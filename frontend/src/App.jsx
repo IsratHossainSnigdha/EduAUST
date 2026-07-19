@@ -13,7 +13,9 @@ export default function App() {
   const themeClass = darkMode ? 'bg-slate-950 text-slate-100' : 'bg-white text-slate-900';
   const navClass = darkMode ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-emerald-100';
   const cardClass = darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-emerald-100';
-  const subTextClass = darkMode ? 'text-slate-400' : 'text-slate-500';
+  const subTextClass = darkMode
+  ? 'text-slate-400'
+  : 'text-slate-700';
 
   const sharedProps = { darkMode, toggleDarkMode, themeClass, navClass, cardClass, subTextClass };
 

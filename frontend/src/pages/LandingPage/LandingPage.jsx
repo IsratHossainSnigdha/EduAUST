@@ -71,9 +71,6 @@ export default function LandingPage({
               Become a Tutor
             </button>
           </div>
-          <div className="mt-4 text-xs font-medium text-emerald-600">
-            7,000+ AUST Students
-          </div>
         </div>
       </section>
 
@@ -235,42 +232,32 @@ export default function LandingPage({
       </section>
 
       {/* FOOTER */}
-      <footer className={`py-12 border-t transition-colors duration-300 ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-emerald-100'}`}>
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="bg-emerald-600 text-white p-1.5 rounded-lg font-bold text-md">E</div>
-              <span className="font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">EduAUST</span>
-            </div>
-            <p className={`text-xs ${subTextClass}`}>Peer-to-peer learning right on campus</p>
-          </div>
-          <div>
-            <h4 className="font-bold text-sm mb-3">Platform</h4>
-            <ul className={`text-xs space-y-2 ${subTextClass}`}>
-              <li><button onClick={() => navigate('/signup')} className="hover:text-emerald-600">Find Tutors</button></li>
-              <li><button onClick={() => navigate('/signup')} className="hover:text-emerald-600">Become a Tutor</button></li>
-              <li><button onClick={() => navigate('/signup')} className="hover:text-emerald-600">How It Works</button></li>
-              <li><button onClick={() => navigate('/signup')} className="hover:text-emerald-600">Departments</button></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-sm mb-3">Company</h4>
-            <ul className={`text-xs space-y-2 ${subTextClass}`}>
-              <li><a href="#" className="hover:text-emerald-600">About Us</a></li>
-              <li><a href="#" className="hover:text-emerald-600">Our Team</a></li>
-              <li><a href="#" className="hover:text-emerald-600">Contact</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-sm mb-3">Resources</h4>
-            <ul className={`text-xs space-y-2 ${subTextClass}`}>
-              <li><a href="#" className="hover:text-emerald-600">Help Center</a></li>
-              <li><a href="#" className="hover:text-emerald-600">FAQ</a></li>
-              <li><a href="#" className="hover:text-emerald-600">Community</a></li>
-            </ul>
-          </div>
-        </div>
-      </footer>
+<footer
+  className={`py-12 border-t transition-colors duration-300 ${
+    darkMode
+      ? 'bg-slate-950 border-slate-800'
+      : 'bg-white border-emerald-100'
+  }`}
+>
+  <div className="max-w-7xl mx-auto px-4 flex flex-col items-center text-center">
+    <div className="flex items-center gap-2 mb-4">
+      <div className="bg-emerald-600 text-white p-1.5 rounded-lg font-bold text-md">
+        E
+      </div>
+      <span className="font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+        EduAUST
+      </span>
+    </div>
+
+    <p className={`text-sm ${subTextClass}`}>
+      Peer-to-peer learning right on campus.
+    </p>
+
+    <p className={`mt-6 text-xs ${subTextClass}`}>
+      © 2026 EduAUST. All rights reserved.
+    </p>
+  </div>
+</footer>
     </div>
   );
 }
