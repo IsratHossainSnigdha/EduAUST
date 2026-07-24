@@ -72,12 +72,21 @@ export default function SignUpPage({
     return { ok: res.ok, body };
   };
 
+  const specialRegex = /[@$!%?&#^()_\-+=]/;
   const passwordChecks = {
     length: password.length >= 8,
     uppercase: /[A-Z]/.test(password),
     lowercase: /[a-z]/.test(password),
     number: /\d/.test(password),
-    special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    special: specialRegex.test(password),
+  };
+
+  const passwordLabels = {
+    length: 'At least 8 characters',
+    uppercase: 'One uppercase letter',
+    lowercase: 'One lowercase letter',
+    number: 'One number',
+    special: 'One special character',
   };
 
   const handleOtpChange = (element, index) => {
@@ -177,7 +186,7 @@ export default function SignUpPage({
     setConfirmPasswordError('');
     setFormError('');
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%?&#^()_\-+=])[A-Za-z\d@$!%?&#^()_\-+=]{8,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%?&#^()_\-+=]).{8,}$/;
 
     if (!passwordRegex.test(password)) {
       setPasswordError('Password must be at least 8 characters and include uppercase, lowercase, number and special character.');
@@ -405,7 +414,12 @@ export default function SignUpPage({
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setPassword(value);
+                      setPasswordError('');
+                      setConfirmPasswordError(confirmPassword && value !== confirmPassword ? 'Passwords do not match.' : '');
+                    }}
                     placeholder="••••••••"
                     className={`w-full px-5 py-3.5 pr-12 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition duration-200 ${passwordError ? 'border-red-500' : ''} ${inputBgClass} ${textColor}`}
                     required
@@ -423,7 +437,11 @@ export default function SignUpPage({
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
-                    onChange={(e) => { setConfirmPassword(e.target.value); setConfirmPasswordError(''); }}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setConfirmPassword(value);
+                      setConfirmPasswordError(password !== value ? 'Passwords do not match.' : '');
+                    }}
                     placeholder="••••••••"
                     className={`w-full px-5 py-3.5 pr-12 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition duration-200 ${confirmPasswordError ? 'border-red-500' : ''} ${inputBgClass} ${textColor}`}
                     required
@@ -441,7 +459,7 @@ export default function SignUpPage({
                     {Object.entries(passwordChecks).map(([key, valid]) => (
                        <div key={key} className={`flex items-center gap-2 ${valid ? "text-green-600" : "text-slate-500 dark:text-slate-400"}`}>
                           {valid ? <Check size={16}/> : <div className="w-4 h-4 rounded-full border"/>}
-                          <span className="capitalize">{key === 'length' ? 'At least 8 characters' : `${key} letter`}</span>
+                          <span>{passwordLabels[key]}</span>
                        </div>
                     ))}
                  </div>
