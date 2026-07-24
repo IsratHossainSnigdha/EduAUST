@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('phone')->nullable()->unique()->after('email');
             $table->foreignId('department_id')->nullable()->after('phone')
                 ->constrained()->nullOnDelete();
+            $table->string('semester')->nullable()->after('department_id');
         });
     }
 
@@ -25,6 +26,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('semester');
             $table->dropConstrainedForeignId('department_id');
             $table->dropUnique(['phone']);
             $table->dropColumn('phone');

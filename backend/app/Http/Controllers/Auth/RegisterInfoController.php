@@ -8,6 +8,7 @@ use App\Notifications\VerificationCodeNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
@@ -39,17 +40,34 @@ class RegisterInfoController extends Controller
             'email' => $validated['email'],
             'phone' => $validated['phone'],
             'department_id' => $validated['department_id'],
+            'semester' => $validated['semester'],
             'code' => Hash::make($code),
             'verified' => false,
         ], $ttl);
 
-        Notification::route('mail', $validated['email'])
-            ->notify(new VerificationCodeNotification($code));
+        $this->sendCode($validated['email'], $code);
 
         return response()->json([
             'message' => 'A verification code has been sent to your AUST email address.',
             'registration_token' => $token,
             'expires_in' => $ttl,
         ], 201);
+    }
+
+    /**
+     * Email the verification code, logging (rather than failing the request)
+     * when the mail transport is misconfigured or unavailable.
+     */
+    private function sendCode(string $email, string $code): void
+    {
+        try {
+            Notification::route('mail', $email)
+                ->notify(new VerificationCodeNotification($code));
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send registration verification code.', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
