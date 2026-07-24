@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | AUST Institutional Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for the registration flow: the institutional email domain
+    | that student accounts must belong to, and how long a pending step-1
+    | registration draft (and its verification code) remains valid.
+    |
+    */
+
+    'aust' => [
+        'email_domain' => env('AUST_EMAIL_DOMAIN', 'aust.edu'),
+        'registration_ttl' => (int) env('AUST_REGISTRATION_TTL', 30 * 60),
+    ],
+
 ];
