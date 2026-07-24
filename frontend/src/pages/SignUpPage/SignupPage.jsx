@@ -43,16 +43,29 @@ export default function SignUpPage({
 
   // Load the department list for the dropdown.
   useEffect(() => {
-    fetch(`${API_BASE}/departments`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
-      .then((body) => {
-        const list = body.data ?? [];
-        setDepartments(list);
-        if (list.length) setDepartmentId(String(list[0].id));
-      })
-      .catch(() => setDepartments([]));
-  }, []);
+  fetch(`${API_BASE}/departments`)
+    .then((res) => {
+      console.log("Response status:", res.status);
+      return res.json();
+    })
+    .then((body) => {
+      console.log("API response:", body);
 
+      const list = body.data ?? [];
+
+      console.log("Department list:", list);
+
+      setDepartments(list);
+
+      if (list.length) {
+        setDepartmentId(String(list[0].id));
+      }
+    })
+    .catch((err) => {
+      console.error("Fetch error:", err);
+      setDepartments([]);
+    });
+}, []);
   // Surface the first Laravel validation error (422) as a single message.
   const firstError = (body, fallback) => {
     if (body?.errors) {
