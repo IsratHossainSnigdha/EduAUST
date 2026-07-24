@@ -51,4 +51,21 @@ return [
         'registration_ttl' => (int) env('AUST_REGISTRATION_TTL', 30 * 60),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | JWT Authentication
+    |--------------------------------------------------------------------------
+    |
+    | Settings for the sign-in JWTs. Access tokens are short-lived; refresh
+    | tokens (issued when "remember me" is selected) live much longer. The
+    | secret falls back to the application key when JWT_SECRET is unset.
+    |
+    */
+
+    'jwt' => [
+        'secret' => env('JWT_SECRET'),
+        'access_ttl' => (int) env('JWT_ACCESS_TTL', 60 * 60),
+        'refresh_ttl' => (int) env('JWT_REFRESH_TTL', 60 * 60 * 24 * 30),
+    ],
+
 ];

@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, 
-  Users, BookOpen, Sparkles, Sun, Moon 
+import {
+  Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck,
+  Users, BookOpen, Sparkles, Sun, Moon
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { apiPost, saveAuth, firstError } from '../../lib/auth';
 
-export default function LoginPage({ 
-  darkMode, 
-  toggleDarkMode, 
-  setCurrentPage 
+export default function LoginPage({
+  darkMode,
+  toggleDarkMode,
+  setCurrentPage
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -24,7 +25,7 @@ export default function LoginPage({
   const subTextClass = darkMode ? 'text-slate-400' : 'text-slate-600';
   const welcomeTextClass = darkMode ? 'text-white' : 'text-slate-900';
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.endsWith('@aust.edu')) {
       setError('Please use a valid AUST email address (@aust.edu).');
@@ -35,17 +36,30 @@ export default function LoginPage({
       return;
     }
     setError('');
+
+    const { ok, body } = await apiPost('/auth/login', {
+      identifier: email.trim(),
+      password,
+      remember: rememberMe,
+    });
+
+    if (!ok) {
+      setError(firstError(body, 'Unable to sign in. Please try again.'));
+      return;
+    }
+
+    saveAuth(body);
     navigate('/dashboard');
   };
 
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex flex-col justify-between transition-colors duration-300 ${bgClass}`}>
       <div className="flex-grow flex flex-col lg:flex-row w-full min-h-[calc(100vh-60px)]">
-        
+
         {/* LEFT SIDE: LOGIN FORM */}
         <div className="w-full lg:w-[45%] flex flex-col justify-between p-8 sm:p-12 xl:p-16 relative">
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('landing')}>
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
               <div className="bg-emerald-600 text-white w-10 h-10 rounded-2xl font-black text-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">E</div>
               <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent tracking-tight">EduAUST</span>
             </div>
@@ -65,7 +79,7 @@ export default function LoginPage({
                   <label className={`text-xs font-bold uppercase ${labelTextClass}`}>AUST Email</label>
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={`w-full p-3.5 rounded-2xl border ${inputBgClass}`} placeholder="ishrat.cse.20230204017@aust.edu" />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className={`text-xs font-bold uppercase ${labelTextClass}`}>Password</label>
                   <div className="relative">
@@ -90,24 +104,24 @@ export default function LoginPage({
           <div className="relative z-20 space-y-6">
             <h2 className="text-5xl font-extrabold leading-tight">Peer learning.<br /> Right <span className="text-emerald-500">on campus.</span></h2>
             <p className="text-slate-300 text-lg">Connect with verified peers, ace your courses, and achieve your goals together.</p>
-            
+
             <div className="space-y-4 pt-4">
               <div className="flex items-center gap-4">
-                <Users className="text-emerald-500" /> 
+                <Users className="text-emerald-500" />
                 <div>
                   <h4 className="font-bold">Verified Community</h4>
                   <p className="text-slate-400 text-sm">All users are verified AUST students.</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <BookOpen className="text-emerald-500" /> 
+                <BookOpen className="text-emerald-500" />
                 <div>
                   <h4 className="font-bold">Quality Learning</h4>
                   <p className="text-slate-400 text-sm">Find the right tutor for your courses.</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <ShieldCheck className="text-emerald-500" /> 
+                <ShieldCheck className="text-emerald-500" />
                 <div>
                   <h4 className="font-bold">Safe & Secure</h4>
                   <p className="text-slate-400 text-sm">Your data is encrypted and protected.</p>

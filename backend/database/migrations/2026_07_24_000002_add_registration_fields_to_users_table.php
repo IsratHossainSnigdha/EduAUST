@@ -12,10 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('student_id')->nullable()->unique()->after('name');
-            $table->string('phone')->nullable()->unique()->after('email');
-            $table->foreignId('department_id')->nullable()->after('phone')
-                ->constrained()->nullOnDelete();
+            // Required academic identity fields. The unique() constraints also
+            // create the indexes required on student_id and phone (email is
+            // already unique in the base users migration).
+            $table->string('student_id')->unique()->after('name');
+            $table->string('phone')->unique()->after('email');
+            $table->foreignId('department_id')->after('phone')
+                ->constrained()->restrictOnDelete();
+            $table->string('semester')->after('department_id');
+
+            // Verification & profile assets.
+            $table->string('student_id_image')->nullable()->after('semester');
+            $table->string('profile_picture')->nullable()->after('student_id_image');
+            $table->boolean('student_id_verified')->default(false)->after('profile_picture');
         });
     }
 
@@ -25,6 +34,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('student_id_verified');
+            $table->dropColumn('profile_picture');
+            $table->dropColumn('student_id_image');
+            $table->dropColumn('semester');
             $table->dropConstrainedForeignId('department_id');
             $table->dropUnique(['phone']);
             $table->dropColumn('phone');

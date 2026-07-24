@@ -27,6 +27,7 @@ class RegisterInfoTest extends TestCase
             'email' => 'ada@aust.edu',
             'phone' => '+8801712345678',
             'department_id' => $department->id,
+            'semester' => '3.1',
         ], $overrides);
     }
 
@@ -112,7 +113,7 @@ class RegisterInfoTest extends TestCase
         $response = $this->postJson('/api/v1/auth/register/info', []);
 
         $response->assertUnprocessable()->assertJsonValidationErrors([
-            'name', 'student_id', 'email', 'phone', 'department_id',
+            'name', 'student_id', 'email', 'phone', 'department_id', 'semester',
         ]);
     }
 }

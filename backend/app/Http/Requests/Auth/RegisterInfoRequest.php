@@ -61,6 +61,8 @@ class RegisterInfoRequest extends FormRequest
                 'integer',
                 Rule::exists('departments', 'id'),
             ],
+
+            'semester' => ['required', 'string', 'max:10'],
         ];
     }
 
