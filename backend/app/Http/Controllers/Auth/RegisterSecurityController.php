@@ -59,6 +59,8 @@ class RegisterSecurityController extends Controller
             'department_id' => $draft['department_id'],
             'semester' => $draft['semester'] ?? null,
             'password' => Hash::make($request->string('password')->value()),
+            // The address was verified via the emailed code in the previous step.
+            'email_verified_at' => now(),
         ]);
 
         Cache::forget($key);
