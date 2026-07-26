@@ -45,6 +45,49 @@ class LoginTest extends TestCase
         $this->assertGreaterThan(time(), $claims['exp']);
     }
 
+    public function test_login_with_aust_email_field_returns_an_access_token(): void
+    {
+        $user = $this->user();
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'aust_email' => 'ada@aust.edu',
+            'password' => 'Str0ng!Pass',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('user.id', $user->id)
+            ->assertJsonStructure(['access_token', 'expires_in']);
+    }
+
+    public function test_remember_me_field_issues_a_refresh_token(): void
+    {
+        $this->user();
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'aust_email' => 'ada@aust.edu',
+            'password' => 'Str0ng!Pass',
+            'remember_me' => true,
+        ]);
+
+        $response->assertOk()->assertJsonStructure([
+            'access_token', 'refresh_token', 'refresh_expires_in',
+        ]);
+    }
+
+    public function test_invalid_credentials_with_aust_email_return_a_generic_error(): void
+    {
+        $this->user();
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'aust_email' => 'ada@aust.edu',
+            'password' => 'wrong-password',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors('aust_email')
+            ->assertJsonMissingPath('access_token');
+    }
+
     public function test_login_with_student_id_works(): void
     {
         $this->user();

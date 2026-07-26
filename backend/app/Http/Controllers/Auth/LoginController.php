@@ -26,11 +26,12 @@ class LoginController extends Controller
      */
     public function store(ApiLoginRequest $request, JwtService $jwt): JsonResponse
     {
-        $identifier = $request->string('identifier')->trim()->value();
+        $credential = $request->credential();
 
-        // A single field accepts either the AUST email or the student ID.
-        $field = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'student_id';
-        $user = User::where($field, $identifier)->first();
+        // `aust_email` logs in by email; the legacy `identifier` field also
+        // accepts the student ID.
+        $field = filter_var($credential, FILTER_VALIDATE_EMAIL) ? 'email' : 'student_id';
+        $user = User::where($field, $credential)->first();
 
         // Secure, constant-time-ish password comparison. When the account does
         // not exist we still perform a hash check to keep timing uniform.
@@ -42,7 +43,7 @@ class LoginController extends Controller
         if (! $user || ! $passwordValid) {
             // Identical, generic error regardless of which part failed.
             throw ValidationException::withMessages([
-                'identifier' => ['These credentials do not match our records.'],
+                $request->credentialField() => ['These credentials do not match our records.'],
             ]);
         }
 
@@ -55,6 +56,6 @@ class LoginController extends Controller
                 'student_id' => $user->student_id,
                 'department_id' => $user->department_id,
             ],
-        ], $jwt->tokensFor($user, $request->boolean('remember'))));
+        ], $jwt->tokensFor($user, $request->wantsRemember())));
     }
 }
