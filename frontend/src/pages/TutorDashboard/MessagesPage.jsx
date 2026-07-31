@@ -151,7 +151,7 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
 
   const menuItems = [
     { name: 'Home', icon: Home, path: '/dashboard' },
-    { name: 'Find Tutor', icon: Search, path: '/find-tutor' },
+    { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
     { name: 'Messages', icon: MessageSquare, badge: 2, path: '/messages' },
     { name: 'My Requests', icon: UserPlus, path: '/my-requests' },
     { name: 'Settings', icon: Settings, path: '/settings' },
@@ -341,7 +341,7 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
               </div>
             </div>
 
-            {/* Conversation Items */}
+            
             <div className="flex-grow overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
               {filteredConversations.length > 0 ? (
                 filteredConversations.map((item) => (
@@ -392,7 +392,7 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
             </div>
           </div>
 
-          {/* Right Column: Chat Box Interface */}
+          
           <div className="md:col-span-7 lg:col-span-8 flex flex-col h-full bg-slate-50/50 dark:bg-[#1a2230]/40 overflow-hidden">
             
             {/* Chat Header */}
@@ -416,7 +416,7 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
               </div>
             </div>
 
-            {/* Chat Messages Body */}
+            
             <div className="flex-grow p-4 overflow-y-auto space-y-3">
               {currentMessages.map((msg, index) => {
                 const showDateBadge = index === 0 || currentMessages[index - 1].dateLabel !== msg.dateLabel;
@@ -453,7 +453,7 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Message Input Form */}
+            
             <form onSubmit={handleSendMessage} className={`p-3 border-t flex items-center gap-2 shrink-0 ${darkMode ? 'border-slate-800 bg-[#1f2937]' : 'border-slate-100 bg-white'}`}>
               <button type="button" className="text-slate-400 hover:text-emerald-600 transition">
                 <Paperclip size={16} />
