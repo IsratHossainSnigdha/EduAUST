@@ -4,19 +4,21 @@ import LandingPage from "./pages/LandingPage/LandingPage";
 import LoginPage from "./pages/LoginPage/LoginPage";
 import SignUpPage from "./pages/SignUpPage/SignupPage";
 import StudentDashboard from "./pages/StudentDashboard/StudentDashboard";
+import FindTutorsPage from "./pages/StudentDashboard/FindTutorsPage";
 import TutorDashboard from "./pages/TutorDashboard/TutorDashboard";
 import TuitionRequests from "./pages/TutorDashboard/TuitionRequests";
 import BecomeATutor from "./pages/BecomeATutor";
 import MessagesPage from "./pages/TutorDashboard/MessagesPage";
+import NotificationsPage from "./pages/NotificationsPage"; 
 
 export default function App() {
-  // লোকাল স্টোরেজ থেকে ডার্ক মোডের স্টেট রিড করা, না থাকলে ডিফল্ট false
+  
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('eduAust_darkMode');
     return saved ? JSON.parse(saved) : false;
   });
 
-  // darkMode পরিবর্তন হলে সেটি localStorage-এ সেভ করে রাখা
+  
   useEffect(() => {
     localStorage.setItem('eduAust_darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
@@ -40,10 +42,12 @@ export default function App() {
           <Route path="/login" element={<LoginPage {...sharedProps} />} />
           <Route path="/signup" element={<SignUpPage {...sharedProps} />} />
           <Route path="/dashboard" element={<StudentDashboard {...sharedProps} />} />
+          <Route path="/find-tutors" element={<FindTutorsPage {...sharedProps} />} />
           <Route path="/tutor-dashboard" element={<TutorDashboard {...sharedProps} />} />
           <Route path="/tutor-requests" element={<TuitionRequests {...sharedProps} />} />
           <Route path="/become-a-tutor" element={<BecomeATutor {...sharedProps} />} />
           <Route path="/messages" element={<MessagesPage {...sharedProps} />} />
+          <Route path="/notifications" element={<NotificationsPage {...sharedProps} />} /> 
         </Routes>
       </BrowserRouter>
     </div>
