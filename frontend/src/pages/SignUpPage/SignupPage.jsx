@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft, Sun, Moon, GraduationCap, Users, ShieldCheck,
-  Mail, UploadCloud, Check, Eye, EyeOff
+import { useNavigate, useLocation } from 'react-router-dom';
+import { 
+  ArrowLeft, Sun, Moon, GraduationCap, Users, ShieldCheck, 
+  Mail, UploadCloud, Check, Eye, EyeOff 
 } from 'lucide-react';
 import { saveAuth } from '../../lib/auth';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
-export default function SignUpPage({
-  darkMode, toggleDarkMode, themeClass, cardClass, subTextClass, inputBgClass
+export default function SignUpPage({ 
+  darkMode, toggleDarkMode, themeClass, cardClass, subTextClass, inputBgClass 
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [signUpStep, setSignUpStep] = useState(1);
   const [userRole, setUserRole] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -41,31 +43,39 @@ export default function SignUpPage({
   const [otpMessage, setOtpMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // BecomeATutor থেকে আসলে অটো স্টেপ বা রোল সেট করার জন্য (যদি প্রয়োজন হয় অথবা সরাসরি স্টার্ট করতে পারেন)
+  // BecomeATutor থেকে আসলে অটো স্টেপ বা রোল সেট করার জন্য
+  useEffect(() => {
+    if (location.state?.step === 2) {
+      setSignUpStep(2);
+      if (location.state?.role) {
+        setUserRole(location.state.role);
+      }
+    }
+  }, [location]);
+
   // Load the department list for the dropdown.
   useEffect(() => {
-  fetch(`${API_BASE}/departments`)
-    .then((res) => {
-      console.log("Response status:", res.status);
-      return res.json();
-    })
-    .then((body) => {
-      console.log("API response:", body);
+    fetch(`${API_BASE}/departments`)
+      .then((res) => {
+        console.log("Response status:", res.status);
+        return res.json();
+      })
+      .then((body) => {
+        console.log("API response:", body);
+        const list = body.data ?? [];
+        console.log("Department list:", list);
+        setDepartments(list);
+        if (list.length) {
+          setDepartmentId(String(list[0].id));
+        }
+      })
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        setDepartments([]);
+      });
+  }, []);
 
-      const list = body.data ?? [];
-
-      console.log("Department list:", list);
-
-      setDepartments(list);
-
-      if (list.length) {
-        setDepartmentId(String(list[0].id));
-      }
-    })
-    .catch((err) => {
-      console.error("Fetch error:", err);
-      setDepartments([]);
-    });
-}, []);
   // Surface the first Laravel validation error (422) as a single message.
   const firstError = (body, fallback) => {
     if (body?.errors) {
@@ -127,14 +137,21 @@ export default function SignUpPage({
     }
     setEmailError('');
 
+    let endpoint = '/auth/register/info';
+    // যদি ইউজার 'tutor' রোল সিলেক্ট করে থাকে, ব্যাকএন্ডের রুট অনুযায়ী হ্যান্ডেল করা যাবে
+    if (userRole === 'tutor') {
+      // যদি ট্যুরের জন্য আলাদা এন্ডপয়েন্ট থাকে এখানে দেওয়া যাবে, নতুবা ডিফল্ট
+    }
+
     setLoading(true);
-    const { ok, body } = await postJson('/auth/register/info', {
+    const { ok, body } = await postJson(endpoint, {
       name,
       student_id: studentId,
       email: email.trim(),
       phone,
       department_id: departmentId ? Number(departmentId) : null,
       semester,
+      role: userRole, // রোলটি ব্যাকএন্ডে পাস করার জন্য
     });
     setLoading(false);
 
@@ -270,7 +287,7 @@ export default function SignUpPage({
               </button>
 
               <button
-                onClick={() => { setUserRole('tutor'); setSignUpStep(2); }}
+                onClick={() => navigate('/become-a-tutor')}
                 className={`w-full p-5 border rounded-2xl flex items-center gap-4 text-left transition duration-300 group hover:border-emerald-500 ${darkMode ? 'border-slate-700 bg-slate-900/50' : 'border-slate-200 bg-white'}`}
               >
                 <div className="bg-emerald-100 dark:bg-emerald-950 p-3 rounded-xl text-emerald-600 group-hover:scale-105 transition duration-300">
@@ -283,7 +300,16 @@ export default function SignUpPage({
               </button>
             </div>
 
-            <p className="text-xs text-emerald-600 font-medium mt-8 flex items-center justify-center gap-1.5">
+            <div className="mt-6">
+              <button 
+                onClick={() => navigate('/become-a-tutor')}
+                className="text-xs text-emerald-600 font-semibold hover:underline"
+              >
+                Want to know about becoming a tutor? Read requirements
+              </button>
+            </div>
+
+            <p className="text-xs text-emerald-600 font-medium mt-6 flex items-center justify-center gap-1.5">
               <ShieldCheck size={14} /> Only for verified AUST students
             </p>
           </div>
