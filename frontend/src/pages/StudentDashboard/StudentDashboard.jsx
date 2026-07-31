@@ -34,15 +34,22 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   const textMuted = darkMode ? 'text-slate-350 font-medium' : 'text-slate-500 font-medium';
 
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard },
-    { name: 'Find Tutors', icon: Search },
-    { name: 'Saved Tutors', icon: Heart },
-    { name: 'My Requests', icon: GitPullRequest },
-    { name: 'Messages', icon: MessageSquare, badge: 3 },
-    { name: 'Notifications', icon: Bell, badge: 2 },
-    { name: 'Settings', icon: Settings },
-    { name: 'Help & Support', icon: HelpCircle },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { name: 'Find Tutors', icon: Search, path: '#' },
+    { name: 'Saved Tutors', icon: Heart, path: '#' },
+    { name: 'My Requests', icon: GitPullRequest, path: '#' },
+    { name: 'Messages', icon: MessageSquare, badge: 3, path: '/messages' },
+    { name: 'Notifications', icon: Bell, badge: 2, path: '#' },
+    { name: 'Settings', icon: Settings, path: '#' },
+    { name: 'Help & Support', icon: HelpCircle, path: '#' },
   ];
+
+  const handleNavigation = (itemName, itemPath) => {
+    setActiveMenu(itemName);
+    if (itemPath && itemPath !== '#') {
+      navigate(itemPath);
+    }
+  };
 
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}>
@@ -61,7 +68,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
               return (
                 <button
                   key={item.name}
-                  onClick={() => setActiveMenu(item.name)}
+                  onClick={() => handleNavigation(item.name, item.path)}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold tracking-wide transition-all ${
                     isActive 
                       ? 'bg-emerald-600 text-white dark:bg-emerald-600 dark:text-white shadow-md' 
@@ -170,14 +177,22 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
           {[
-            { title: 'Find Tutor', desc: 'Search by course or subject', icon: Search, color: 'text-blue-500 bg-blue-500/10 border-blue-500/15' },
-            { title: 'Saved Tutors', desc: 'View your saved tutor list', icon: Heart, color: 'text-pink-500 bg-pink-500/10 border-pink-500/15' },
-            { title: 'My Requests', desc: 'Check the status of your requests', icon: GitPullRequest, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/15', badge: 2 },
-            { title: 'Messages', desc: 'Chat with active tutors', icon: MessageSquare, color: 'text-violet-500 bg-violet-500/10 border-violet-500/15', badge: 3 }
+            { title: 'Find Tutor', desc: 'Search by course or subject', icon: Search, color: 'text-blue-500 bg-blue-500/10 border-blue-500/15', path: '#' },
+            { title: 'Saved Tutors', desc: 'View your saved tutor list', icon: Heart, color: 'text-pink-500 bg-pink-500/10 border-pink-500/15', path: '#' },
+            { title: 'My Requests', desc: 'Check the status of your requests', icon: GitPullRequest, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/15', badge: 2, path: '#' },
+            { title: 'Messages', desc: 'Chat with active tutors', icon: MessageSquare, color: 'text-violet-500 bg-violet-500/10 border-violet-500/15', badge: 3, path: '/messages' }
           ].map((card, idx) => {
             const Icon = card.icon;
             return (
-              <div key={idx} className={`p-5 rounded-2xl border transition-all duration-300 ${cardBg} hover:-translate-y-1 hover:shadow-lg relative group cursor-pointer`}>
+              <div 
+                key={idx} 
+                onClick={() => {
+                  if (card.path && card.path !== '#') {
+                    navigate(card.path);
+                  }
+                }}
+                className={`p-5 rounded-2xl border transition-all duration-300 ${cardBg} hover:-translate-y-1 hover:shadow-lg relative group cursor-pointer`}
+              >
                 <div className="flex items-start justify-between">
                   <div className={`p-3 rounded-xl border ${card.color}`}>
                     <Icon size={18} />
