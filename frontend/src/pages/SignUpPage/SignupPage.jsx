@@ -43,8 +43,7 @@ export default function SignUpPage({
   const [otpMessage, setOtpMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // BecomeATutor থেকে আসলে অটো স্টেপ বা রোল সেট করার জন্য (যদি প্রয়োজন হয় অথবা সরাসরি স্টার্ট করতে পারেন)
-  // BecomeATutor থেকে আসলে অটো স্টেপ বা রোল সেট করার জন্য
+ 
   useEffect(() => {
     if (location.state?.step === 2) {
       setSignUpStep(2);
@@ -54,7 +53,7 @@ export default function SignUpPage({
     }
   }, [location]);
 
-  // Load the department list for the dropdown.
+  
   useEffect(() => {
     fetch(`${API_BASE}/departments`)
       .then((res) => {
@@ -126,7 +125,7 @@ export default function SignUpPage({
   const textColor = darkMode ? "text-slate-200" : "text-slate-800";
   const labelColor = darkMode ? "text-slate-300" : "text-slate-700";
 
-  // Step 1 -> POST /register/info : validate details + request a code.
+  
   const handleAccountInfoSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
@@ -138,9 +137,9 @@ export default function SignUpPage({
     setEmailError('');
 
     let endpoint = '/auth/register/info';
-    // যদি ইউজার 'tutor' রোল সিলেক্ট করে থাকে, ব্যাকএন্ডের রুট অনুযায়ী হ্যান্ডেল করা যাবে
+   
     if (userRole === 'tutor') {
-      // যদি ট্যুরের জন্য আলাদা এন্ডপয়েন্ট থাকে এখানে দেওয়া যাবে, নতুবা ডিফল্ট
+     
     }
 
     setLoading(true);
@@ -151,7 +150,7 @@ export default function SignUpPage({
       phone,
       department_id: departmentId ? Number(departmentId) : null,
       semester,
-      role: userRole, // রোলটি ব্যাকএন্ডে পাস করার জন্য
+      role: userRole, 
     });
     setLoading(false);
 
@@ -167,7 +166,7 @@ export default function SignUpPage({
     setSignUpStep(3);
   };
 
-  // Step 2 -> POST /register/verify : check the 6-digit code.
+  
   const handleVerifyCode = async () => {
     setOtpError('');
     setOtpMessage('');
@@ -192,7 +191,7 @@ export default function SignUpPage({
     setSignUpStep(4);
   };
 
-  // Resend the verification code.
+ 
   const handleResend = async () => {
     setOtpError('');
     setOtpMessage('');
@@ -209,7 +208,7 @@ export default function SignUpPage({
     setOtpMessage('A new code has been sent to your email.');
   };
 
-  // Step 4 -> POST /register/security : set the password + create the account.
+  
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setPasswordError('');
@@ -241,7 +240,7 @@ export default function SignUpPage({
       return;
     }
 
-    // Auto-login: the completed registration returns JWT tokens.
+   
     saveAuth(body);
     setSignUpStep(6);
   };
