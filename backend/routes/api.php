@@ -8,11 +8,20 @@ use App\Http\Controllers\Auth\RegisterSecurityController;
 use App\Http\Controllers\Auth\RegisterVerifyController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\TutorController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::get('/departments', [DepartmentController::class, 'index'])
         ->name('api.v1.departments.index');
+
+    Route::middleware('auth.jwt')->prefix('tutors')->group(function () {
+        Route::get('/', [TutorController::class, 'index'])
+            ->name('api.v1.tutors.index');
+
+        Route::get('/filters', [TutorController::class, 'filters'])
+            ->name('api.v1.tutors.filters');
+    });
 
     Route::prefix('auth')->group(function () {
         Route::post('/register/info', [RegisterInfoController::class, 'store'])

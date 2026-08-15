@@ -35,24 +35,41 @@ export function clearAuth() {
   localStorage.removeItem(USER_KEY);
 }
 
-// POST JSON; returns { ok, body }.
-export async function apiPost(path, payload) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify(payload),
-  });
+// Perform a request and always resolve to { ok, body }.
+//
+// fetch() rejects when the server is unreachable, which would otherwise leave
+// callers awaiting a promise that never resolves — a page stuck on its loading
+// state with nothing on screen to explain why.
+async function request(path, options) {
+  let res;
+
+  try {
+    res = await fetch(`${API_BASE}${path}`, options);
+  } catch {
+    return {
+      ok: false,
+      body: { message: 'Could not reach the server. Please check your connection and try again.' },
+    };
+  }
+
   const body = await res.json().catch(() => ({}));
   return { ok: res.ok, body };
 }
 
+// POST JSON; returns { ok, body }.
+export function apiPost(path, payload) {
+  return request(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
 // GET JSON with the stored Bearer token; returns { ok, body }.
-export async function apiGet(path) {
-  const res = await fetch(`${API_BASE}${path}`, {
+export function apiGet(path) {
+  return request(path, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${getAccessToken()}` },
   });
-  const body = await res.json().catch(() => ({}));
-  return { ok: res.ok, body };
 }
 
 // Surface the first Laravel validation error (422) as a single message.
