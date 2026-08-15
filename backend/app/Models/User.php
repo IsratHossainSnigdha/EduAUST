@@ -59,6 +59,18 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether the account has cleared the checks required to sign in and use
+     * authenticated features.
+     *
+     * Registration only persists a user once the emailed code has been
+     * confirmed, so this also guards accounts created by other means.
+     */
+    public function canSignIn(): bool
+    {
+        return $this->hasVerifiedEmail();
+    }
+
+    /**
      * The department the user belongs to.
      *
      * @return BelongsTo<Department, $this>

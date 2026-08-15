@@ -173,6 +173,26 @@ class LoginTest extends TestCase
         $unknownUser->assertUnprocessable();
     }
 
+    public function test_successful_login_never_exposes_credentials(): void
+    {
+        $user = $this->user();
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'identifier' => 'ada@aust.edu',
+            'password' => 'Str0ng!Pass',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonMissingPath('user.password')
+            ->assertJsonMissingPath('user.remember_token');
+
+        // Neither the hash nor the submitted password appears anywhere in the
+        // payload.
+        $body = $response->getContent();
+        $this->assertStringNotContainsString($user->password, $body);
+        $this->assertStringNotContainsString('Str0ng!Pass', $body);
+    }
+
     public function test_identifier_and_password_are_required(): void
     {
         $response = $this->postJson('/api/v1/auth/login', []);

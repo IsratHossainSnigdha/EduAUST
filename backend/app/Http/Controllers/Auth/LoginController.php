@@ -47,7 +47,7 @@ class LoginController extends Controller
             ]);
         }
 
-        if (! $this->canSignIn($user)) {
+        if (! $user->canSignIn()) {
             throw ValidationException::withMessages([
                 $request->credentialField() => ['Your account is not yet eligible to sign in.'],
             ]);
@@ -63,10 +63,5 @@ class LoginController extends Controller
                 'department_id' => $user->department_id,
             ],
         ], $jwt->tokensFor($user, $request->wantsRemember())));
-    }
-
-    private function canSignIn(User $user): bool
-    {
-        return $user->email_verified_at !== null;
     }
 }

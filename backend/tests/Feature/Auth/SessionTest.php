@@ -62,6 +62,29 @@ class SessionTest extends TestCase
             ->assertJsonValidationErrors('refresh_token');
     }
 
+    public function test_me_is_rejected_for_an_unverified_account(): void
+    {
+        $user = User::factory()->unverified()->create();
+        $token = app(JwtService::class)->tokensFor($user)['access_token'];
+
+        // The token is well-formed, but the account is not eligible to use
+        // authenticated features.
+        $this->withToken($token)->getJson('/api/v1/auth/me')
+            ->assertForbidden()
+            ->assertJsonMissingPath('user');
+    }
+
+    public function test_refresh_is_rejected_for_an_unverified_account(): void
+    {
+        $user = User::factory()->unverified()->create();
+        $refresh = app(JwtService::class)->tokensFor($user, true)['refresh_token'];
+
+        $this->postJson('/api/v1/auth/refresh', ['refresh_token' => $refresh])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('refresh_token')
+            ->assertJsonMissingPath('access_token');
+    }
+
     public function test_logout_succeeds_for_an_authenticated_user(): void
     {
         $user = User::factory()->create();
