@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -56,6 +57,20 @@ class User extends Authenticatable
             'password' => 'hashed',
             'student_id_verified' => 'boolean',
         ];
+    }
+
+    /**
+     * The in-app notifications addressed to this user, newest first.
+     *
+     * This intentionally replaces the morphMany that the Notifiable trait
+     * provides, because notifications are stored as a first-class table with
+     * their own columns rather than through Laravel's database channel.
+     *
+     * @return HasMany<Notification, $this>
+     */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class)->latest();
     }
 
     /**

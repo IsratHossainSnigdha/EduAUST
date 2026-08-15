@@ -16,11 +16,13 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
+import { apiGet } from '../../lib/auth';
 
 export default function TutorDashboard({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMenu, setActiveMenu] = useState('Dashboard');
+  const [unreadCount, setUnreadCount] = useState(0);
   const [currentRole, setCurrentRole] = useState(() => {
   return localStorage.getItem('eduAUST_role') || 'tutor';
 });
@@ -37,7 +39,7 @@ export default function TutorDashboard({ darkMode, toggleDarkMode }) {
     { name: 'Dashboard', icon: LayoutDashboard, path: '/tutor-dashboard' },
     { name: 'Tuition Requests', icon: UserPlus, badge: 6, path: '/tutor-requests' },
     { name: 'Messages', icon: MessageSquare, badge: 3, path: '/messages' },
-        { name: 'Notifications', icon: Bell, badge: 3, path: '/notifications' }, 
+    { name: 'Notifications', icon: Bell, badge: unreadCount || undefined, path: '/notifications' },
     { name: 'Settings', icon: Settings, path: '/settings' },
     { name: 'Help & Support', icon: HelpCircle, path: '/support' },
   ];
@@ -52,6 +54,21 @@ export default function TutorDashboard({ darkMode, toggleDarkMode }) {
  useEffect(() => {
   localStorage.setItem('eduAUST_role', currentRole);
 }, [currentRole]);
+
+  // Badge count for this dashboard only; the API reports each side separately.
+  useEffect(() => {
+    let cancelled = false;
+
+    apiGet('/notifications/unread-count').then(({ ok, body }) => {
+      if (!cancelled && ok) {
+        setUnreadCount(body?.by_audience?.tutor ?? 0);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}>
@@ -159,9 +176,14 @@ export default function TutorDashboard({ darkMode, toggleDarkMode }) {
             <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1f2937] text-slate-700 dark:text-white transition-all">
               {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
             </button>
-            <button className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1f2937] text-slate-700 dark:text-white relative">
+            <button
+              onClick={() => navigate('/notifications')}
+              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1f2937] text-slate-700 dark:text-white relative cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            >
               <Bell size={16} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+              )}
             </button>
             <div className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800">
               <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120" alt="Profile" className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" />
