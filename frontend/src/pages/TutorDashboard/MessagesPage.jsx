@@ -17,7 +17,9 @@ import {
   Paperclip,
   Smile,
   Send,
-  CheckCheck
+  CheckCheck,
+  HelpCircle,
+  
 } from 'lucide-react';
 
 export default function MessagesPage({ darkMode, toggleDarkMode }) {
@@ -143,18 +145,27 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, selectedChat]);
 
-  const bgClass = darkMode ? 'bg-[#0b0f19] text-slate-150' : 'bg-slate-50 text-slate-950';
-  const sidebarBg = darkMode ? 'bg-[#111827] border-slate-800' : 'bg-white border-slate-100';
-  const cardBg = darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-100';
+  const bgClass = darkMode
+  ? 'bg-[#12161f] text-slate-100'
+  : 'bg-[#f1f3f6] text-slate-900';
+
+const sidebarBg = darkMode
+  ? 'bg-[#1a202c] border-slate-700/60'
+  : 'bg-white border-slate-200 shadow-sm';
+
+const cardBg = darkMode
+  ? 'bg-[#1e2533] border-slate-700/60'
+  : 'bg-white border-slate-200 shadow-sm';
   const textPrimary = darkMode ? 'text-white font-extrabold' : 'text-slate-900 font-extrabold';
   const textSecondary = darkMode ? 'text-slate-200 font-medium' : 'text-slate-600 font-medium';
 
   const menuItems = [
-    { name: 'Home', icon: Home, path: '/dashboard' },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
-    { name: 'Messages', icon: MessageSquare, badge: 2, path: '/messages' },
-    { name: 'My Requests', icon: UserPlus, path: '/my-requests' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
+    { name: 'Messages', icon: MessageSquare, badge: 3, path: '/messages' },
+    { name: 'Notifications', icon: Bell, badge: 3, path: '/notifications' }, 
+    { name: 'Settings', icon: Settings, path: '#' },
+    { name: 'Help & Support', icon: HelpCircle, path: '#' },
   ];
 
   const getCurrentTime = () => {
@@ -243,47 +254,105 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 overflow-hidden ${bgClass}`}>
       
       {/* Sidebar */}
-      <aside className={`w-64 shrink-0 flex flex-col p-5 border-r transition-colors duration-300 ${sidebarBg}`}>
-        <div>
-          <div className="flex items-center gap-3 cursor-pointer mb-6" onClick={() => navigate('/')}>
-            <div className="bg-emerald-600 text-white w-9 h-9 rounded-xl font-black text-lg flex items-center justify-center shadow-md shadow-emerald-500/20">E</div>
-            <span className="text-xl font-black bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">EduAUST</span>
-          </div>
+      <aside className={`w-64 shrink-0 flex flex-col justify-between p-6 border-r transition-colors duration-300 ${sidebarBg}`}>
+  <div>
+    {/* Logo */}
+    <div
+      className="flex items-center gap-3 cursor-pointer mb-8"
+      onClick={() => navigate('/')}
+    >
+      <div className="bg-emerald-600 text-white w-9 h-9 rounded-xl font-black text-lg flex items-center justify-center shadow-md shadow-emerald-500/20">
+        E
+      </div>
+      <span className="text-xl font-black bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">
+        EduAUST
+      </span>
+    </div>
 
-          <nav className="space-y-1.5">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeMenu === item.name;
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    setActiveMenu(item.name);
-                    navigate(item.path);
-                  }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all ${
-                    isActive 
-                      ? 'bg-emerald-600 text-white shadow-md' 
-                      : 'text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon size={16} className={isActive ? 'text-white' : 'text-slate-400 dark:text-slate-300'} />
-                    <span>{item.name}</span>
-                  </div>
-                  {item.badge && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
-                      isActive ? 'bg-white text-emerald-600' : 'bg-emerald-600 text-white'
-                    }`}>
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-      </aside>
+    {/* Navigation */}
+    <nav className="space-y-1.5">
+      {menuItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = activeMenu === item.name;
+
+        return (
+          <button
+            key={item.name}
+            onClick={() => {
+              setActiveMenu(item.name);
+              if (item.path !== '#') navigate(item.path);
+            }}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold tracking-wide transition-all ${
+              isActive
+                ? 'bg-emerald-600 text-white shadow-md'
+                : darkMode
+                ? 'text-slate-300 hover:text-white hover:bg-slate-800'
+                : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Icon
+                size={16}
+                className={
+                  isActive
+                    ? 'text-white'
+                    : darkMode
+                    ? 'text-slate-400'
+                    : 'text-slate-500'
+                }
+              />
+              <span>{item.name}</span>
+            </div>
+
+            {item.badge && (
+              <span
+                className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
+                  isActive
+                    ? 'bg-white text-emerald-600'
+                    : 'bg-emerald-600 text-white'
+                }`}
+              >
+                {item.badge}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </nav>
+  </div>
+
+  {/* Bottom User Section */}
+  <div className={`pt-6 border-t ${darkMode ? 'border-slate-700/60' : 'border-slate-200'} space-y-4`}>
+    <div className="flex items-center gap-3">
+      <img
+        src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"
+        alt="User"
+        className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/30"
+      />
+      <div>
+        <h4 className={`text-xs ${textPrimary}`}>Ishrat Jahan Ifa</h4>
+        <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
+          Student • CSE 3.1
+        </p>
+      </div>
+    </div>
+
+    <button
+      onClick={() => navigate('/tutor-dashboard')}
+      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
+    >
+      Switch to Tutor Dashboard
+    </button>
+
+    <button
+      onClick={() => navigate('/login')}
+      className="w-full border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-2"
+    >
+      <LogOut size={14} />
+      Logout
+    </button>
+  </div>
+</aside>
 
       {/* Main Content Area */}
       <main className="flex-grow flex flex-col h-screen p-4 lg:p-6 overflow-hidden space-y-4">
