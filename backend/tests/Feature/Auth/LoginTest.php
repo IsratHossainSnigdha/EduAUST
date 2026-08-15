@@ -100,6 +100,20 @@ class LoginTest extends TestCase
         $response->assertOk()->assertJsonStructure(['access_token']);
     }
 
+    public function test_unverified_accounts_cannot_sign_in(): void
+    {
+        $user = $this->user(['email_verified_at' => null]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'identifier' => $user->email,
+            'password' => 'Str0ng!Pass',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors('identifier')
+            ->assertJsonMissingPath('access_token');
+    }
+
     public function test_remember_me_issues_a_refresh_token(): void
     {
         $this->user();
