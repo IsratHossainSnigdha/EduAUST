@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -36,8 +36,6 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
-    { name: 'Saved Tutors', icon: Heart, path: '#' },
-    { name: 'My Requests', icon: GitPullRequest, path: '#' },
     { name: 'Messages', icon: MessageSquare, badge: 3, path: '/messages' },
     { name: 'Notifications', icon: Bell, badge: 3, path: '/notifications' }, 
     { name: 'Settings', icon: Settings, path: '#' },
@@ -50,6 +48,9 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
       navigate(itemPath);
     }
   };
+  useEffect(() => {
+  localStorage.setItem('eduAUST_role', 'student');
+}, []);
 
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}>

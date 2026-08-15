@@ -146,8 +146,8 @@ export default function TuitionRequestsPage({ darkMode, toggleDarkMode }) {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/tutor-dashboard' },
     { name: 'Tuition Requests', icon: UserPlus, badge: 6, path: '/tutor-requests' },
-    { name: 'Notifications', icon: Bell, badge: 3, path: '/tutor-notifications' },
-    { name: 'Messages', icon: MessageSquare, badge: 2, path: '/messages' },
+    { name: 'Messages', icon: MessageSquare, badge: 3, path: '/messages' },
+        { name: 'Notifications', icon: Bell, badge: 3, path: '/notifications' }, 
     { name: 'Settings', icon: Settings, path: '/settings' },
     { name: 'Help & Support', icon: HelpCircle, path: '/support' },
   ];

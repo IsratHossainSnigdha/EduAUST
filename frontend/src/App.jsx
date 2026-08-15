@@ -10,6 +10,8 @@ import TuitionRequests from "./pages/TutorDashboard/TuitionRequests";
 import BecomeATutor from "./pages/BecomeATutor";
 import MessagesPage from "./pages/TutorDashboard/MessagesPage";
 import NotificationsPage from "./pages/NotificationsPage"; 
+import SettingsPage from "./pages/SettingsPage";
+import SupportPage from "./pages/SupportPage";
 
 export default function App() {
   
@@ -48,6 +50,8 @@ export default function App() {
           <Route path="/become-a-tutor" element={<BecomeATutor {...sharedProps} />} />
           <Route path="/messages" element={<MessagesPage {...sharedProps} />} />
           <Route path="/notifications" element={<NotificationsPage {...sharedProps} />} /> 
+          <Route path="/settings" element={<SettingsPage {...sharedProps} />} />
+<Route path="/support" element={<SupportPage {...sharedProps} />} />
         </Routes>
       </BrowserRouter>
     </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -21,7 +21,9 @@ export default function TutorDashboard({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMenu, setActiveMenu] = useState('Dashboard');
-  const [currentRole, setCurrentRole] = useState('tutor');
+  const [currentRole, setCurrentRole] = useState(() => {
+  return localStorage.getItem('eduAUST_role') || 'tutor';
+});
 
   const bgClass = darkMode ? 'bg-[#0b0f19] text-slate-150' : 'bg-slate-50 text-slate-950';
   const sidebarBg = darkMode ? 'bg-[#111827] border-slate-800' : 'bg-white border-slate-100';
@@ -34,10 +36,10 @@ export default function TutorDashboard({ darkMode, toggleDarkMode }) {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/tutor-dashboard' },
     { name: 'Tuition Requests', icon: UserPlus, badge: 6, path: '/tutor-requests' },
-    { name: 'My Students', icon: Users, path: '#' },
-    { name: 'Messages', icon: MessageSquare, badge: 2, path: '/messages' },
-    { name: 'Settings', icon: Settings, path: '#' },
-    { name: 'Help & Support', icon: HelpCircle, path: '#' },
+    { name: 'Messages', icon: MessageSquare, badge: 3, path: '/messages' },
+        { name: 'Notifications', icon: Bell, badge: 3, path: '/notifications' }, 
+    { name: 'Settings', icon: Settings, path: '/settings' },
+    { name: 'Help & Support', icon: HelpCircle, path: '/support' },
   ];
 
   const handleNavigation = (itemName, itemPath) => {
@@ -46,6 +48,10 @@ export default function TutorDashboard({ darkMode, toggleDarkMode }) {
       navigate(itemPath);
     }
   };
+
+ useEffect(() => {
+  localStorage.setItem('eduAUST_role', currentRole);
+}, [currentRole]);
 
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}>
@@ -108,14 +114,16 @@ export default function TutorDashboard({ darkMode, toggleDarkMode }) {
 
           <button
             onClick={() => {
-              if (currentRole === 'tutor') {
-                setCurrentRole('student');
-                navigate('/dashboard');
-              } else {
-                setCurrentRole('tutor');
-                navigate('/tutor-dashboard');
-              }
-            }}
+  if (currentRole === 'tutor') {
+    setCurrentRole('student');
+    localStorage.setItem('eduAUST_role', 'student');
+    navigate('/dashboard');
+  } else {
+    setCurrentRole('tutor');
+    localStorage.setItem('eduAUST_role', 'tutor');
+    navigate('/tutor-dashboard');
+  }
+}}
             className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition"
           >
             {currentRole === 'tutor' ? 'Switch to Student Dashboard' : 'Switch to Tutor Dashboard'}

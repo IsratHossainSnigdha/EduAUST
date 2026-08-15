@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   MessageSquare,
@@ -22,8 +22,11 @@ import {
 
 export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
+const location = useLocation();
   const [activeMenu, setActiveMenu] = useState('Notifications');
-  const [currentRole, setCurrentRole] = useState('student');
+  const [currentRole, setCurrentRole] = useState(() => {
+  return localStorage.getItem('eduAUST_role') || 'student';
+});
   const [activeTab, setActiveTab] = useState('All');
 
   // Sample Notifications Data with LocalStorage persistence (Without Booking & Payment)
@@ -78,6 +81,10 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
     ];
   });
 
+  useEffect(() => {
+  localStorage.setItem('eduAUST_role', currentRole);
+}, [currentRole]);
+
   // Save to localStorage whenever notifications state changes
   useEffect(() => {
     const dataToStore = notifications.map(({ icon, ...rest }) => rest);
@@ -91,13 +98,19 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   const textSecondary = darkMode ? 'text-slate-300 font-medium' : 'text-slate-700 font-medium';
 
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
-    { name: 'Messages', icon: MessageSquare, badge: 2, path: '/messages' },
-    { name: 'Notifications', icon: Bell, badge: 3, path: '/notifications' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
-    { name: 'Help & Support', icon: HelpCircle, path: '/support' },
-  ];
+  {
+    name: 'Dashboard',
+    icon: LayoutDashboard,
+    path: currentRole === 'tutor' ? '/tutor-dashboard' : '/dashboard'
+  },
+  ...(currentRole === 'student'
+    ? [{ name: 'Find Tutors', icon: Search, path: '/find-tutors' }]
+    : [{ name: 'Tuition Requests', icon: BookOpen, badge: 6, path: '/tutor-requests' }]),
+  { name: 'Messages', icon: MessageSquare, badge: 2, path: '/messages' },
+  { name: 'Notifications', icon: Bell, badge: 3, path: '/notifications' },
+  { name: 'Settings', icon: Settings, path: '/settings' },
+  { name: 'Help & Support', icon: HelpCircle, path: '/support' },
+];
 
   // Mark all as read handler
   const handleMarkAllAsRead = () => {
@@ -177,24 +190,32 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
             />
             <div>
               <h4 className={`text-xs ${textPrimary}`}>Ishrat Jahan Ifa</h4>
-              <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>Student.CSE 3.1</p>
+             <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
+  {currentRole === 'student'
+    ? 'Student • CSE 3.1'
+    : 'Tutor'}
+</p>
             </div>
           </div>
           
           <button
-            onClick={() => {
-              if (currentRole === 'student') {
-                setCurrentRole('tutor');
-                navigate('/tutor-dashboard');
-              } else {
-                setCurrentRole('student');
-                navigate('/dashboard');
-              }
-            }}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
-          >
-            {currentRole === 'student' ? 'Switch to Tutor Dashboard' : 'Switch to Student Dashboard'}
-          </button>
+  onClick={() => {
+    if (currentRole === 'student') {
+      setCurrentRole('tutor');
+      localStorage.setItem('eduAUST_role', 'tutor');
+      navigate('/tutor-dashboard');
+    } else {
+      setCurrentRole('student');
+      localStorage.setItem('eduAUST_role', 'student');
+      navigate('/dashboard');
+    }
+  }}
+  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
+>
+  {currentRole === 'student'
+    ? 'Switch to Tutor Dashboard'
+    : 'Switch to Student Dashboard'}
+</button>
 
           <button
             onClick={() => navigate('/login')}
@@ -228,7 +249,11 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
               <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120" alt="Profile" className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" />
               <div className="hidden sm:block">
                 <h5 className={`text-xs ${textPrimary}`}>Ishrat Jahan Ifa</h5>
-                <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>Student.CSE 3.1</p>
+               <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
+  {currentRole === 'student'
+    ? 'Student • CSE 3.1'
+    : 'Tutor Dashboard'}
+</p>
               </div>
             </div>
           </div>
