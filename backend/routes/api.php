@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\RegisterVerifyController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\TutorController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -27,6 +28,14 @@ Route::prefix('v1')->group(function () {
 
         Route::patch('/{notification}/read', [NotificationController::class, 'markAsRead'])
             ->name('api.v1.notifications.read');
+    });
+
+    Route::middleware('auth.jwt')->prefix('tutors')->group(function () {
+        Route::get('/', [TutorController::class, 'index'])
+            ->name('api.v1.tutors.index');
+
+        Route::get('/filters', [TutorController::class, 'filters'])
+            ->name('api.v1.tutors.filters');
     });
 
     Route::prefix('auth')->group(function () {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -22,66 +22,117 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { apiGet, clearAuth } from '../../lib/auth';
+
+// Filter panel defaults; '' means "no filter applied".
+const EMPTY_FILTERS = {
+  subject_id: '',
+  department_id: '',
+  language: '',
+  min_experience: '',
+  min_students: '',
+};
+
+const SORT_OPTIONS = [
+  { value: 'students', label: 'Most students' },
+  { value: 'experience', label: 'Most experienced' },
+  { value: 'rate_asc', label: 'Lowest rate' },
+  { value: 'rate_desc', label: 'Highest rate' },
+  { value: 'newest', label: 'Newest' },
+];
+
+const PER_PAGE = 6;
+const SEARCH_DEBOUNCE_MS = 300;
 
 export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState('Find Tutors');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('All');
   const [currentRole, setCurrentRole] = useState('student');
   const [currentPage, setCurrentPage] = useState(1);
 
-  
-  const tutors = [
-    {
-      id: 1,
-      name: 'Nusrat Jahan',
-      role: 'Computer Science & Engineering',
-      university: 'AUST',
-      students: 28,
-      experience: '3+ Years',
-      hourlyRate: '৳500/hr',
-      subjects: ['Data Structures', 'C Programming', 'Algorithms'],
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120',
-      badge: 'Top Rated'
-    },
-    {
-      id: 2,
-      name: 'Saifur Rahman',
-      role: 'Electrical & Electronic Engineering',
-      university: 'AUST',
-      students: 22,
-      experience: '2+ Years',
-      hourlyRate: '৳450/hr',
-      subjects: ['Physics', 'Calculus', 'Circuit Analysis'],
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120',
-      badge: 'Expert'
-    },
-    {
-      id: 3,
-      name: 'Meher Afroz',
-      role: 'Department of Mathematics',
-      university: 'AUST',
-      students: 40,
-      experience: '3+ Years',
-      hourlyRate: '৳600/hr',
-      subjects: ['Discrete Mathematics', 'Calculus', 'Linear Algebra'],
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120',
-      badge: 'Super Tutor'
-    },
-    {
-      id: 4,
-      name: 'Rafi Ahmed',
-      role: 'Software Engineering',
-      university: 'AUST',
-      students: 18,
-      experience: '2+ Years',
-      hourlyRate: '৳400/hr',
-      subjects: ['Database Systems', 'Web Development', 'C Programming'],
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120',
-      badge: 'Active'
-    }
-  ];
+  // Filter panel state. `applied` is what the API is actually queried with, so
+  // editing a dropdown does not refetch until Apply Filters is pressed.
+  const [draft, setDraft] = useState(EMPTY_FILTERS);
+  const [applied, setApplied] = useState(EMPTY_FILTERS);
+  const [sort, setSort] = useState('students');
+
+  // Options for the dropdowns, and the listing itself.
+  const [options, setOptions] = useState({ subjects: [], departments: [], languages: [] });
+  const [tutors, setTutors] = useState([]);
+  const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Load the dropdown options once.
+  useEffect(() => {
+    let cancelled = false;
+
+    apiGet('/tutors/filters').then(({ ok, body }) => {
+      if (!cancelled && ok) {
+        setOptions({
+          subjects: body.subjects ?? [],
+          departments: body.departments ?? [],
+          languages: body.languages ?? [],
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Refetch whenever the applied filters, sort, page or search term change.
+  // The search term is debounced so typing does not fire a request per key.
+  useEffect(() => {
+    let cancelled = false;
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      setError('');
+
+      const params = new URLSearchParams({ sort, page: currentPage, per_page: PER_PAGE });
+      if (searchQuery.trim()) params.set('search', searchQuery.trim());
+      Object.entries(applied).forEach(([key, value]) => {
+        if (value !== '') params.set(key, value);
+      });
+
+      const { ok, body } = await apiGet(`/tutors?${params}`);
+      if (cancelled) return;
+
+      if (!ok) {
+        setTutors([]);
+        setLoading(false);
+
+        // An expired or missing token is the common case here: access tokens
+        // only live an hour. Send the user to sign in rather than leaving them
+        // staring at an empty list.
+        if (body?.message === 'Unauthenticated.') {
+          clearAuth();
+          navigate('/login');
+          return;
+        }
+
+        setError(body?.message || 'Could not load tutors.');
+        return;
+      }
+
+      setTutors(body.data ?? []);
+      setMeta(body.meta ?? { current_page: 1, last_page: 1, total: 0 });
+      setLoading(false);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchQuery, applied, sort, currentPage, navigate]);
+
+  // Changing what is being searched or filtered invalidates the current page.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, applied, sort]);
 
   const bgClass = darkMode ? 'bg-[#12161f] text-slate-100' : 'bg-[#f1f3f6] text-slate-900';
   const sidebarBg = darkMode ? 'bg-[#1a202c] border-slate-700/60' : 'bg-white border-slate-200 shadow-sm';
@@ -100,16 +151,17 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
 
   const handleResetFilters = () => {
     setSearchQuery('');
-    setSelectedSubject('All');
+    setDraft(EMPTY_FILTERS);
+    setApplied(EMPTY_FILTERS);
+    setSort('students');
   };
 
-  
-  const filteredTutors = tutors.filter((tutor) => {
-    const matchesSearch = tutor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tutor.subjects.some(sub => sub.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesSubject = selectedSubject === 'All' || tutor.subjects.includes(selectedSubject);
-    return matchesSearch && matchesSubject;
-  });
+  const setDraftField = (field, value) => setDraft((prev) => ({ ...prev, [field]: value }));
+
+  // Selects share the same look; kept here so the panel stays readable.
+  const selectClass = `w-full px-3 py-2 rounded-xl border text-xs outline-none font-medium ${
+    darkMode ? 'bg-[#12161f] border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-700'
+  }`;
 
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}>
@@ -213,7 +265,10 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             <button onClick={toggleDarkMode} className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}>
               {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
             </button>
-            <button className={`p-2.5 rounded-xl border relative ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}>
+            <button
+              onClick={() => navigate('/notifications')}
+              className={`p-2.5 rounded-xl border relative cursor-pointer transition ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white hover:bg-slate-800' : 'border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-100'}`}
+            >
               <Bell size={16} />
               <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
             </button>
@@ -262,46 +317,139 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             
             <div className="space-y-2">
               <label className={`text-xs font-bold ${textPrimary}`}>Subject</label>
-              <select 
-                value={selectedSubject} 
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className={`w-full px-3 py-2 rounded-xl border text-xs outline-none font-medium ${
-                  darkMode ? 'bg-[#12161f] border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-700'
-                }`}
+              <select
+                value={draft.subject_id}
+                onChange={(e) => setDraftField('subject_id', e.target.value)}
+                className={selectClass}
               >
-                <option value="All">All Subjects</option>
-                <option value="Data Structures">Data Structures</option>
-                <option value="C Programming">C Programming</option>
-                <option value="Calculus">Calculus</option>
-                <option value="Discrete Mathematics">Discrete Mathematics</option>
+                <option value="">All Subjects</option>
+                {options.subjects.map((subject) => (
+                  <option key={subject.id} value={subject.id}>{subject.name}</option>
+                ))}
               </select>
             </div>
 
-            <button className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm">
+            <div className="space-y-2">
+              <label className={`text-xs font-bold ${textPrimary}`}>Department</label>
+              <select
+                value={draft.department_id}
+                onChange={(e) => setDraftField('department_id', e.target.value)}
+                className={selectClass}
+              >
+                <option value="">All Departments</option>
+                {options.departments.map((department) => (
+                  <option key={department.id} value={department.id}>{department.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className={`text-xs font-bold ${textPrimary}`}>Language</label>
+              <select
+                value={draft.language}
+                onChange={(e) => setDraftField('language', e.target.value)}
+                className={selectClass}
+              >
+                <option value="">Any Language</option>
+                {options.languages.map((language) => (
+                  <option key={language} value={language}>{language}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className={`text-xs font-bold ${textPrimary}`}>Minimum Experience</label>
+              <select
+                value={draft.min_experience}
+                onChange={(e) => setDraftField('min_experience', e.target.value)}
+                className={selectClass}
+              >
+                <option value="">Any Experience</option>
+                <option value="1">1+ Years</option>
+                <option value="2">2+ Years</option>
+                <option value="3">3+ Years</option>
+                <option value="5">5+ Years</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className={`text-xs font-bold ${textPrimary}`}>Minimum Students Taught</label>
+              <select
+                value={draft.min_students}
+                onChange={(e) => setDraftField('min_students', e.target.value)}
+                className={selectClass}
+              >
+                <option value="">Any Number</option>
+                <option value="10">10+</option>
+                <option value="25">25+</option>
+                <option value="50">50+</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className={`text-xs font-bold ${textPrimary}`}>Sort By</label>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className={selectClass}
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => setApplied(draft)}
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm"
+            >
               Apply Filters
             </button>
           </div>
 
           
           <div className="lg:col-span-3 space-y-6">
+            {error && (
+              <div className={`p-4 rounded-2xl border border-rose-500/40 text-rose-500 text-xs font-semibold ${cardBg}`}>
+                {error}
+              </div>
+            )}
+
+            {!loading && !error && (
+              <p className={`text-xs ${textSecondary}`}>
+                {meta.total} tutor{meta.total === 1 ? '' : 's'} found
+              </p>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredTutors.length > 0 ? (
-                filteredTutors.map((tutor) => (
+              {loading ? (
+                <div className={`col-span-2 p-12 text-center rounded-2xl border ${cardBg}`}>
+                  <Search size={40} className="mx-auto text-slate-400 mb-3 opacity-50 animate-pulse" />
+                  <h4 className={`text-sm font-bold ${textPrimary}`}>Loading tutors…</h4>
+                </div>
+              ) : tutors.length > 0 ? (
+                tutors.map((tutor) => (
                   <div key={tutor.id} className={`p-6 rounded-2xl border shadow-sm flex flex-col justify-between space-y-4 transition hover:border-emerald-500/50 ${cardBg}`}>
-                    
+
                     {/* Header info */}
                     <div className="flex items-start gap-4">
-                      <img src={tutor.avatar} alt={tutor.name} className="w-14 h-14 rounded-2xl object-cover ring-2 ring-emerald-500/20 shrink-0" />
+                      {tutor.avatar ? (
+                        <img src={tutor.avatar} alt={tutor.name} className="w-14 h-14 rounded-2xl object-cover ring-2 ring-emerald-500/20 shrink-0" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-2xl shrink-0 bg-emerald-600 text-white flex items-center justify-center text-lg font-black ring-2 ring-emerald-500/20">
+                          {tutor.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="space-y-1 flex-grow">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <h4 className={`text-sm font-black ${textPrimary}`}>{tutor.name}</h4>
-                          <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500">
-                            {tutor.badge}
+                          <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 shrink-0">
+                            {tutor.experience_years}+ yrs
                           </span>
                         </div>
-                        <p className="text-[11px] text-emerald-600 font-bold">{tutor.role}</p>
+                        <p className="text-[11px] text-emerald-600 font-bold">{tutor.headline}</p>
                         <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                          <span className="flex items-center gap-1"><MapPin size={12} /> {tutor.university}</span>
+                          <span className="flex items-center gap-1"><MapPin size={12} /> {tutor.department ?? 'AUST'}</span>
                         </div>
                       </div>
                     </div>
@@ -310,41 +458,36 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                     <div className={`grid grid-cols-3 p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800/50 border-slate-700/60' : 'bg-slate-50 border-slate-200/80'}`}>
                       <div>
                         <p className="text-[10px] text-slate-400 font-medium">Experience</p>
-                        <p className={`text-xs font-bold ${textPrimary}`}>{tutor.experience}</p>
+                        <p className={`text-xs font-bold ${textPrimary}`}>{tutor.experience_years}+ Years</p>
                       </div>
                       <div className="border-x border-slate-200 dark:border-slate-700">
                         <p className="text-[10px] text-slate-400 font-medium">Students</p>
-                        <p className={`text-xs font-bold ${textPrimary}`}>{tutor.students}+</p>
+                        <p className={`text-xs font-bold ${textPrimary}`}>{tutor.student_count}+</p>
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-400 font-medium">Rate</p>
-                        <p className="text-xs font-bold text-emerald-500">{tutor.hourlyRate}</p>
+                        <p className="text-xs font-bold text-emerald-500">৳{tutor.hourly_rate}/hr</p>
                       </div>
                     </div>
 
-                    
+
                     <div className="flex flex-wrap gap-1.5">
-                      {tutor.subjects.map((sub, idx) => (
-                        <span key={idx} className={`text-[10px] px-2.5 py-1 rounded-lg font-medium ${
+                      {tutor.subjects.map((subject) => (
+                        <span key={subject.id} className={`text-[10px] px-2.5 py-1 rounded-lg font-medium ${
                           darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
                         }`}>
-                          {sub}
+                          {subject.name}
                         </span>
                       ))}
                     </div>
 
-                    
+
                     <div className="flex items-center gap-3 pt-2">
-                      <button 
+                      <button
                         onClick={() => navigate('/messages')}
                         className="flex-grow py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm"
                       >
                         <MessageSquare size={14} /> Message Tutor
-                      </button>
-                      <button className={`px-4 py-2 border rounded-xl text-xs font-bold transition ${
-                        darkMode ? 'border-slate-700 hover:bg-slate-800 text-slate-200' : 'border-slate-300 hover:bg-slate-100 text-slate-700'
-                      }`}>
-                        View Profile
                       </button>
                     </div>
 
@@ -358,6 +501,34 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                 </div>
               )}
             </div>
+
+            {meta.last_page > 1 && (
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={meta.current_page <= 1}
+                  className={`p-2 rounded-xl border transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                    darkMode ? 'border-slate-700 hover:bg-slate-800 text-slate-200' : 'border-slate-300 hover:bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <span className={`text-xs font-bold ${textSecondary}`}>
+                  Page {meta.current_page} of {meta.last_page}
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage((page) => Math.min(meta.last_page, page + 1))}
+                  disabled={meta.current_page >= meta.last_page}
+                  className={`p-2 rounded-xl border transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                    darkMode ? 'border-slate-700 hover:bg-slate-800 text-slate-200' : 'border-slate-300 hover:bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
 
           </div>
 
