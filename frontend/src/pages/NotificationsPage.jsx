@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   MessageSquare,
@@ -13,83 +13,91 @@ import {
   CheckCheck,
   Calendar,
   BookOpen,
-  DollarSign,
   UserCheck,
-  AlertCircle,
-  Trash2,
-  Filter
+  AlertCircle
 } from 'lucide-react';
+import { apiGet, apiPatch } from '../lib/auth';
+
+// How each backend category is rendered in the list.
+const CATEGORY_STYLES = {
+  message: { icon: MessageSquare, color: 'text-sky-500 bg-sky-500/15' },
+  request: { icon: UserCheck, color: 'text-violet-500 bg-violet-500/15' },
+  session: { icon: Calendar, color: 'text-emerald-500 bg-emerald-500/15' },
+  system: { icon: AlertCircle, color: 'text-rose-500 bg-rose-500/15' },
+};
+
+const FALLBACK_STYLE = { icon: BookOpen, color: 'text-slate-500 bg-slate-500/15' };
+
+// Tabs map onto the query the API already supports.
+const TABS = [
+  { label: 'All', params: {} },
+  { label: 'Unread', params: { unread: 1 } },
+  { label: 'Messages', params: { category: 'message' } },
+  { label: 'Requests', params: { category: 'request' } },
+  { label: 'Sessions', params: { category: 'session' } },
+  { label: 'System', params: { category: 'system' } },
+];
 
 export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
-const location = useLocation();
   const [activeMenu, setActiveMenu] = useState('Notifications');
   const [currentRole, setCurrentRole] = useState(() => {
   return localStorage.getItem('eduAUST_role') || 'student';
 });
   const [activeTab, setActiveTab] = useState('All');
 
-  // Sample Notifications Data with LocalStorage persistence (Without Booking & Payment)
-  const [notifications, setNotifications] = useState(() => {
-    const savedNotifications = localStorage.getItem('eduAust_notifications_v2');
-    if (savedNotifications) {
-      try {
-        const parsed = JSON.parse(savedNotifications);
-        return parsed.map(item => {
-          let iconComponent = Calendar;
-          if (item.type === 'message') iconComponent = MessageSquare;
-          else if (item.type === 'system' && item.title.includes('Verification')) iconComponent = UserCheck;
-          else if (item.type === 'system') iconComponent = AlertCircle;
-          
-          return { ...item, icon: iconComponent };
-        });
-      } catch (e) {
-        console.error("Failed to parse notifications from localStorage", e);
-      }
+  // Live data from the API, scoped to whichever dashboard is active.
+  const [groups, setGroups] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const loadNotifications = useCallback(async () => {
+    setLoading(true);
+    setError('');
+
+    const tab = TABS.find((t) => t.label === activeTab) ?? TABS[0];
+    const query = new URLSearchParams({ audience: currentRole, ...tab.params });
+
+    const { ok, body } = await apiGet(`/notifications?${query}`);
+
+    if (!ok) {
+      setGroups([]);
+      setError(
+        body?.message === 'Unauthenticated.'
+          ? 'Your session has expired. Please sign in again.'
+          : body?.message || 'Could not load notifications.'
+      );
+      setLoading(false);
+      return;
     }
-    return [
-      {
-        id: 1,
-        title: 'New Message Received',
-        description: 'Saifur Rahman sent you a message regarding the upcoming Physics assignment doubts.',
-        time: '1 hour ago',
-        type: 'message',
-        unread: true,
-        icon: MessageSquare,
-        color: 'text-sky-500 bg-sky-500/15'
-      },
-      {
-        id: 2,
-        title: 'Tutor Verification Complete',
-        description: 'Your profile has been reviewed and verified successfully as an expert tutor.',
-        time: '2 days ago',
-        type: 'system',
-        unread: false,
-        icon: UserCheck,
-        color: 'text-teal-500 bg-teal-500/15'
-      },
-      {
-        id: 3,
-        title: 'System Maintenance Notice',
-        description: 'EduAUST portal will undergo scheduled maintenance this Friday from 1:00 AM to 3:00 AM.',
-        time: '3 days ago',
-        type: 'system',
-        unread: false,
-        icon: AlertCircle,
-        color: 'text-rose-500 bg-rose-500/15'
-      }
-    ];
-  });
+
+    setGroups(body.groups ?? []);
+    setUnreadCount(body.unread_count ?? 0);
+    setLoading(false);
+  }, [activeTab, currentRole]);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  // Mark every notification on this dashboard as read; the other dashboard is
+  // left untouched by the API.
+  const handleMarkAllAsRead = async () => {
+    const { ok } = await apiPatch(`/notifications/read-all?audience=${currentRole}`);
+    if (ok) loadNotifications();
+  };
+
+  // Reading a single notification clears its unread state.
+  const handleOpenNotification = async (item) => {
+    if (!item.unread) return;
+    const { ok } = await apiPatch(`/notifications/${item.id}/read`);
+    if (ok) loadNotifications();
+  };
 
   useEffect(() => {
   localStorage.setItem('eduAUST_role', currentRole);
 }, [currentRole]);
-
-  // Save to localStorage whenever notifications state changes
-  useEffect(() => {
-    const dataToStore = notifications.map(({ icon, ...rest }) => rest);
-    localStorage.setItem('eduAust_notifications_v2', JSON.stringify(dataToStore));
-  }, [notifications]);
 
   const bgClass = darkMode ? 'bg-[#12161f] text-slate-100' : 'bg-[#f1f3f6] text-slate-900';
   const sidebarBg = darkMode ? 'bg-[#1a202c] border-slate-700/60' : 'bg-white border-slate-200 shadow-sm';
@@ -107,29 +115,12 @@ const location = useLocation();
     ? [{ name: 'Find Tutors', icon: Search, path: '/find-tutors' }]
     : [{ name: 'Tuition Requests', icon: BookOpen, badge: 6, path: '/tutor-requests' }]),
   { name: 'Messages', icon: MessageSquare, badge: 2, path: '/messages' },
-  { name: 'Notifications', icon: Bell, badge: 3, path: '/notifications' },
+  { name: 'Notifications', icon: Bell, badge: unreadCount || undefined, path: '/notifications' },
   { name: 'Settings', icon: Settings, path: '/settings' },
   { name: 'Help & Support', icon: HelpCircle, path: '/support' },
 ];
 
-  // Mark all as read handler
-  const handleMarkAllAsRead = () => {
-    setNotifications(notifications.map(item => ({ ...item, unread: false })));
-  };
-
-  // Clear all notifications
-  const handleClearAll = () => {
-    setNotifications([]);
-  };
-
-  // Filter notifications based on active tab
-  const filteredNotifications = notifications.filter(item => {
-    if (activeTab === 'All') return true;
-    if (activeTab === 'Unread') return item.unread;
-    if (activeTab === 'Bookings') return item.type === 'booking';
-    if (activeTab === 'Messages') return item.type === 'message';
-    return true;
-  });
+  const totalShown = groups.reduce((sum, group) => sum + group.notifications.length, 0);
 
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}>
@@ -264,82 +255,101 @@ const location = useLocation();
           
           {/* Notification Categories / Tabs */}
           <div className="flex flex-wrap items-center gap-2">
-            {['All', 'Unread', 'Bookings', 'Messages'].map((tab) => (
+            {TABS.map(({ label }) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={label}
+                onClick={() => setActiveTab(label)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-                  activeTab === tab
+                  activeTab === label
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : darkMode
                       ? 'bg-[#12161f] text-slate-300 hover:bg-slate-800'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                {tab}
+                {label}
               </button>
             ))}
           </div>
 
           {/* Action Triggers */}
           <div className="flex items-center gap-3">
-            <button 
+            <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              {unreadCount} unread
+            </span>
+            <button
               onClick={handleMarkAllAsRead}
-              className={`px-3.5 py-2 border rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              disabled={unreadCount === 0}
+              className={`px-3.5 py-2 border rounded-xl text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed ${
                 darkMode ? 'border-slate-700 hover:bg-slate-800 text-slate-200' : 'border-slate-300 hover:bg-slate-100 text-slate-700'
               }`}
             >
               <CheckCheck size={14} className="text-emerald-500" />
               Mark all as read
             </button>
-            <button 
-              onClick={handleClearAll}
-              className={`px-3.5 py-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5`}
-            >
-              <Trash2 size={14} />
-              Clear All
-            </button>
           </div>
 
         </div>
 
         {/* Notifications List Section */}
-        <div className="space-y-4">
-          {filteredNotifications.length > 0 ? (
-            filteredNotifications.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div 
-                  key={item.id} 
-                  className={`p-5 rounded-2xl border transition flex items-start gap-4 shadow-sm ${cardBg} ${
-                    item.unread ? (darkMode ? 'border-emerald-500/40 bg-[#1e2533]' : 'border-emerald-500/40 bg-emerald-50/30') : ''
-                  }`}
-                >
-                  {/* Icon */}
-                  <div className={`p-3 rounded-2xl shrink-0 ${item.color}`}>
-                    <Icon size={20} />
-                  </div>
+        <div className="space-y-6">
+          {error && (
+            <div className={`p-4 rounded-2xl border border-rose-500/40 text-rose-500 text-xs font-semibold ${cardBg}`}>
+              {error}
+            </div>
+          )}
 
-                  {/* Content */}
-                  <div className="flex-grow space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <h4 className={`text-sm ${textPrimary}`}>{item.title}</h4>
-                        {item.unread && (
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                        )}
+          {loading ? (
+            <div className={`p-12 text-center rounded-2xl border ${cardBg}`}>
+              <Bell size={40} className="mx-auto text-slate-400 mb-3 opacity-50 animate-pulse" />
+              <h4 className={`text-sm font-bold ${textPrimary}`}>Loading notifications…</h4>
+            </div>
+          ) : totalShown > 0 ? (
+            // The API returns notifications already bucketed into Today,
+            // Yesterday, This Week and Earlier.
+            groups.map((group) => (
+              <section key={group.key} className="space-y-3">
+                <h3 className={`text-[11px] font-black uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {group.label}
+                </h3>
+
+                {group.notifications.map((item) => {
+                  const { icon: Icon, color } = CATEGORY_STYLES[item.category] ?? FALLBACK_STYLE;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleOpenNotification(item)}
+                      className={`w-full text-left p-5 rounded-2xl border transition flex items-start gap-4 shadow-sm ${cardBg} ${
+                        item.unread ? (darkMode ? 'border-emerald-500/40 bg-[#1e2533]' : 'border-emerald-500/40 bg-emerald-50/30') : ''
+                      }`}
+                    >
+                      {/* Icon */}
+                      <div className={`p-3 rounded-2xl shrink-0 ${color}`}>
+                        <Icon size={20} />
                       </div>
-                      <span className={`text-[10px] ${darkMode ? 'text-slate-400 font-medium' : 'text-slate-500 font-medium'}`}>
-                        {item.time}
-                      </span>
-                    </div>
-                    <p className={`text-xs ${textSecondary}`}>
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })
+
+                      {/* Content */}
+                      <div className="flex-grow space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <h4 className={`text-sm ${textPrimary}`}>{item.title}</h4>
+                            {item.unread && (
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                            )}
+                          </div>
+                          <span className={`text-[10px] ${darkMode ? 'text-slate-400 font-medium' : 'text-slate-500 font-medium'}`}>
+                            {item.time}
+                          </span>
+                        </div>
+                        <p className={`text-xs ${textSecondary}`}>
+                          {item.body}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </section>
+            ))
           ) : (
             <div className={`p-12 text-center rounded-2xl border ${cardBg}`}>
               <Bell size={40} className="mx-auto text-slate-400 mb-3 opacity-50" />
