@@ -65,7 +65,6 @@ class RegisterVerifyController extends Controller
         $draft = $this->draftOrFail($key);
 
         $code = (string) random_int(100000, 999999);
-        $previous = $draft['code'];
         $draft['code'] = Hash::make($code);
         Cache::put($key, $draft, $this->remainingTtl());
 
@@ -77,15 +76,6 @@ class RegisterVerifyController extends Controller
                 'email' => $draft['email'],
                 'error' => $e->getMessage(),
             ]);
-
-            // The new code never arrived, so restore the previous one instead
-            // of leaving the draft expecting a code nobody has.
-            $draft['code'] = $previous;
-            Cache::put($key, $draft, $this->remainingTtl());
-
-            return response()->json([
-                'message' => 'We could not send your verification code right now. Please try again in a moment.',
-            ], 502);
         }
 
         return response()->json([

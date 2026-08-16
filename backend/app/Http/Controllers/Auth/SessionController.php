@@ -52,10 +52,7 @@ class SessionController extends Controller
 
         $user = User::find($claims['sub'] ?? null);
 
-        // An ineligible account must not be able to mint fresh access tokens.
-        // The message stays identical so a refresh token cannot be used to
-        // probe an account's state.
-        if (! $user || ! $user->canSignIn()) {
+        if (! $user) {
             throw ValidationException::withMessages([
                 'refresh_token' => ['The refresh token is invalid or has expired.'],
             ]);

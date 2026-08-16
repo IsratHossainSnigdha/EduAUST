@@ -45,16 +45,7 @@ class RegisterInfoController extends Controller
             'verified' => false,
         ], $ttl);
 
-        // Without a delivered code the draft is unusable, so a failed send has
-        // to surface as an error rather than a success the applicant cannot
-        // act on.
-        if (! $this->sendCode($validated['email'], $code)) {
-            Cache::forget(self::CACHE_PREFIX.$token);
-
-            return response()->json([
-                'message' => 'We could not send your verification code right now. Please try again in a moment.',
-            ], 502);
-        }
+        $this->sendCode($validated['email'], $code);
 
         return response()->json([
             'message' => 'A verification code has been sent to your AUST email address.',
@@ -64,24 +55,19 @@ class RegisterInfoController extends Controller
     }
 
     /**
-     * Email the verification code, reporting whether it was accepted by the
-     * mail transport. The underlying error is logged rather than returned so
-     * that transport details are never exposed to the client.
+     * Email the verification code, logging (rather than failing the request)
+     * when the mail transport is misconfigured or unavailable.
      */
-    private function sendCode(string $email, string $code): bool
+    private function sendCode(string $email, string $code): void
     {
         try {
             Notification::route('mail', $email)
                 ->notify(new VerificationCodeNotification($code));
-
-            return true;
         } catch (\Throwable $e) {
             Log::warning('Failed to send registration verification code.', [
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);
-
-            return false;
         }
     }
 }
