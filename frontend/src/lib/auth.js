@@ -72,6 +72,19 @@ export function apiGet(path) {
   });
 }
 
+// PATCH with the stored Bearer token; returns { ok, body }.
+export function apiPatch(path, payload) {
+  return request(path, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${getAccessToken()}`,
+    },
+    body: JSON.stringify(payload ?? {}),
+  });
+}
+
 // Surface the first Laravel validation error (422) as a single message.
 export function firstError(body, fallback) {
   if (body?.errors) {

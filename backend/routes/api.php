@@ -8,12 +8,27 @@ use App\Http\Controllers\Auth\RegisterSecurityController;
 use App\Http\Controllers\Auth\RegisterVerifyController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TutorController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::get('/departments', [DepartmentController::class, 'index'])
         ->name('api.v1.departments.index');
+
+    Route::middleware('auth.jwt')->prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])
+            ->name('api.v1.notifications.index');
+
+        Route::get('/unread-count', [NotificationController::class, 'unreadCount'])
+            ->name('api.v1.notifications.unread-count');
+
+        Route::patch('/read-all', [NotificationController::class, 'markAllAsRead'])
+            ->name('api.v1.notifications.read-all');
+
+        Route::patch('/{notification}/read', [NotificationController::class, 'markAsRead'])
+            ->name('api.v1.notifications.read');
+    });
 
     Route::middleware('auth.jwt')->prefix('tutors')->group(function () {
         Route::get('/', [TutorController::class, 'index'])
