@@ -30,6 +30,15 @@ class EnsureJwtAuthenticated
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
+        // A token alone is not enough: an account that has since become
+        // ineligible (e.g. its email verification was revoked) must not reach
+        // authenticated features while its access token is still within TTL.
+        if (! $user->canSignIn()) {
+            return response()->json([
+                'message' => 'Your account is not yet eligible to sign in.',
+            ], 403);
+        }
+
         $request->setUserResolver(fn () => $user);
 
         return $next($request);

@@ -105,4 +105,23 @@ class RegisterVerifyTest extends TestCase
             fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'ada@aust.edu'
         );
     }
+
+    public function test_a_failed_resend_keeps_the_previous_code_usable(): void
+    {
+        $token = $this->pendingDraft('111111');
+
+        Notification::shouldReceive('route')
+            ->andThrow(new \RuntimeException('smtp unavailable'));
+
+        $this->postJson('/api/v1/auth/register/resend', [
+            'registration_token' => $token,
+        ])->assertStatus(502);
+
+        // Since the replacement code was never delivered, the code the
+        // applicant already holds must still work.
+        $this->postJson('/api/v1/auth/register/verify', [
+            'registration_token' => $token,
+            'code' => '111111',
+        ])->assertOk();
+    }
 }
