@@ -17,13 +17,11 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
-import { apiGet } from '../../lib/auth';
 
 export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMenu, setActiveMenu] = useState('Dashboard');
-  const [unreadCount, setUnreadCount] = useState(0);
   const [currentRole, setCurrentRole] = useState('student');
 
   const bgClass = darkMode ? 'bg-[#0b0f19] text-slate-150' : 'bg-slate-50 text-slate-950';
@@ -39,7 +37,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
     { name: 'Messages', icon: MessageSquare, badge: 3, path: '/messages' },
-    { name: 'Notifications', icon: Bell, badge: unreadCount || undefined, path: '/notifications' },
+    { name: 'Notifications', icon: Bell, badge: 3, path: '/notifications' }, 
     { name: 'Settings', icon: Settings, path: '#' },
     { name: 'Help & Support', icon: HelpCircle, path: '#' },
   ];
@@ -53,21 +51,6 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   useEffect(() => {
   localStorage.setItem('eduAUST_role', 'student');
 }, []);
-
-  // Badge count for this dashboard only; the API reports each side separately.
-  useEffect(() => {
-    let cancelled = false;
-
-    apiGet('/notifications/unread-count').then(({ ok, body }) => {
-      if (!cancelled && ok) {
-        setUnreadCount(body?.by_audience?.student ?? 0);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}>
@@ -175,9 +158,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
               className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1f2937] text-slate-700 dark:text-white relative cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               <Bell size={16} />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping" />
-              )}
+              <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping" />
             </button>
 
             <div className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800">
