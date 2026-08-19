@@ -28,9 +28,7 @@ class User extends Authenticatable
         'phone',
         'department_id',
         'semester',
-        'student_id_image',
         'profile_picture',
-        'student_id_verified',
         'password',
         'email_verified_at',
     ];
@@ -55,7 +53,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'student_id_verified' => 'boolean',
         ];
     }
 

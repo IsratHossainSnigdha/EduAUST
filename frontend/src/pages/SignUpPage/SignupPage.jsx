@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, Sun, Moon, GraduationCap, Users, ShieldCheck, 
-  Mail, UploadCloud, Check, Eye, EyeOff 
+  Mail, Check, Eye, EyeOff 
 } from 'lucide-react';
 import { saveAuth } from '../../lib/auth';
 
@@ -242,14 +242,14 @@ export default function SignUpPage({
 
    
     saveAuth(body);
-    setSignUpStep(6);
+    setSignUpStep(5);
   };
 
   return (
     <div className={`min-h-screen flex items-center justify-center px-4 py-12 transition-colors duration-300 ${themeClass}`}>
       <div className={`w-full max-w-lg p-10 rounded-3xl border shadow-xl relative transition-all duration-300 ${cardClass}`}>
 
-        {signUpStep > 1 && signUpStep < 6 && (
+        {signUpStep > 1 && signUpStep < 5 && (
           <button
             onClick={() => setSignUpStep(signUpStep - 1)}
             className="absolute top-8 left-8 p-2 rounded-xl border transition hover:bg-emerald-50 dark:hover:bg-slate-800 border-emerald-100 dark:border-slate-700 text-emerald-600"
@@ -317,7 +317,7 @@ export default function SignUpPage({
         {signUpStep === 2 && (
           <div className="pt-4">
             <div className="text-center mb-8">
-              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 1 of 4</span>
+              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 1 of 3</span>
               <h3 className={`text-3xl font-black mt-4 tracking-tight ${textColor}`}>Account Information</h3>
               <p className={`text-xs mt-2 ${subTextClass}`}>Please use your authentic campus academic details</p>
             </div>
@@ -396,7 +396,7 @@ export default function SignUpPage({
 
         {signUpStep === 3 && (
           <div className="text-center pt-4">
-            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 2 of 4</span>
+            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 2 of 3</span>
             <div className="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mt-6 mb-4">
               <Mail size={32} />
             </div>
@@ -422,25 +422,9 @@ export default function SignUpPage({
         )}
 
         {signUpStep === 4 && (
-          <div className="text-center pt-4">
-            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 3 of 4</span>
-            <h3 className={`text-2xl font-black mt-4 tracking-tight ${textColor}`}>Verify Student Identity</h3>
-            <p className={`text-sm mt-1 ${subTextClass}`}>Upload your valid AUST student ID card to ensure platform safety</p>
-
-            <div className={`border-2 border-dashed rounded-2xl p-10 my-6 flex flex-col items-center justify-center transition cursor-pointer ${darkMode ? 'border-slate-700 bg-slate-900/20 hover:bg-slate-900/50' : 'border-emerald-200 bg-emerald-50/10 hover:bg-emerald-50/30'}`}>
-              <UploadCloud size={44} className="text-emerald-600 mb-3 animate-pulse" />
-              <span className={`font-bold text-sm mb-1 ${textColor}`}>Drag and drop files here</span>
-              <span className={`text-xs ${subTextClass}`}>Supports JPG, PNG or PDF up to 5MB</span>
-            </div>
-
-            <button onClick={() => setSignUpStep(5)} className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-md shadow-emerald-600/10 text-base">Continue</button>
-          </div>
-        )}
-
-        {signUpStep === 5 && (
           <div className="pt-4">
             <div className="text-center mb-8">
-              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 4 of 4</span>
+              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 3 of 3</span>
               <h3 className={`text-3xl font-black mt-4 tracking-tight ${textColor}`}>Secure Your Account</h3>
               <p className={`text-xs mt-2 ${subTextClass}`}>Create a strong password to safeguard your portal</p>
             </div>
@@ -514,7 +498,7 @@ export default function SignUpPage({
           </div>
         )}
 
-        {signUpStep === 6 && (
+        {signUpStep === 5 && (
           <div className="text-center pt-6 pb-2">
             <div className="bg-emerald-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
               <Check size={32} strokeWidth={3} />
@@ -547,7 +531,7 @@ export default function SignUpPage({
           </div>
         )}
 
-        {signUpStep < 6 && (
+        {signUpStep < 5 && (
           <div className="mt-8 text-center text-sm border-t pt-5 border-emerald-100/30 dark:border-slate-700">
             <span className={subTextClass}>Already have an account? </span>
             <button onClick={() => navigate('/')} className="text-emerald-600 font-bold hover:underline">Back to Home</button>

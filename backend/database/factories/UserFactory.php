@@ -33,7 +33,6 @@ class UserFactory extends Factory
             'department_id' => Department::factory(),
             'semester' => fake()->randomElement(['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2']),
             'email_verified_at' => now(),
-            'student_id_verified' => false,
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
