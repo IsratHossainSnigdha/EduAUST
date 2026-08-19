@@ -21,7 +21,7 @@ import {
   HelpCircle,
   
 } from 'lucide-react';
-import { apiGet, apiPost, clearAuth, firstError } from '../../lib/auth';
+import { apiGet, apiPost, clearAuth, firstError, isUnauthenticated } from '../../lib/auth';
 
 export default function MessagesPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
@@ -41,6 +41,14 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
 
+  // A 401 that survived the automatic token refresh means the session is
+  // genuinely over, so every call site ends it the same way rather than
+  // printing "Unauthenticated." into the error banner.
+  const endExpiredSession = useCallback(() => {
+    clearAuth();
+    navigate('/login');
+  }, [navigate]);
+
   // Load the conversation list. Also re-run after opening or sending, since
   // both change the previews and the unread counts.
   const loadConversations = useCallback(async () => {
@@ -48,9 +56,8 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
 
     if (!ok) {
       setLoadingList(false);
-      if (body?.message === 'Unauthenticated.') {
-        clearAuth();
-        navigate('/login');
+      if (isUnauthenticated(body)) {
+        endExpiredSession();
         return;
       }
       setError(body?.message || 'Could not load conversations.');
@@ -60,7 +67,7 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
     setConversations(body.data ?? []);
     setUnreadTotal(body.unread_total ?? 0);
     setLoadingList(false);
-  }, [navigate]);
+  }, [endExpiredSession]);
 
   useEffect(() => {
     loadConversations();
@@ -86,6 +93,10 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
       if (!ok) {
         setCurrentMessages([]);
         setLoadingThread(false);
+        if (isUnauthenticated(body)) {
+          endExpiredSession();
+          return;
+        }
         setError(body?.message || 'Could not load this conversation.');
         return;
       }
@@ -144,6 +155,10 @@ const cardBg = darkMode
     setSending(false);
 
     if (!ok) {
+      if (isUnauthenticated(response)) {
+        endExpiredSession();
+        return;
+      }
       setError(firstError(response, 'Could not send your message.'));
       return;
     }
