@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\RegisterInfoController;
 use App\Http\Controllers\Auth\RegisterSecurityController;
 use App\Http\Controllers\Auth\RegisterVerifyController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TutorController;
@@ -15,6 +16,27 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::get('/departments', [DepartmentController::class, 'index'])
         ->name('api.v1.departments.index');
+
+    Route::middleware('auth.jwt')->prefix('conversations')->group(function () {
+        Route::get('/', [ConversationController::class, 'index'])
+            ->name('api.v1.conversations.index');
+
+        Route::post('/', [ConversationController::class, 'store'])
+            ->name('api.v1.conversations.store');
+
+        Route::get('/unread-count', [ConversationController::class, 'unreadCount'])
+            ->name('api.v1.conversations.unread-count');
+
+        Route::get('/{conversation}/messages', [ConversationController::class, 'messages'])
+            ->name('api.v1.conversations.messages.index');
+
+        Route::post('/{conversation}/messages', [ConversationController::class, 'sendMessage'])
+            ->middleware('throttle:60,1')
+            ->name('api.v1.conversations.messages.store');
+
+        Route::patch('/{conversation}/read', [ConversationController::class, 'markRead'])
+            ->name('api.v1.conversations.read');
+    });
 
     Route::middleware('auth.jwt')->prefix('notifications')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])
