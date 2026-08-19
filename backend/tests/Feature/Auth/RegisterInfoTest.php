@@ -57,6 +57,23 @@ class RegisterInfoTest extends TestCase
         );
     }
 
+    public function test_a_failed_send_is_reported_instead_of_a_usable_token(): void
+    {
+        // The applicant can do nothing with a token whose code never arrived,
+        // so the transport failure must not be reported as success.
+        Notification::shouldReceive('route')
+            ->andThrow(new \RuntimeException('smtp unavailable'));
+
+        $response = $this->postJson('/api/v1/auth/register/info', $this->validPayload());
+
+        $response->assertStatus(502)
+            ->assertJsonMissingPath('registration_token')
+            ->assertJsonMissingPath('expires_in');
+
+        // The transport error itself is never surfaced to the client.
+        $this->assertStringNotContainsString('smtp', $response->getContent());
+    }
+
     public function test_email_must_belong_to_the_aust_domain(): void
     {
         $response = $this->postJson('/api/v1/auth/register/info', $this->validPayload([

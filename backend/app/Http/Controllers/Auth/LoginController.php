@@ -47,6 +47,12 @@ class LoginController extends Controller
             ]);
         }
 
+        if (! $user->canSignIn()) {
+            throw ValidationException::withMessages([
+                $request->credentialField() => ['Your account is not yet eligible to sign in.'],
+            ]);
+        }
+
         return response()->json(array_merge([
             'message' => 'Signed in successfully.',
             'user' => [

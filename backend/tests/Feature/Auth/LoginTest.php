@@ -100,6 +100,20 @@ class LoginTest extends TestCase
         $response->assertOk()->assertJsonStructure(['access_token']);
     }
 
+    public function test_unverified_accounts_cannot_sign_in(): void
+    {
+        $user = $this->user(['email_verified_at' => null]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'identifier' => $user->email,
+            'password' => 'Str0ng!Pass',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors('identifier')
+            ->assertJsonMissingPath('access_token');
+    }
+
     public function test_remember_me_issues_a_refresh_token(): void
     {
         $this->user();
@@ -157,6 +171,26 @@ class LoginTest extends TestCase
             $unknownUser->json('errors.identifier'),
         );
         $unknownUser->assertUnprocessable();
+    }
+
+    public function test_successful_login_never_exposes_credentials(): void
+    {
+        $user = $this->user();
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'identifier' => 'ada@aust.edu',
+            'password' => 'Str0ng!Pass',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonMissingPath('user.password')
+            ->assertJsonMissingPath('user.remember_token');
+
+        // Neither the hash nor the submitted password appears anywhere in the
+        // payload.
+        $body = $response->getContent();
+        $this->assertStringNotContainsString($user->password, $body);
+        $this->assertStringNotContainsString('Str0ng!Pass', $body);
     }
 
     public function test_identifier_and_password_are_required(): void
