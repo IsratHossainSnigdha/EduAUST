@@ -1,1 +1,12 @@
-@import "tailwindcss"; 
+@import "tailwindcss";
+
+/*
+ * Tailwind v4 defaults the `dark:` variant to the operating system's
+ * prefers-color-scheme. This app instead toggles a `dark` class on the root
+ * element (see App.jsx), so the variant has to be pointed at that class.
+ *
+ * Without this, `dark:` utilities follow the OS while the rest of the UI
+ * follows the in-app toggle — which renders white-on-white text whenever the
+ * two disagree.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
