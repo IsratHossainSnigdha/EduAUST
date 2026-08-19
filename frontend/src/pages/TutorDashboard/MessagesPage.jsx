@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -21,6 +21,7 @@ import {
   HelpCircle,
   
 } from 'lucide-react';
+import { apiGet, apiPost, clearAuth, firstError } from '../../lib/auth';
 
 export default function MessagesPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
@@ -31,119 +32,78 @@ export default function MessagesPage({ darkMode, toggleDarkMode }) {
   const messagesEndRef = useRef(null);
 
 
-  const [selectedChat, setSelectedChat] = useState(() => {
-    const saved = localStorage.getItem('eduAust_selectedChat');
-    return saved ? JSON.parse(saved) : 1;
-  });
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [conversations, setConversations] = useState([]);
+  const [currentMessages, setCurrentMessages] = useState([]);
+  const [unreadTotal, setUnreadTotal] = useState(0);
+  const [loadingList, setLoadingList] = useState(true);
+  const [loadingThread, setLoadingThread] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
 
-  const [conversations, setConversations] = useState(() => {
-    const saved = localStorage.getItem('eduAust_conversations');
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 1,
-        name: 'Fahim Rahman',
-        role: 'CSE, AUST • Data Structures, Algorithms',
-        rating: '4.9',
-        lastMessage: 'Sure! How about Wednesday evening at 7 PM?',
-        time: '10:30 AM',
-        unread: 2,
-        online: true,
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'
-      },
-      {
-        id: 2,
-        name: 'Sadia Tasnim',
-        role: 'EEE, AUST • Calculus, Physics',
-        rating: '4.8',
-        lastMessage: 'Sounds good! I’ll send the meeting link.',
-        time: 'Yesterday',
-        unread: 1,
-        online: false,
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120'
-      },
-      {
-        id: 3,
-        name: 'Raihan Ahmed',
-        role: 'ME, AUST • Mechanics',
-        rating: '4.7',
-        lastMessage: 'You: Okay, thank you!',
-        time: 'Mon',
-        unread: 0,
-        online: true,
-        avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=120'
-      },
-      {
-        id: 4,
-        name: 'Nusrat Jahan',
-        role: 'CSE, AUST • Database Systems',
-        rating: '5.0',
-        lastMessage: 'Can we reschedule to tomorrow?',
-        time: 'Mon',
-        unread: 1,
-        online: false,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'
-      },
-      {
-        id: 5,
-        name: 'Tanvir Hasan',
-        role: 'CE, AUST • Physics, Mathematics',
-        rating: '4.6',
-        lastMessage: 'Thanks! I will check it out.',
-        time: '18 May',
-        unread: 0,
-        online: true,
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120'
+  // Load the conversation list. Also re-run after opening or sending, since
+  // both change the previews and the unread counts.
+  const loadConversations = useCallback(async () => {
+    const { ok, body } = await apiGet('/conversations');
+
+    if (!ok) {
+      setLoadingList(false);
+      if (body?.message === 'Unauthenticated.') {
+        clearAuth();
+        navigate('/login');
+        return;
       }
-    ];
-  });
+      setError(body?.message || 'Could not load conversations.');
+      return;
+    }
 
+    setConversations(body.data ?? []);
+    setUnreadTotal(body.unread_total ?? 0);
+    setLoadingList(false);
+  }, [navigate]);
 
-  const [chatMessages, setChatMessages] = useState(() => {
-    const saved = localStorage.getItem('eduAust_chatMessages');
-    return saved ? JSON.parse(saved) : {
-      1: [
-        { id: 1, sender: 'them', text: 'Hi Israt! I’m happy to see you’re interested in my tutoring.', time: '10:28 AM', dateLabel: 'Today', seen: true },
-        { id: 2, sender: 'me', text: 'Hi Fahim! Yes, I need help with Data Structures. Are you available this week?', time: '10:29 AM', dateLabel: 'Today', seen: true },
-        { id: 3, sender: 'them', text: 'Yes, I’m available on weekdays after 6 PM. Which time works best for you?', time: '10:29 AM', dateLabel: 'Today', seen: true },
-        { id: 4, sender: 'me', text: 'How about Wednesday evening at 7 PM?', time: '10:30 AM', dateLabel: 'Today', seen: true },
-        { id: 5, sender: 'them', text: 'Sure! How about Wednesday evening at 7 PM?', time: '10:30 AM', dateLabel: 'Today', seen: true }
-      ],
-      2: [
-        { id: 1, sender: 'them', text: 'Hello! Let me know if you need help with Calculus.', time: 'Yesterday', dateLabel: 'Yesterday', seen: true },
-        { id: 2, sender: 'me', text: 'Sure! I need help with integration.', time: 'Yesterday', dateLabel: 'Yesterday', seen: true },
-        { id: 3, sender: 'them', text: 'Sounds good! I’ll send the meeting link.', time: 'Yesterday', dateLabel: 'Yesterday', seen: true }
-      ],
-      3: [
-        { id: 1, sender: 'me', text: 'Okay, thank you!', time: 'Mon', dateLabel: 'Monday', seen: false }
-      ],
-      4: [
-        { id: 1, sender: 'them', text: 'Can we reschedule to tomorrow?', time: 'Mon', dateLabel: 'Monday', seen: true }
-      ],
-      5: [
-        { id: 1, sender: 'them', text: 'Thanks! I will check it out.', time: '18 May', dateLabel: '18 May', seen: true }
-      ]
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  // Open the first thread once the list arrives so the pane is never blank.
+  useEffect(() => {
+    if (selectedChat === null && conversations.length > 0) {
+      setSelectedChat(conversations[0].id);
+    }
+  }, [conversations, selectedChat]);
+
+  // Fetching a thread also marks it read on the server.
+  useEffect(() => {
+    if (!selectedChat) return;
+
+    let cancelled = false;
+    setLoadingThread(true);
+
+    apiGet(`/conversations/${selectedChat}/messages`).then(({ ok, body }) => {
+      if (cancelled) return;
+
+      if (!ok) {
+        setCurrentMessages([]);
+        setLoadingThread(false);
+        setError(body?.message || 'Could not load this conversation.');
+        return;
+      }
+
+      setCurrentMessages(body.data ?? []);
+      setLoadingThread(false);
+      // Reading the thread clears its unread pill and the sidebar badge.
+      loadConversations();
+    });
+
+    return () => {
+      cancelled = true;
     };
-  });
+  }, [selectedChat, loadConversations]);
 
- 
-  useEffect(() => {
-    localStorage.setItem('eduAust_selectedChat', JSON.stringify(selectedChat));
-  }, [selectedChat]);
-
-  
-  useEffect(() => {
-    localStorage.setItem('eduAust_conversations', JSON.stringify(conversations));
-  }, [conversations]);
-
-
-  useEffect(() => {
-    localStorage.setItem('eduAust_chatMessages', JSON.stringify(chatMessages));
-  }, [chatMessages]);
-
-  
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, selectedChat]);
+  }, [currentMessages, selectedChat]);
 
   const bgClass = darkMode
   ? 'bg-[#12161f] text-slate-100'
@@ -162,93 +122,47 @@ const cardBg = darkMode
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
-    { name: 'Messages', icon: MessageSquare, badge: 3, path: '/messages' },
+    { name: 'Messages', icon: MessageSquare, badge: unreadTotal || undefined, path: '/messages' },
     { name: 'Notifications', icon: Bell, badge: 3, path: '/notifications' }, 
     { name: 'Settings', icon: Settings, path: '#' },
     { name: 'Help & Support', icon: HelpCircle, path: '#' },
   ];
 
-  const getCurrentTime = () => {
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
   const handleSelectChat = (id) => {
     setSelectedChat(id);
-    setConversations(prev =>
-      prev.map(conv => conv.id === id ? { ...conv, unread: 0 } : conv)
-    );
-
-    setChatMessages(prev => {
-      const targetConv = conversations.find(c => c.id === id);
-      const isUserOnline = targetConv ? targetConv.online : false;
-
-      const messages = prev[id] || [];
-      const updatedMessages = messages.map(msg => 
-        (msg.sender === 'me' && isUserOnline) ? { ...msg, seen: true } : msg
-      );
-      return { ...prev, [id]: updatedMessages };
-    });
+    setError('');
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!messageInput.trim()) return;
 
-    const newMessage = {
-      id: Date.now(),
-      sender: 'me',
-      text: messageInput,
-      time: getCurrentTime(),
-      dateLabel: 'Today',
-      seen: false 
-    };
+    const body = messageInput.trim();
+    if (!body || !selectedChat || sending) return;
 
-    setChatMessages(prev => ({
-      ...prev,
-      [selectedChat]: [...(prev[selectedChat] || []), newMessage]
-    }));
+    setSending(true);
+    const { ok, body: response } = await apiPost(`/conversations/${selectedChat}/messages`, { body });
+    setSending(false);
 
-    setConversations(prev => {
-      const currentConv = prev.find(conv => conv.id === selectedChat);
-      if (!currentConv) return prev;
-
-      const updatedConv = {
-        ...currentConv,
-        lastMessage: `You: ${messageInput}`,
-        time: getCurrentTime(),
-        unread: 0
-      };
-
-      const otherConvs = prev.filter(conv => conv.id !== selectedChat);
-      return [updatedConv, ...otherConvs];
-    });
-
-    setMessageInput('');
-
-    
-    const currentConv = conversations.find(c => c.id === selectedChat);
-    if (currentConv && currentConv.online) {
-      setTimeout(() => {
-        setChatMessages(prev => {
-          const currentMsgs = prev[selectedChat] || [];
-          const updated = currentMsgs.map(msg => 
-            msg.id === newMessage.id ? { ...msg, seen: true } : msg
-          );
-          return { ...prev, [selectedChat]: updated };
-        });
-      }, 2000);
+    if (!ok) {
+      setError(firstError(response, 'Could not send your message.'));
+      return;
     }
+
+    // Append the message the server actually stored rather than a local copy,
+    // so ids and timestamps match what a reload would show.
+    setCurrentMessages((prev) => [...prev, response.data]);
+    setMessageInput('');
+    loadConversations();
   };
 
+  const filteredConversations = conversations.filter((conv) => {
+    const name = conv.participant?.name ?? '';
+    const department = conv.participant?.department ?? '';
+    const term = searchQuery.toLowerCase();
+    return name.toLowerCase().includes(term) || department.toLowerCase().includes(term);
+  });
 
-  const filteredConversations = conversations.filter(conv => 
-    conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const activeChatDetails = conversations.find(c => c.id === selectedChat) || conversations[0];
-  const currentMessages = chatMessages[selectedChat] || [];
+  const activeChatDetails = conversations.find((c) => c.id === selectedChat) ?? null;
 
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 overflow-hidden ${bgClass}`}>
@@ -412,45 +326,56 @@ const cardBg = darkMode
 
             
             <div className="flex-grow overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
-              {filteredConversations.length > 0 ? (
+              {loadingList ? (
+                <div className="p-6 text-center text-xs text-slate-400">Loading conversations…</div>
+              ) : filteredConversations.length > 0 ? (
                 filteredConversations.map((item) => (
                   <div
                     key={item.id}
                     onClick={() => handleSelectChat(item.id)}
                     className={`p-3.5 flex items-center gap-3 cursor-pointer transition-all ${
-                      selectedChat === item.id 
-                        ? (darkMode ? 'bg-slate-800 border-l-4 border-emerald-500 shadow-inner' : 'bg-emerald-50/80 border-l-4 border-emerald-600') 
+                      selectedChat === item.id
+                        ? (darkMode ? 'bg-slate-800 border-l-4 border-emerald-500 shadow-inner' : 'bg-emerald-50/80 border-l-4 border-emerald-600')
                         : (darkMode ? 'hover:bg-slate-800/40 border-l-4 border-transparent' : 'hover:bg-slate-50 border-l-4 border-transparent')
                     }`}
                   >
                     <div className="relative shrink-0">
-                      <img src={item.avatar} alt={item.name} className="w-10 h-10 rounded-full object-cover" />
-                      {item.online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />}
+                      {item.participant?.avatar ? (
+                        <img src={item.participant.avatar} alt={item.participant?.name} className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-black">
+                          {(item.participant?.name ?? '?').charAt(0).toUpperCase()}
+                        </div>
+                      )}
                     </div>
                     <div className="flex-grow min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
                         <h4 className={`text-xs truncate ${
                           selectedChat === item.id
                             ? (darkMode ? 'font-black text-emerald-400' : 'font-black text-emerald-700')
-                            : (item.unread > 0 
-                                ? (darkMode ? 'font-black text-white' : 'font-black text-slate-900') 
+                            : (item.unread_count > 0
+                                ? (darkMode ? 'font-black text-white' : 'font-black text-slate-900')
                                 : (darkMode ? 'font-semibold text-slate-200' : 'font-medium text-slate-700'))
                         }`}>
-                          {item.name}
+                          {item.participant?.name ?? 'Unknown'}
                         </h4>
-                        <span className={`text-[10px] shrink-0 font-medium ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>{item.time}</span>
+                        <span className={`text-[10px] shrink-0 font-medium ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+                          {item.last_message?.time ?? ''}
+                        </span>
                       </div>
                       <p className={`text-[11px] truncate ${
-                        item.unread > 0 
-                          ? (darkMode ? 'font-bold text-slate-100' : 'font-bold text-slate-900') 
+                        item.unread_count > 0
+                          ? (darkMode ? 'font-bold text-slate-100' : 'font-bold text-slate-900')
                           : (darkMode ? 'font-normal text-slate-400' : 'font-normal text-slate-500')
                       }`}>
-                        {item.lastMessage}
+                        {item.last_message
+                          ? `${item.last_message.sent_by_me ? 'You: ' : ''}${item.last_message.body}`
+                          : 'No messages yet'}
                       </p>
                     </div>
-                    {item.unread > 0 && (
-                      <span className="w-4.5 h-4.5 rounded-full bg-emerald-600 text-white text-[9px] font-black flex items-center justify-center shrink-0">
-                        {item.unread}
+                    {item.unread_count > 0 && (
+                      <span className="w-4.5 h-4.5 rounded-full bg-emerald-600 text-white text-[9px] font-black flex items-center justify-center shrink-0 px-1.5">
+                        {item.unread_count}
                       </span>
                     )}
                   </div>
@@ -461,64 +386,64 @@ const cardBg = darkMode
             </div>
           </div>
 
-          
+
           <div className="md:col-span-7 lg:col-span-8 flex flex-col h-full bg-slate-50/50 dark:bg-[#1a2230]/40 overflow-hidden">
-            
+
             {/* Chat Header */}
-            <div className={`p-3.5 border-b flex items-center justify-between shrink-0 ${darkMode ? 'border-slate-800 bg-[#1f2937]' : 'border-slate-100 bg-white'}`}>
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <img src={activeChatDetails.avatar} alt="Active User" className="w-9 h-9 rounded-full object-cover" />
-                  {activeChatDetails.online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className={`text-xs font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>{activeChatDetails.name}</h4>
-                    <span className="flex items-center gap-1 bg-emerald-500/10 text-emerald-600 px-1.5 py-0.2 rounded text-[10px] font-bold">
-                      <Star size={10} className="fill-emerald-500" /> {activeChatDetails.rating}
-                    </span>
-                  </div>
-                  <p className={`text-[10px] ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>
-                    {activeChatDetails.role} • {activeChatDetails.online ? <span className="text-emerald-500 font-bold">Online</span> : <span className="text-slate-400 font-normal">Offline</span>}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            
-            <div className="flex-grow p-4 overflow-y-auto space-y-3">
-              {currentMessages.map((msg, index) => {
-                const showDateBadge = index === 0 || currentMessages[index - 1].dateLabel !== msg.dateLabel;
-
-                return (
-                  <React.Fragment key={msg.id}>
-                    {showDateBadge && (
-                      <div className="text-center my-2">
-                        <span className={`text-[10px] px-3 py-1 rounded-full font-bold shadow-sm ${
-                          darkMode ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-slate-200 text-slate-700'
-                        }`}>
-                          {msg.dateLabel}
-                        </span>
+            {activeChatDetails && (
+              <div className={`p-3.5 border-b flex items-center justify-between shrink-0 ${darkMode ? 'border-slate-800 bg-[#1f2937]' : 'border-slate-100 bg-white'}`}>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    {activeChatDetails.participant?.avatar ? (
+                      <img src={activeChatDetails.participant.avatar} alt="Active User" className="w-9 h-9 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-black">
+                        {(activeChatDetails.participant?.name ?? '?').charAt(0).toUpperCase()}
                       </div>
                     )}
-                    <div className={`flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'}`}>
-                      <div className={`max-w-md p-3 rounded-2xl text-xs leading-relaxed ${
-                        msg.sender === 'me' 
-                          ? 'bg-emerald-600 text-white rounded-br-none shadow-sm' 
-                          : (darkMode ? 'bg-slate-800 text-slate-100 rounded-bl-none border border-slate-700/80 shadow-sm' : 'bg-white text-slate-800 rounded-bl-none shadow-sm border border-slate-100')
-                      }`}>
-                        {msg.text}
-                      </div>
-                      <div className="flex items-center gap-1 mt-1">
-                        <span className={`text-[10px] font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>{msg.time}</span>
-                        {msg.sender === 'me' && (
-                          <CheckCheck size={12} className={msg.seen ? 'text-emerald-500' : 'text-slate-400'} />
-                        )}
-                      </div>
+                  </div>
+                  <div>
+                    <h4 className={`text-xs font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                      {activeChatDetails.participant?.name ?? 'Unknown'}
+                    </h4>
+                    <p className={`text-[10px] ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+                      {activeChatDetails.participant?.department ?? 'AUST'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="p-3 text-xs font-semibold text-rose-500 border-b border-rose-500/30">{error}</div>
+            )}
+
+            <div className="flex-grow p-4 overflow-y-auto space-y-3">
+              {loadingThread ? (
+                <div className="text-center text-xs text-slate-400 py-8">Loading messages…</div>
+              ) : currentMessages.length === 0 ? (
+                <div className="text-center text-xs text-slate-400 py-8">
+                  No messages yet. Say hello to start the conversation.
+                </div>
+              ) : (
+                currentMessages.map((msg) => (
+                  <div key={msg.id} className={`flex flex-col ${msg.sent_by_me ? 'items-end' : 'items-start'}`}>
+                    <div className={`max-w-md p-3 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap break-words ${
+                      msg.sent_by_me
+                        ? 'bg-emerald-600 text-white rounded-br-none shadow-sm'
+                        : (darkMode ? 'bg-slate-800 text-slate-100 rounded-bl-none border border-slate-700/80 shadow-sm' : 'bg-white text-slate-800 rounded-bl-none shadow-sm border border-slate-100')
+                    }`}>
+                      {msg.body}
                     </div>
-                  </React.Fragment>
-                );
-              })}
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className={`text-[10px] font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>{msg.time}</span>
+                      {msg.sent_by_me && (
+                        <CheckCheck size={12} className={msg.read ? 'text-emerald-500' : 'text-slate-400'} />
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
               <div ref={messagesEndRef} />
             </div>
 
