@@ -1,33 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 
-import LandingPage from "./pages/LandingPage/LandingPage";
-import LoginPage from "./pages/LoginPage/LoginPage";
-import SignUpPage from "./pages/SignUpPage/SignupPage";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from 'react-router-dom';
 
-import StudentDashboard from "./pages/StudentDashboard/StudentDashboard";
-import FindTutorsPage from "./pages/StudentDashboard/FindTutorsPage";
+import LandingPage from './pages/LandingPage/LandingPage';
+import LoginPage from './pages/LoginPage/LoginPage';
+import SignUpPage from './pages/SignUpPage/SignupPage';
 
-import TutorDashboard from "./pages/TutorDashboard/TutorDashboard";
-import TuitionRequests from "./pages/TutorDashboard/TuitionRequests";
+import BecomeATutor from './pages/BecomeATutor';
 
-import BecomeATutor from "./pages/BecomeATutor";
+import StudentDashboard from './pages/StudentDashboard/StudentDashboard';
+import FindTutorsPage from './pages/StudentDashboard/FindTutorsPage';
 
-import MessagesPage from "./pages/Messages/MessagesPage";
+import TutorDashboard from './pages/TutorDashboard/TutorDashboard';
+import TuitionRequests from './pages/TutorDashboard/TuitionRequests';
 
-import NotificationsPage from "./pages/NotificationsPage";
-import SettingsPage from "./pages/Settings/SettingsPage";
-import SupportPage from "./pages/SupportPage";
+import TutorRoute from './components/TutorRoute';
+
+import TutorAccountPage from './pages/TutorAccount/TutorAccountPage';
+
+import MessagesPage from './pages/Messages/MessagesPage';
+import NotificationsPage from './pages/NotificationsPage';
+import SettingsPage from './pages/Settings/SettingsPage';
+import SupportPage from './pages/SupportPage';
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('eduAust_darkMode');
-    return saved ? JSON.parse(saved) : false;
+    const saved = localStorage.getItem(
+      'eduAust_darkMode'
+    );
+
+    return saved
+      ? JSON.parse(saved)
+      : false;
   });
 
-  const [currentRole, setCurrentRole] = useState(() => {
-    return localStorage.getItem('eduAUST_role') || 'student';
-  });
+  const [currentRole, setCurrentRole] = useState(
+    () =>
+      localStorage.getItem('eduAUST_role') ||
+      'student'
+  );
 
   useEffect(() => {
     localStorage.setItem(
@@ -44,7 +59,7 @@ export default function App() {
   }, [currentRole]);
 
   const toggleDarkMode = () => {
-    setDarkMode((prev) => !prev);
+    setDarkMode((previous) => !previous);
   };
 
   const sharedProps = {
@@ -81,55 +96,105 @@ export default function App() {
     >
       <BrowserRouter>
         <Routes>
+
+          {/* ==================== Landing ==================== */}
+
           <Route
             path="/"
-            element={<LandingPage {...sharedProps} />}
+            element={
+              <LandingPage
+                {...sharedProps}
+              />
+            }
           />
+
+          {/* ==================== Authentication ==================== */}
 
           <Route
             path="/login"
-            element={<LoginPage {...sharedProps} />}
+            element={
+              <LoginPage
+                {...sharedProps}
+              />
+            }
           />
 
           <Route
             path="/signup"
-            element={<SignUpPage {...sharedProps} />}
+            element={
+              <SignUpPage
+                {...sharedProps}
+              />
+            }
           />
+
+          {/* ==================== Student ==================== */}
 
           <Route
             path="/dashboard"
             element={
-              <StudentDashboard {...sharedProps} />
+              <StudentDashboard
+                {...sharedProps}
+              />
             }
           />
 
           <Route
             path="/find-tutors"
             element={
-              <FindTutorsPage {...sharedProps} />
+              <FindTutorsPage
+                {...sharedProps}
+              />
             }
           />
+
+          {/* ==================== Tutor Dashboard ==================== */}
 
           <Route
             path="/tutor-dashboard"
             element={
-              <TutorDashboard {...sharedProps} />
+              <TutorRoute>
+                <TutorDashboard
+                  {...sharedProps}
+                />
+              </TutorRoute>
             }
           />
 
           <Route
             path="/tutor-requests"
             element={
-              <TuitionRequests {...sharedProps} />
+              <TutorRoute>
+                <TuitionRequests
+                  {...sharedProps}
+                />
+              </TutorRoute>
             }
           />
 
+          {/* ==================== Become Tutor ==================== */}
+
+          {/* Conditions / eligibility page */}
           <Route
             path="/become-a-tutor"
             element={
-              <BecomeATutor {...sharedProps} />
+              <BecomeATutor
+                {...sharedProps}
+              />
             }
           />
+
+          {/* Actual tutor profile creation */}
+          <Route
+            path="/tutor/create-profile"
+            element={
+              <TutorAccountPage
+                {...sharedProps}
+              />
+            }
+          />
+
+          {/* ==================== Messages ==================== */}
 
           <Route
             path="/messages"
@@ -138,30 +203,44 @@ export default function App() {
                 darkMode={darkMode}
                 toggleDarkMode={toggleDarkMode}
                 currentRole={currentRole}
+                setCurrentRole={setCurrentRole}
               />
             }
           />
 
+          {/* ==================== Notifications ==================== */}
+
           <Route
             path="/notifications"
             element={
-              <NotificationsPage {...sharedProps} />
+              <NotificationsPage
+                {...sharedProps}
+              />
             }
           />
+
+          {/* ==================== Settings ==================== */}
 
           <Route
             path="/settings"
             element={
-              <SettingsPage {...sharedProps} />
+              <SettingsPage
+                {...sharedProps}
+              />
             }
           />
+
+          {/* ==================== Support ==================== */}
 
           <Route
             path="/support"
             element={
-              <SupportPage {...sharedProps} />
+              <SupportPage
+                {...sharedProps}
+              />
             }
           />
+
         </Routes>
       </BrowserRouter>
     </div>

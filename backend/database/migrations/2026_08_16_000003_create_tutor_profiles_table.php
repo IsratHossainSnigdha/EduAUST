@@ -18,7 +18,7 @@ return new class extends Migration
             // avatar are read from the user rather than duplicated here.
             $table->foreignUuid('user_id')->unique()->constrained()->cascadeOnDelete();
 
-            $table->string('headline');
+            $table->string('headline')->nullable();
             $table->text('bio')->nullable();
 
             // Whole taka per hour — no fractional currency in this market.

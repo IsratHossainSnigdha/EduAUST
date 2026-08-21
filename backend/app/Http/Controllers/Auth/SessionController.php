@@ -27,6 +27,7 @@ class SessionController extends Controller
                 'phone' => $user->phone,
                 'department_id' => $user->department_id,
                 'semester' => $user->semester,
+                'isTutor' => $user->isTutor,
             ],
         ]);
     }
