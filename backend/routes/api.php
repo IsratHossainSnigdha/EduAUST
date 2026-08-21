@@ -12,12 +12,30 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TutorController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SubjectController;
 
 Route::prefix('v1')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Departments
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/departments', [DepartmentController::class, 'index'])
         ->name('api.v1.departments.index');
+        Route::get('/subjects', [SubjectController::class, 'index'])
+    ->name('api.v1.subjects.index');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Conversations
+    |--------------------------------------------------------------------------
+    */
 
     Route::middleware('auth.jwt')->prefix('conversations')->group(function () {
+
         Route::get('/', [ConversationController::class, 'index'])
             ->name('api.v1.conversations.index');
 
@@ -38,7 +56,15 @@ Route::prefix('v1')->group(function () {
             ->name('api.v1.conversations.read');
     });
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    */
+
     Route::middleware('auth.jwt')->prefix('notifications')->group(function () {
+
         Route::get('/', [NotificationController::class, 'index'])
             ->name('api.v1.notifications.index');
 
@@ -52,7 +78,16 @@ Route::prefix('v1')->group(function () {
             ->name('api.v1.notifications.read');
     });
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tutor Listings
+    |--------------------------------------------------------------------------
+    | These routes are available to authenticated users.
+    */
+
     Route::middleware('auth.jwt')->prefix('tutors')->group(function () {
+
         Route::get('/', [TutorController::class, 'index'])
             ->name('api.v1.tutors.index');
 
@@ -60,7 +95,43 @@ Route::prefix('v1')->group(function () {
             ->name('api.v1.tutors.filters');
     });
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tutor Account Creation
+    |--------------------------------------------------------------------------
+    | Any authenticated user can create a tutor account.
+    */
+
+    Route::middleware('auth.jwt')->prefix('tutor')->group(function () {
+
+        Route::post('/account', [TutorController::class, 'create'])
+            ->name('api.v1.tutor.account.create');
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tutor Dashboard / Tutor-Only Routes
+    |--------------------------------------------------------------------------
+    | Requires both authentication AND isTutor = true.
+    */
+
+    Route::middleware(['auth.jwt', 'tutor'])->prefix('tutor')->group(function () {
+
+        Route::get('/dashboard', [TutorController::class, 'dashboard'])
+            ->name('api.v1.tutor.dashboard');
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication
+    |--------------------------------------------------------------------------
+    */
+
     Route::prefix('auth')->group(function () {
+
         Route::post('/register/info', [RegisterInfoController::class, 'store'])
             ->middleware('throttle:6,1')
             ->name('api.v1.auth.register.info');
@@ -93,9 +164,20 @@ Route::prefix('v1')->group(function () {
             ->middleware('throttle:5,1')
             ->name('password.store');
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Current User
+        |--------------------------------------------------------------------------
+        */
+
         Route::middleware('auth.jwt')->group(function () {
-            Route::get('/me', [SessionController::class, 'me'])->name('api.v1.auth.me');
-            Route::post('/logout', [SessionController::class, 'logout'])->name('api.v1.auth.logout');
+
+            Route::get('/me', [SessionController::class, 'me'])
+                ->name('api.v1.auth.me');
+
+            Route::post('/logout', [SessionController::class, 'logout'])
+                ->name('api.v1.auth.logout');
         });
     });
 });
