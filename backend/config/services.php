@@ -46,6 +46,21 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Google Sign-In
+    |--------------------------------------------------------------------------
+    |
+    | The OAuth client ID that ID tokens must be issued for. Tokens minted for
+    | any other client are rejected, so this must match the client ID the
+    | frontend's Google button is initialised with.
+    |
+    */
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+    ],
+
     'aust' => [
         'email_domain' => env('AUST_EMAIL_DOMAIN', 'aust.edu'),
         'registration_ttl' => (int) env('AUST_REGISTRATION_TTL', 30 * 60),

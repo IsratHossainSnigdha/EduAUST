@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\Auth\RegisterInfoController;
 use App\Http\Controllers\Auth\RegisterSecurityController;
 use App\Http\Controllers\Auth\RegisterVerifyController;
@@ -10,9 +12,9 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TutorController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\SubjectController;
 
 Route::prefix('v1')->group(function () {
 
@@ -24,9 +26,8 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/departments', [DepartmentController::class, 'index'])
         ->name('api.v1.departments.index');
-        Route::get('/subjects', [SubjectController::class, 'index'])
-    ->name('api.v1.subjects.index');
-
+    Route::get('/subjects', [SubjectController::class, 'index'])
+        ->name('api.v1.subjects.index');
 
     /*
     |--------------------------------------------------------------------------
@@ -56,7 +57,6 @@ Route::prefix('v1')->group(function () {
             ->name('api.v1.conversations.read');
     });
 
-
     /*
     |--------------------------------------------------------------------------
     | Notifications
@@ -78,7 +78,6 @@ Route::prefix('v1')->group(function () {
             ->name('api.v1.notifications.read');
     });
 
-
     /*
     |--------------------------------------------------------------------------
     | Tutor Listings
@@ -95,7 +94,6 @@ Route::prefix('v1')->group(function () {
             ->name('api.v1.tutors.filters');
     });
 
-
     /*
     |--------------------------------------------------------------------------
     | Tutor Account Creation
@@ -109,7 +107,6 @@ Route::prefix('v1')->group(function () {
             ->name('api.v1.tutor.account.create');
     });
 
-
     /*
     |--------------------------------------------------------------------------
     | Tutor Dashboard / Tutor-Only Routes
@@ -122,7 +119,6 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard', [TutorController::class, 'dashboard'])
             ->name('api.v1.tutor.dashboard');
     });
-
 
     /*
     |--------------------------------------------------------------------------
@@ -152,6 +148,11 @@ Route::prefix('v1')->group(function () {
             ->middleware('throttle:5,1')
             ->name('api.v1.auth.login');
 
+        // Sign in with an AUST institutional Google account.
+        Route::post('/google', [GoogleLoginController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('api.v1.auth.google');
+
         Route::post('/refresh', [SessionController::class, 'refresh'])
             ->middleware('throttle:10,1')
             ->name('api.v1.auth.refresh');
@@ -163,7 +164,6 @@ Route::prefix('v1')->group(function () {
         Route::post('/reset-password', [NewPasswordController::class, 'store'])
             ->middleware('throttle:5,1')
             ->name('password.store');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -178,6 +178,10 @@ Route::prefix('v1')->group(function () {
 
             Route::post('/logout', [SessionController::class, 'logout'])
                 ->name('api.v1.auth.logout');
+
+            // Supplies the details a Google sign-in cannot provide.
+            Route::patch('/profile', [ProfileController::class, 'update'])
+                ->name('api.v1.auth.profile.update');
         });
     });
 });

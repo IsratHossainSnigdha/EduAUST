@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiPost, saveAuth, firstError } from '../../lib/auth';
+import GoogleSignInButton from '../../components/GoogleSignInButton';
 
 export default function LoginPage({
   darkMode,
@@ -94,6 +95,14 @@ export default function LoginPage({
                   Sign In <ArrowRight size={16} className="inline ml-1" />
                 </button>
               </form>
+
+              <div className="flex items-center gap-3 my-5">
+                <span className={`h-px flex-1 ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+                <span className={`text-xs font-semibold ${subTextClass}`}>OR</span>
+                <span className={`h-px flex-1 ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+              </div>
+
+              <GoogleSignInButton darkMode={darkMode} onError={setError} />
             </div>
           </div>
         </div>

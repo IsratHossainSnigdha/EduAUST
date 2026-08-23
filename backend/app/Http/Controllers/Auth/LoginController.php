@@ -33,10 +33,12 @@ class LoginController extends Controller
         $field = filter_var($credential, FILTER_VALIDATE_EMAIL) ? 'email' : 'student_id';
         $user = User::where($field, $credential)->first();
 
-        // Secure, constant-time-ish password comparison. When the account does
-        // not exist we still perform a hash check to keep timing uniform.
+        // Secure, constant-time-ish password comparison. Accounts created
+        // through Google have no password at all, so they are treated exactly
+        // like a missing account: the hash check still runs, against a dummy,
+        // to keep the response timing uniform.
         $password = $request->string('password')->value();
-        $passwordValid = $user
+        $passwordValid = $user && filled($user->password)
             ? Hash::check($password, $user->password)
             : Hash::check($password, self::DUMMY_HASH);
 
