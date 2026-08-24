@@ -9,6 +9,7 @@ import {
 import LandingPage from './pages/LandingPage/LandingPage';
 import LoginPage from './pages/LoginPage/LoginPage';
 import SignUpPage from './pages/SignUpPage/SignupPage';
+import CompleteProfilePage from './pages/CompleteProfile/CompleteProfilePage';
 
 import BecomeATutor from './pages/BecomeATutor';
 
@@ -123,6 +124,16 @@ export default function App() {
             path="/signup"
             element={
               <SignUpPage
+                {...sharedProps}
+              />
+            }
+          />
+
+          {/* Finishes a Google sign-up: collects what Google cannot supply */}
+          <Route
+            path="/complete-profile"
+            element={
+              <CompleteProfilePage
                 {...sharedProps}
               />
             }

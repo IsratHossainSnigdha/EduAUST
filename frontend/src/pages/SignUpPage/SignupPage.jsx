@@ -5,6 +5,7 @@ import {
   Mail, Check, Eye, EyeOff 
 } from 'lucide-react';
 import { saveAuth } from '../../lib/auth';
+import GoogleSignInButton from '../../components/GoogleSignInButton';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
@@ -39,6 +40,7 @@ export default function SignUpPage({
   const [departments, setDepartments] = useState([]);
   const [registrationToken, setRegistrationToken] = useState('');
   const [formError, setFormError] = useState('');
+  const [existingAccount, setExistingAccount] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpMessage, setOtpMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -155,7 +157,15 @@ export default function SignUpPage({
     setLoading(false);
 
     if (!ok) {
-      setFormError(firstError(body, 'Could not submit your details. Please try again.'));
+      // An account already exists for these details: tutoring is added to an
+      // existing account rather than registered separately, so offer sign-in
+      // instead of leaving the applicant on a dead end.
+      const taken = body?.errors?.email || body?.errors?.student_id || body?.errors?.phone;
+      setExistingAccount(Boolean(taken));
+      setFormError(
+        body?.errors?.email?.[0]
+          ?? firstError(body, 'Could not submit your details. Please try again.')
+      );
       return;
     }
 
@@ -308,6 +318,21 @@ export default function SignUpPage({
               </button>
             </div>
 
+            <div className="flex items-center gap-3 my-6">
+              <span className={`h-px flex-1 ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+              <span className={`text-xs font-semibold ${subTextClass}`}>OR</span>
+              <span className={`h-px flex-1 ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+            </div>
+
+            {/* Registering with an AUST Google account skips the email code. */}
+            <GoogleSignInButton
+              darkMode={darkMode}
+              onError={setFormError}
+              label="Sign up with AUST email"
+            />
+
+            {formError && <p className="mt-3 text-sm text-red-500 font-medium text-center">{formError}</p>}
+
             <p className="text-xs text-emerald-600 font-medium mt-6 flex items-center justify-center gap-1.5">
               <ShieldCheck size={14} /> Only for verified AUST students
             </p>
@@ -332,7 +357,7 @@ export default function SignUpPage({
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
+                  onChange={(e) => { setEmail(e.target.value); setEmailError(''); setExistingAccount(false); setFormError(''); }}
                   placeholder="ishrat.cse.20230204017@aust.edu"
                   className={`w-full px-5 py-3.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition duration-200 ${emailError ? 'border-red-500 focus:ring-red-500/20' : 'focus:border-emerald-500'} ${inputBgClass} ${textColor}`}
                   required
@@ -389,6 +414,16 @@ export default function SignUpPage({
                 </div>
               </div>
               {formError && <p className="text-sm text-red-500 font-medium text-center">{formError}</p>}
+
+              {existingAccount && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="w-full py-3 rounded-xl border border-emerald-600 text-emerald-600 font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950 transition"
+                >
+                  Log in to your account
+                </button>
+              )}
               <button type="submit" disabled={loading} className="w-full mt-6 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold rounded-xl transition-all duration-200 shadow-md shadow-emerald-600/10 text-base">{loading ? 'Sending code…' : 'Continue'}</button>
             </form>
           </div>
