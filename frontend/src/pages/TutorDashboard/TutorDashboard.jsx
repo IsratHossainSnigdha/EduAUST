@@ -26,8 +26,7 @@ export default function TutorDashboard({
 }) {
   const navigate = useNavigate();
 
-  const [searchQuery, setSearchQuery] =
-    useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [activeMenu, setActiveMenu] =
     useState('Dashboard');
@@ -36,10 +35,19 @@ export default function TutorDashboard({
     useState(0);
 
   /*
-   * TutorRoute already confirmed that this
-   * user is a tutor.
+   * Tutor profile status
    *
-   * Therefore DO NOT call /auth/me here again.
+   * false = tutor profile does not exist
+   * true  = tutor profile exists
+   */
+  const [hasTutorProfile, setHasTutorProfile] =
+    useState(false);
+
+  const [profileLoading, setProfileLoading] =
+    useState(true);
+
+  /*
+   * Set current role to tutor.
    */
   useEffect(() => {
     setCurrentRole('tutor');
@@ -51,23 +59,86 @@ export default function TutorDashboard({
   }, [setCurrentRole]);
 
   /*
-   * Notifications
+   * Check tutor profile status.
+   *
+   * Backend:
+   * GET /api/v1/tutor/status
+   *
+   * Response:
+   * {
+   *     "isTutor": true
+   * }
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkTutorStatus = async () => {
+      try {
+        const {
+          ok,
+          body,
+        } = await apiGet('/tutor/status');
+
+        if (cancelled) {
+          return;
+        }
+
+        if (ok) {
+          setHasTutorProfile(
+            body?.isTutor === true
+          );
+        } else {
+          setHasTutorProfile(false);
+        }
+
+        setProfileLoading(false);
+      } catch (error) {
+        console.error(
+          'Failed to check tutor status:',
+          error
+        );
+
+        if (!cancelled) {
+          setHasTutorProfile(false);
+          setProfileLoading(false);
+        }
+      }
+    };
+
+    checkTutorStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /*
+   * Load notification count.
    */
   useEffect(() => {
     let cancelled = false;
 
     const loadNotifications = async () => {
-      const { ok, body } =
-        await apiGet(
+      try {
+        const {
+          ok,
+          body,
+        } = await apiGet(
           '/notifications/unread-count'
         );
 
-      if (
-        !cancelled &&
-        ok
-      ) {
-        setUnreadCount(
-          body?.by_audience?.tutor ?? 0
+        if (
+          !cancelled &&
+          ok
+        ) {
+          setUnreadCount(
+            body?.by_audience?.tutor ?? 0
+          );
+        }
+      } catch (error) {
+        console.error(
+          'Failed to load notifications:',
+          error
         );
       }
     };
@@ -79,10 +150,43 @@ export default function TutorDashboard({
     };
   }, []);
 
+  /*
+   * Sidebar navigation.
+   *
+   * Dashboard is always accessible.
+   *
+   * All other sidebar items require
+   * a tutor profile.
+   */
   const handleNavigation = (
     itemName,
     itemPath
   ) => {
+    /*
+     * Dashboard is always accessible.
+     */
+    if (itemName === 'Dashboard') {
+      setActiveMenu(itemName);
+
+      if (
+        itemPath &&
+        itemPath !== '#'
+      ) {
+        navigate(itemPath);
+      }
+
+      return;
+    }
+
+    /*
+     * Block every other sidebar item
+     * if the tutor profile does not exist.
+     */
+    if (!hasTutorProfile) {
+      navigate('/become-tutor');
+      return;
+    }
+
     setActiveMenu(itemName);
 
     if (
@@ -101,16 +205,22 @@ export default function TutorDashboard({
     <div
       className={`min-h-screen w-full font-sans antialiased flex ${bgClass}`}
     >
+
+      {/* Sidebar */}
       <TutorSidebar
         darkMode={darkMode}
         activeMenu={activeMenu}
         currentRole="tutor"
         setCurrentRole={setCurrentRole}
         handleNavigation={handleNavigation}
+        hasTutorProfile={hasTutorProfile}
+        profileLoading={profileLoading}
       />
 
+      {/* Main Content */}
       <main className="flex-grow p-6 lg:p-10 space-y-8 overflow-y-auto max-h-screen">
 
+        {/* Header */}
         <TutorHeader
           darkMode={darkMode}
           toggleDarkMode={toggleDarkMode}
@@ -119,20 +229,24 @@ export default function TutorDashboard({
           unreadCount={unreadCount}
         />
 
+        {/* Welcome */}
         <WelcomeSection
           darkMode={darkMode}
         />
 
+        {/* Statistics */}
         <TutorStats
           darkMode={darkMode}
           navigate={navigate}
         />
 
+        {/* Tuition Requests */}
         <TuitionRequests
           darkMode={darkMode}
           navigate={navigate}
         />
 
+        {/* Profile Reminder */}
         <ProfileReminder
           darkMode={darkMode}
         />

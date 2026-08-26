@@ -103,10 +103,12 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth.jwt')->prefix('tutor')->group(function () {
 
-        Route::post('/account', [TutorController::class, 'create'])
-            ->name('api.v1.tutor.account.create');
-    });
+    Route::post('/account', [TutorController::class, 'create'])
+        ->name('api.v1.tutor.account.create');
 
+    Route::get('/status', [TutorController::class, 'status'])
+        ->name('api.v1.tutor.status');
+});
     /*
     |--------------------------------------------------------------------------
     | Tutor Dashboard / Tutor-Only Routes

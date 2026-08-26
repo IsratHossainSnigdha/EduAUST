@@ -20,5 +20,9 @@ class DatabaseSeeder extends Seeder
 
         // Development/demo accounts
         $this->call(DemoUserSeeder::class);
+        $this->call([
+            TutorSeeder::class,
+            StudentSeeder::class,
+        ]);
     }
 }
