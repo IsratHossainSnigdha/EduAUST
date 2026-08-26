@@ -63,6 +63,16 @@ class TutorController extends Controller
     }
 
     /**
+     * Check whether the authenticated user has a tutor profile.
+     */
+    public function status(Request $request): JsonResponse
+    {
+        return response()->json([
+            'isTutor' => (bool) $request->user()->isTutor,
+        ]);
+    }
+
+    /**
      * Get tutors.
      */
     public function index(Request $request): JsonResponse
