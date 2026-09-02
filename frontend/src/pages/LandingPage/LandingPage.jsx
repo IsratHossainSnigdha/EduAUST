@@ -4,6 +4,7 @@ import {
   Search, Star, ChevronDown, ChevronUp, 
   GraduationCap, Users, ShieldCheck, Sun, Moon
 } from 'lucide-react';
+import './LandingPage.css';
 
 export default function LandingPage({ 
   darkMode, toggleDarkMode, 
@@ -17,10 +18,10 @@ export default function LandingPage({
   };
 
   return (
-    <div className={`min-h-screen font-sans antialiased transition-colors duration-300 ${themeClass}`}>
+    <div className={`landing-container ${themeClass}`}>
       {/* NAVBAR */}
-      <nav className={`sticky top-0 z-50 backdrop-blur-md border-b transition-colors duration-300 ${navClass}`}>
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <nav className={`landing-nav ${navClass}`}>
+        <div className="landing-nav-inner">
           
           {/* বাম পাশে লোগো */}
           <Link to="/" className="flex items-center gap-3">
@@ -75,8 +76,8 @@ export default function LandingPage({
       </section>
 
       {/* STATS SECTION */}
-      <section className="py-12 border-y transition-colors duration-300 border-emerald-100/50 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+      <section className={`landing-stats-section border-emerald-100/50 dark:border-slate-800`}>
+        <div className="landing-stats-grid">
           <div>
             <h3 className="text-4xl font-extrabold text-emerald-600">7,000+</h3>
             <p className={`text-xs font-bold uppercase tracking-wider mt-1 ${subTextClass}`}>Students</p>
@@ -108,17 +109,17 @@ export default function LandingPage({
           <p className={`mt-4 ${subTextClass}`}>Go from searching to studying together in three simple steps.</p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
-          <div className={`p-8 rounded-2xl border transition-colors duration-300 ${cardClass}`}>
+          <div className={`p-8 landing-card ${cardClass}`}>
             <div className="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 w-12 h-12 rounded-xl flex items-center justify-center font-bold mb-6">1</div>
             <h3 className="text-xl font-bold mb-3">Search for a tutor</h3>
             <p className={subTextClass}>Search by course or subject, view tutor profiles, and filter by department and availability.</p>
           </div>
-          <div className={`p-8 rounded-2xl border transition-colors duration-300 ${cardClass}`}>
+          <div className={`p-8 landing-card ${cardClass}`}>
             <div className="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 w-12 h-12 rounded-xl flex items-center justify-center font-bold mb-6">2</div>
             <h3 className="text-xl font-bold mb-3">Connect & book</h3>
             <p className={subTextClass}>Message your tutor directly and schedule a session that fits your schedule.</p>
           </div>
-          <div className={`p-8 rounded-2xl border transition-colors duration-300 ${cardClass}`}>
+          <div className={`p-8 landing-card ${cardClass}`}>
             <div className="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 w-12 h-12 rounded-xl flex items-center justify-center font-bold mb-6">3</div>
             <h3 className="text-xl font-bold mb-3">Learn & grow</h3>
             <p className={subTextClass}>Meet with your tutor, master the material, and boost your grades with peer support.</p>
@@ -135,28 +136,28 @@ export default function LandingPage({
             <p className={`text-sm mt-1 ${subTextClass}`}>Everything you need to find real academic support in one place</p>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
-            <div className={`p-6 rounded-2xl border flex gap-4 transition-colors duration-300 ${cardClass}`}>
+            <div className={`p-6 landing-card flex gap-4 ${cardClass}`}>
               <ShieldCheck className="text-emerald-600 shrink-0" size={24} />
               <div>
                 <h3 className="font-bold text-lg mb-2">Verified tutors</h3>
                 <p className={subTextClass}>Every tutor is a real, verified AUST student vetted through the platform, not a stranger from social media.</p>
               </div>
             </div>
-            <div className={`p-6 rounded-2xl border flex gap-4 transition-colors duration-300 ${cardClass}`}>
+            <div className={`p-6 landing-card flex gap-4 ${cardClass}`}>
               <Search className="text-emerald-600 shrink-0" size={24} />
               <div>
                 <h3 className="font-bold text-lg mb-2">Course-specific search</h3>
                 <p className={subTextClass}>Find tutors by exact course or subject and department, so you get help suited to your need.</p>
               </div>
             </div>
-            <div className={`p-6 rounded-2xl border flex gap-4 transition-colors duration-300 ${cardClass}`}>
+            <div className={`p-6 landing-card flex gap-4 ${cardClass}`}>
               <Star className="text-emerald-600 shrink-0" size={24} />
               <div>
                 <h3 className="font-bold text-lg mb-2">Ratings & reviews</h3>
                 <p className={subTextClass}>See ratings and reviews from fellow students before you book a session with a tutor.</p>
               </div>
             </div>
-            <div className={`p-6 rounded-2xl border flex gap-4 transition-colors duration-300 ${cardClass}`}>
+            <div className={`p-6 landing-card flex gap-4 ${cardClass}`}>
               <Users className="text-emerald-600 shrink-0" size={24} />
               <div>
                 <h3 className="font-bold text-lg mb-2">Direct, on-campus connection</h3>
@@ -174,14 +175,14 @@ export default function LandingPage({
           <h2 className="text-3xl font-bold mt-2">Trusted by AUST students</h2>
           <p className={`mt-4 ${subTextClass}`}>See what students and tutors have to say about their experience with EduAUST</p>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="landing-testimonials-grid">
           {[
             { quote: '"EduAUST helped me find a senior who\'d already aced Numerical Methods. My grade went from a C to an A in one semester."', name: "Rafid Ahmed", role: "CSE" },
             { quote: '"As a tutor, I finally have a real way to reach juniors who need help instead of relying on word of mouth."', name: "Nusrat Jahan", role: "Peer Tutor" },
             { quote: '"Searching by course code saved me so much time. I found exactly the right tutor in minutes."', name: "Tanvir Islam", role: "Student" },
             { quote: '"Knowing every tutor is verified made me comfortable reaching out. It feels safe and genuinely useful."', name: "Mehjabin Chowdhury", role: "Student" }
           ].map((item, idx) => (
-            <div key={idx} className={`p-6 rounded-2xl border flex flex-col justify-between transition-colors duration-300 min-h-[250px] ${cardClass}`}>
+            <div key={idx} className={`landing-testimonial-card ${cardClass}`}>
               <div className="flex flex-col flex-grow justify-between">
                 <p className="italic text-sm min-h-[110px] flex items-center">{item.quote}</p>
                 <ul className="flex items-center gap-0.5 mt-2">
@@ -215,7 +216,7 @@ export default function LandingPage({
               { q: "Is there a fee for using EduAUST?", a: "Using the platform is completely free. Peer session terms are mutually agreed upon by students." },
               { q: "Is my information kept private?", a: "Yes, your personal profile data is securely maintained and only accessible within the verified campus community." }
             ].map((faq, idx) => (
-              <div key={idx} className={`border rounded-xl overflow-hidden transition-all duration-300 ${cardClass}`}>
+              <div key={idx} className={`landing-card overflow-hidden ${cardClass}`}>
                 <button onClick={() => toggleFaq(idx)} className="w-full p-5 flex justify-between items-center text-left font-semibold">
                   <span>{faq.q}</span>
                   {openFaq === idx ? <ChevronUp size={18} className="text-emerald-600" /> : <ChevronDown size={18} />}
@@ -232,32 +233,32 @@ export default function LandingPage({
       </section>
 
       {/* FOOTER */}
-<footer
-  className={`py-12 border-t transition-colors duration-300 ${
-    darkMode
-      ? 'bg-slate-950 border-slate-800'
-      : 'bg-white border-emerald-100'
-  }`}
->
-  <div className="max-w-7xl mx-auto px-4 flex flex-col items-center text-center">
-    <div className="flex items-center gap-2 mb-4">
-      <div className="bg-emerald-600 text-white p-1.5 rounded-lg font-bold text-md">
-        E
-      </div>
-      <span className="font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-        EduAUST
-      </span>
-    </div>
+      <footer
+        className={`py-12 border-t transition-colors duration-300 ${
+          darkMode
+            ? 'bg-slate-950 border-slate-800'
+            : 'bg-white border-emerald-100'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 flex flex-col items-center text-center">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="bg-emerald-600 text-white p-1.5 rounded-lg font-bold text-md">
+              E
+            </div>
+            <span className="font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+              EduAUST
+            </span>
+          </div>
 
-    <p className={`text-sm ${subTextClass}`}>
-      Peer-to-peer learning right on campus.
-    </p>
+          <p className={`text-sm ${subTextClass}`}>
+            Peer-to-peer learning right on campus.
+          </p>
 
-    <p className={`mt-6 text-xs ${subTextClass}`}>
-      © 2026 EduAUST. All rights reserved.
-    </p>
-  </div>
-</footer>
+          <p className={`mt-6 text-xs ${subTextClass}`}>
+            © 2026 EduAUST. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

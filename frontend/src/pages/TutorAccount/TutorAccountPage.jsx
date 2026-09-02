@@ -15,6 +15,7 @@ import {
 
 import TutorSidebar from '../../components/Tutor/TutorSidebar';
 import TutorAccountForm from '../../components/Tutor/TutorAccountForm';
+import './TutorAccountPage.css'; // <-- External stylesheet imported here
 
 export default function TutorAccountPage({
   darkMode,
@@ -123,7 +124,7 @@ export default function TutorAccountPage({
   if (loading) {
     return (
       <div
-        className={`min-h-screen flex items-center justify-center ${bgClass}`}
+        className={`min-h-screen flex items-center justify-center tutor-account-container ${bgClass}`}
       >
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
@@ -144,7 +145,7 @@ export default function TutorAccountPage({
 
   return (
     <div
-      className={`min-h-screen w-full font-sans antialiased flex ${bgClass}`}
+      className={`min-h-screen w-full font-sans antialiased flex tutor-account-container ${bgClass}`}
     >
       <TutorSidebar
         darkMode={darkMode}

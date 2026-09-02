@@ -18,6 +18,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { apiGet } from '../../lib/auth';
+import './StudentDashboard.css'; // <-- External stylesheet imported here
 
 export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
@@ -148,7 +149,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
 
   return (
     <div
-      className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}
+      className={`min-h-screen w-full font-sans antialiased flex student-dashboard-container ${bgClass}`}
     >
       {/* SIDEBAR */}
       <aside

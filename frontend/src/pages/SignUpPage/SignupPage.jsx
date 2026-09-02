@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { saveAuth } from '../../lib/auth';
 import GoogleSignInButton from '../../components/GoogleSignInButton';
+import './SignUpPage.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
@@ -45,7 +46,6 @@ export default function SignUpPage({
   const [otpMessage, setOtpMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
- 
   useEffect(() => {
     if (location.state?.step === 2) {
       setSignUpStep(2);
@@ -55,7 +55,6 @@ export default function SignUpPage({
     }
   }, [location]);
 
-  
   useEffect(() => {
     fetch(`${API_BASE}/departments`)
       .then((res) => {
@@ -127,7 +126,6 @@ export default function SignUpPage({
   const textColor = darkMode ? "text-slate-200" : "text-slate-800";
   const labelColor = darkMode ? "text-slate-300" : "text-slate-700";
 
-  
   const handleAccountInfoSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
@@ -139,10 +137,6 @@ export default function SignUpPage({
     setEmailError('');
 
     let endpoint = '/auth/register/info';
-   
-    if (userRole === 'tutor') {
-     
-    }
 
     setLoading(true);
     const { ok, body } = await postJson(endpoint, {
@@ -157,9 +151,6 @@ export default function SignUpPage({
     setLoading(false);
 
     if (!ok) {
-      // An account already exists for these details: tutoring is added to an
-      // existing account rather than registered separately, so offer sign-in
-      // instead of leaving the applicant on a dead end.
       const taken = body?.errors?.email || body?.errors?.student_id || body?.errors?.phone;
       setExistingAccount(Boolean(taken));
       setFormError(
@@ -176,7 +167,6 @@ export default function SignUpPage({
     setSignUpStep(3);
   };
 
-  
   const handleVerifyCode = async () => {
     setOtpError('');
     setOtpMessage('');
@@ -201,7 +191,6 @@ export default function SignUpPage({
     setSignUpStep(4);
   };
 
- 
   const handleResend = async () => {
     setOtpError('');
     setOtpMessage('');
@@ -218,7 +207,6 @@ export default function SignUpPage({
     setOtpMessage('A new code has been sent to your email.');
   };
 
-  
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setPasswordError('');
@@ -250,14 +238,13 @@ export default function SignUpPage({
       return;
     }
 
-   
     saveAuth(body);
     setSignUpStep(5);
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center px-4 py-12 transition-colors duration-300 ${themeClass}`}>
-      <div className={`w-full max-w-lg p-10 rounded-3xl border shadow-xl relative transition-all duration-300 ${cardClass}`}>
+    <div className={`signup-container font-sans antialiased ${themeClass}`}>
+      <div className={`signup-card ${cardClass}`}>
 
         {signUpStep > 1 && signUpStep < 5 && (
           <button
@@ -324,7 +311,6 @@ export default function SignUpPage({
               <span className={`h-px flex-1 ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
             </div>
 
-            {/* Registering with an AUST Google account skips the email code. */}
             <GoogleSignInButton
               darkMode={darkMode}
               onError={setFormError}
