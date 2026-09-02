@@ -17,6 +17,7 @@ import WelcomeSection from '../../components/Tutor/WelcomeSection';
 import TutorStats from '../../components/Tutor/TutorStats';
 import TuitionRequests from '../../components/Tutor/TuitionRequests';
 import ProfileReminder from '../../components/Tutor/ProfileReminder';
+import './TutorDashboard.css'; // <-- External stylesheet imported here
 
 export default function TutorDashboard({
   darkMode,
@@ -66,7 +67,7 @@ export default function TutorDashboard({
    *
    * Response:
    * {
-   *     "isTutor": true
+   *    "isTutor": true
    * }
    */
   useEffect(() => {
@@ -203,7 +204,7 @@ export default function TutorDashboard({
 
   return (
     <div
-      className={`min-h-screen w-full font-sans antialiased flex ${bgClass}`}
+      className={`min-h-screen w-full font-sans antialiased flex tutor-dashboard-container ${bgClass}`}
     >
 
       {/* Sidebar */}

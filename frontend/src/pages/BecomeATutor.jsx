@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ShieldCheck, 
@@ -15,6 +15,7 @@ import {
   Globe,
   Share2
 } from 'lucide-react';
+import './BecomeATutor.css'; // আলাদা করা সিএসএস ফাইলটি ইম্পোর্ট করা হলো
 
 export default function BecomeATutor({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
@@ -29,15 +30,15 @@ export default function BecomeATutor({ darkMode, toggleDarkMode }) {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col justify-between font-sans transition-colors duration-300 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+    <div className={`become-tutor-container ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
       
       {/* Navbar Section */}
-      <header className={`border-b px-6 lg:px-16 py-4 flex items-center justify-between sticky top-0 z-50 transition-colors duration-300 ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
+      <header className={`become-tutor-navbar ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-          <div className="bg-emerald-600 text-white p-2 rounded-lg">
-            <ShieldCheck className="w-6 h-6" />
+          <div className="become-tutor-logo-badge">
+            <ShieldCheck className="w-6 h-6 text-white" />
           </div>
-          <span className="text-xl font-bold text-emerald-600 tracking-tight">EduAUST</span>
+          <span className="become-tutor-logo-text">EduAUST</span>
         </div>
 
         <div className="flex items-center gap-4">
@@ -59,7 +60,7 @@ export default function BecomeATutor({ darkMode, toggleDarkMode }) {
 
       {/* Main Content Container */}
       <main className="flex-grow flex justify-center px-4 py-10">
-        <div className={`w-full max-w-4xl rounded-2xl shadow-sm border p-8 md:p-12 transition-colors duration-300 ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
+        <div className={`become-tutor-card ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
           
           {/* Header Title */}
           <div className="text-center mb-10">
@@ -79,22 +80,22 @@ export default function BecomeATutor({ darkMode, toggleDarkMode }) {
 
             {/* 4 Feature Badges */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className={`p-4 rounded-xl text-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
+              <div className={`become-tutor-badge-box ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex justify-center mb-2 text-emerald-600 dark:text-emerald-400"><ShieldCheck className="w-6 h-6" /></div>
                 <h3 className={`font-bold text-xs mb-1 ${darkMode ? 'text-slate-200' : 'text-slate-900'}`}>Verify Students</h3>
                 <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We verify every tutor is an AUST student.</p>
               </div>
-              <div className={`p-4 rounded-xl text-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
+              <div className={`become-tutor-badge-box ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex justify-center mb-2 text-emerald-600 dark:text-emerald-400"><UserCheck className="w-6 h-6" /></div>
                 <h3 className={`font-bold text-xs mb-1 ${darkMode ? 'text-slate-200' : 'text-slate-900'}`}>Prevent Fake Accounts</h3>
                 <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We prevent fake or anonymous tutor accounts.</p>
               </div>
-              <div className={`p-4 rounded-xl text-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
+              <div className={`become-tutor-badge-box ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex justify-center mb-2 text-emerald-600 dark:text-emerald-400"><Lock className="w-6 h-6" /></div>
                 <h3 className={`font-bold text-xs mb-1 ${darkMode ? 'text-slate-200' : 'text-slate-900'}`}>Secure Communication</h3>
                 <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We ensure secure communication between students.</p>
               </div>
-              <div className={`p-4 rounded-xl text-center border transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
+              <div className={`become-tutor-badge-box ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex justify-center mb-2 text-emerald-600 dark:text-emerald-400"><Award className="w-6 h-6" /></div>
                 <h3 className={`font-bold text-xs mb-1 ${darkMode ? 'text-slate-200' : 'text-slate-900'}`}>Quality & Trust</h3>
                 <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We maintain the quality and credibility of the platform.</p>
@@ -163,7 +164,7 @@ export default function BecomeATutor({ darkMode, toggleDarkMode }) {
           </div>
 
           {/* Checkbox Agreement */}
-          <div className={`border rounded-xl p-4 mb-6 flex items-center gap-3 transition-colors ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+          <div className={`become-tutor-checkbox-box ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
             <input 
               type="checkbox" 
               id="terms" 
@@ -207,7 +208,7 @@ export default function BecomeATutor({ darkMode, toggleDarkMode }) {
       </main>
 
       {/* Footer Section */}
-      <footer className={`border-t px-6 lg:px-16 py-10 mt-10 transition-colors duration-300 ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
+      <footer className={`become-tutor-footer ${darkMode ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-sm">
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -235,7 +236,7 @@ export default function BecomeATutor({ darkMode, toggleDarkMode }) {
               <a href="#" className={`p-2 rounded-full border hover:text-emerald-600 shadow-xs transition ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-600'}`}><Globe className="w-4 h-4" /></a>
               <a href="#" className={`p-2 rounded-full border hover:text-emerald-600 shadow-xs transition ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-600'}`}><Share2 className="w-4 h-4" /></a>
             </div>
-            <p className={`text-[11px] ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>© 2024 EduAUST. All rights reserved.</p>
+            <p className={`text-[11px] ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>© 2026 EduAUST. All rights reserved.</p>
           </div>
         </div>
       </footer>

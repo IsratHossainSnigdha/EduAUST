@@ -17,6 +17,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { apiGet, apiPatch } from '../lib/auth';
+import './NotificationsPage.css'; // <-- External stylesheet imported here
 
 // How each backend category is rendered in the list.
 const CATEGORY_STYLES = {
@@ -42,8 +43,8 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState('Notifications');
   const [currentRole, setCurrentRole] = useState(() => {
-  return localStorage.getItem('eduAUST_role') || 'student';
-});
+    return localStorage.getItem('eduAUST_role') || 'student';
+  });
   const [activeTab, setActiveTab] = useState('All');
 
   // Live data from the API, scoped to whichever dashboard is active.
@@ -81,8 +82,7 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
     loadNotifications();
   }, [loadNotifications]);
 
-  // Mark every notification on this dashboard as read; the other dashboard is
-  // left untouched by the API.
+  // Mark every notification on this dashboard as read
   const handleMarkAllAsRead = async () => {
     const { ok } = await apiPatch(`/notifications/read-all?audience=${currentRole}`);
     if (ok) loadNotifications();
@@ -96,8 +96,8 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   };
 
   useEffect(() => {
-  localStorage.setItem('eduAUST_role', currentRole);
-}, [currentRole]);
+    localStorage.setItem('eduAUST_role', currentRole);
+  }, [currentRole]);
 
   const bgClass = darkMode ? 'bg-[#12161f] text-slate-100' : 'bg-[#f1f3f6] text-slate-900';
   const sidebarBg = darkMode ? 'bg-[#1a202c] border-slate-700/60' : 'bg-white border-slate-200 shadow-sm';
@@ -106,19 +106,19 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   const textSecondary = darkMode ? 'text-slate-300 font-medium' : 'text-slate-700 font-medium';
 
   const menuItems = [
-  {
-    name: 'Dashboard',
-    icon: LayoutDashboard,
-    path: currentRole === 'tutor' ? '/tutor-dashboard' : '/dashboard'
-  },
-  ...(currentRole === 'student'
-    ? [{ name: 'Find Tutors', icon: Search, path: '/find-tutors' }]
-    : [{ name: 'Tuition Requests', icon: BookOpen, badge: 6, path: '/tutor-requests' }]),
-  { name: 'Messages', icon: MessageSquare, badge: 2, path: '/messages' },
-  { name: 'Notifications', icon: Bell, badge: unreadCount || undefined, path: '/notifications' },
-  { name: 'Settings', icon: Settings, path: '/settings' },
-  { name: 'Help & Support', icon: HelpCircle, path: '/support' },
-];
+    {
+      name: 'Dashboard',
+      icon: LayoutDashboard,
+      path: currentRole === 'tutor' ? '/tutor-dashboard' : '/dashboard'
+    },
+    ...(currentRole === 'student'
+      ? [{ name: 'Find Tutors', icon: Search, path: '/find-tutors' }]
+      : [{ name: 'Tuition Requests', icon: BookOpen, badge: 6, path: '/tutor-requests' }]),
+    { name: 'Messages', icon: MessageSquare, badge: 2, path: '/messages' },
+    { name: 'Notifications', icon: Bell, badge: unreadCount || undefined, path: '/notifications' },
+    { name: 'Settings', icon: Settings, path: '/settings' },
+    { name: 'Help & Support', icon: HelpCircle, path: '/support' },
+  ];
 
   const totalShown = groups.reduce((sum, group) => sum + group.notifications.length, 0);
 
@@ -181,32 +181,28 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
             />
             <div>
               <h4 className={`text-xs ${textPrimary}`}>Ishrat Jahan Ifa</h4>
-             <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
-  {currentRole === 'student'
-    ? 'Student • CSE 3.1'
-    : 'Tutor'}
-</p>
+              <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
+                {currentRole === 'student' ? 'Student • CSE 3.1' : 'Tutor'}
+              </p>
             </div>
           </div>
           
           <button
-  onClick={() => {
-    if (currentRole === 'student') {
-      setCurrentRole('tutor');
-      localStorage.setItem('eduAUST_role', 'tutor');
-      navigate('/tutor-dashboard');
-    } else {
-      setCurrentRole('student');
-      localStorage.setItem('eduAUST_role', 'student');
-      navigate('/dashboard');
-    }
-  }}
-  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
->
-  {currentRole === 'student'
-    ? 'Switch to Tutor Dashboard'
-    : 'Switch to Student Dashboard'}
-</button>
+            onClick={() => {
+              if (currentRole === 'student') {
+                setCurrentRole('tutor');
+                localStorage.setItem('eduAUST_role', 'tutor');
+                navigate('/tutor-dashboard');
+              } else {
+                setCurrentRole('student');
+                localStorage.setItem('eduAUST_role', 'student');
+                navigate('/dashboard');
+              }
+            }}
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
+          >
+            {currentRole === 'student' ? 'Switch to Tutor Dashboard' : 'Switch to Student Dashboard'}
+          </button>
 
           <button
             onClick={() => navigate('/login')}
@@ -218,8 +214,8 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-grow p-6 lg:p-10 space-y-8 overflow-y-auto max-h-screen">
+      {/* Main Content Area with custom scrollbar class applied */}
+      <main className="flex-grow p-6 lg:p-10 space-y-8 overflow-y-auto max-h-screen notifications-container">
         
         {/* Top Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -240,11 +236,9 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
               <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120" alt="Profile" className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" />
               <div className="hidden sm:block">
                 <h5 className={`text-xs ${textPrimary}`}>Ishrat Jahan Ifa</h5>
-               <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
-  {currentRole === 'student'
-    ? 'Student • CSE 3.1'
-    : 'Tutor Dashboard'}
-</p>
+                <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
+                  {currentRole === 'student' ? 'Student • CSE 3.1' : 'Tutor Dashboard'}
+                </p>
               </div>
             </div>
           </div>
@@ -305,8 +299,6 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
               <h4 className={`text-sm font-bold ${textPrimary}`}>Loading notifications…</h4>
             </div>
           ) : totalShown > 0 ? (
-            // The API returns notifications already bucketed into Today,
-            // Yesterday, This Week and Earlier.
             groups.map((group) => (
               <section key={group.key} className="space-y-3">
                 <h3 className={`text-[11px] font-black uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>

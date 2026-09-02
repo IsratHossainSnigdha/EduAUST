@@ -1,0 +1,107 @@
+/* BecomeATutor Custom & Utility Styles */
+
+.become-tutor-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-family: inherit;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Navbar styles */
+.become-tutor-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom-width: 1px;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+@media (min-width: 1024px) {
+  .become-tutor-navbar {
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+}
+
+.become-tutor-logo-badge {
+  background-color: #059669;
+  color: #ffffff;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.become-tutor-logo-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #059669;
+  letter-spacing: -0.025em;
+}
+
+/* Main Box Card */
+.become-tutor-card {
+  width: 100%;
+  max-width: 56rem;
+  border-radius: 1rem;
+  border-width: 1px;
+  padding: 2rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+@media (min-width: 768px) {
+  .become-tutor-card {
+    padding: 3rem;
+  }
+}
+
+/* Feature Badges */
+.become-tutor-badge-box {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  border-width: 1px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Checkbox Section */
+.become-tutor-checkbox-box {
+  border-width: 1px;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Footer Section */
+.become-tutor-footer {
+  border-top-width: 1px;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+  margin-top: 2.5rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+@media (min-width: 1024px) {
+  .become-tutor-footer {
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+}

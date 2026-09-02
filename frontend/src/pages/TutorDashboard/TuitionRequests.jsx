@@ -8,8 +8,9 @@ import TuitionRequestList, {
 } from '../../components/Tutor/TuitionRequestList';
 import RequestNotice from '../../components/Tutor/RequestNotice';
 import RequestDetailsModal from '../../components/Tutor/RequestDetailsModal';
+import './TuitionRequests.css'; // <-- External stylesheet imported here
 
-export default function TutorRequests({
+export default function TuitionRequests({
   darkMode,
   toggleDarkMode,
 }) {
@@ -128,8 +129,8 @@ export default function TutorRequests({
         handleNavigation={handleNavigation}
       />
 
-      {/* Main Content */}
-      <main className="flex-grow p-6 lg:p-10 space-y-8 overflow-y-auto max-h-screen">
+      {/* Main Content with custom scrollbar class applied */}
+      <main className="flex-grow p-6 lg:p-10 space-y-8 overflow-y-auto max-h-screen tuition-requests-container">
         {/* Header */}
         <TutorHeader
           darkMode={darkMode}
