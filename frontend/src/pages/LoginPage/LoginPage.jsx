@@ -6,6 +6,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { apiPost, saveAuth, firstError } from '../../lib/auth';
 import GoogleSignInButton from '../../components/GoogleSignInButton';
+import './LoginPage.css';
 
 export default function LoginPage({
   darkMode,
@@ -54,11 +55,11 @@ export default function LoginPage({
   };
 
   return (
-    <div className={`min-h-screen w-full font-sans antialiased flex flex-col justify-between transition-colors duration-300 ${bgClass}`}>
-      <div className="flex-grow flex flex-col lg:flex-row w-full min-h-[calc(100vh-60px)]">
+    <div className={`login-container ${bgClass}`}>
+      <div className="login-body-wrapper">
 
         {/* LEFT SIDE: LOGIN FORM */}
-        <div className="w-full lg:w-[45%] flex flex-col justify-between p-8 sm:p-12 xl:p-16 relative">
+        <div className="login-form-side">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
               <div className="bg-emerald-600 text-white w-10 h-10 rounded-2xl font-black text-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">E</div>
@@ -66,7 +67,7 @@ export default function LoginPage({
             </div>
           </div>
 
-          <div className="my-auto py-10 max-w-md w-full mx-auto space-y-8">
+          <div className="login-form-content space-y-8">
             <div className="space-y-3">
               <h1 className={`text-3xl sm:text-4xl font-black tracking-tight ${welcomeTextClass}`}>Welcome back</h1>
               <p className={subTextClass}>Sign in to your EduAUST account.</p>
@@ -74,17 +75,17 @@ export default function LoginPage({
 
             {error && <p className="text-red-500 text-sm font-semibold bg-red-500/10 p-3 rounded-xl">{error}</p>}
 
-            <div className={`p-8 rounded-3xl border ${cardBgClass} shadow-xl`}>
+            <div className={`login-card ${cardBgClass} shadow-xl`}>
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
                   <label className={`text-xs font-bold uppercase ${labelTextClass}`}>AUST Email</label>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={`w-full p-3.5 rounded-2xl border ${inputBgClass}`} placeholder="ishrat.cse.20230204017@aust.edu" />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={`login-input ${inputBgClass}`} placeholder="ishrat.cse.20230204017@aust.edu" />
                 </div>
 
                 <div className="space-y-2">
                   <label className={`text-xs font-bold uppercase ${labelTextClass}`}>Password</label>
                   <div className="relative">
-                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required className={`w-full p-3.5 rounded-2xl border ${inputBgClass}`} placeholder="••••••••" />
+                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required className={`login-input ${inputBgClass}`} placeholder="••••••••" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-4 text-slate-400">
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -105,12 +106,13 @@ export default function LoginPage({
               <GoogleSignInButton darkMode={darkMode} onError={setError} />
             </div>
           </div>
+          <div />
         </div>
 
         {/* RIGHT SIDE: DESIGN */}
-        <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-center p-16 bg-[#0b1120] text-white overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0b1120] to-transparent z-10" />
-          <div className="relative z-20 space-y-6">
+        <div className="login-design-side">
+          <div className="login-design-gradient" />
+          <div className="login-design-content space-y-6">
             <h2 className="text-5xl font-extrabold leading-tight">Peer learning.<br /> Right <span className="text-emerald-500">on campus.</span></h2>
             <p className="text-slate-300 text-lg">Connect with verified peers, ace your courses, and achieve your goals together.</p>
 
@@ -139,6 +141,7 @@ export default function LoginPage({
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

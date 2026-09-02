@@ -1,0 +1,113 @@
+/* LoginPage.css */
+
+.login-container {
+  min-height: 100vh;
+  width: 100%;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+.login-body-wrapper {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: calc(100vh - 60px);
+}
+
+@media (min-width: 1024px) {
+  .login-body-wrapper {
+    flex-direction: row;
+  }
+}
+
+.login-form-side {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem;
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  .login-form-side {
+    padding: 3rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .login-form-side {
+    padding: 4rem;
+    width: 45%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .login-form-side {
+    width: 45%;
+  }
+}
+
+.login-form-content {
+  margin-top: auto;
+  margin-bottom: auto;
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+  max-width: 28rem;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.login-card {
+  padding: 2rem;
+  border-radius: 1.5rem;
+  border-width: 1px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.login-design-side {
+  display: none;
+  position: relative;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem;
+  background-color: #0b1120;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .login-design-side {
+    display: flex;
+    width: 55%;
+  }
+}
+
+.login-design-gradient {
+  position: absolute;
+  inset: 0px;
+  background-image: linear-gradient(to top, #0b1120, transparent);
+  z-index: 10;
+}
+
+.login-design-content {
+  position: relative;
+  z-index: 20;
+}
+
+/* Custom Input Focus Transitions */
+.login-input {
+  width: 100%;
+  padding: 0.875rem;
+  border-radius: 1rem;
+  border-width: 1px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}

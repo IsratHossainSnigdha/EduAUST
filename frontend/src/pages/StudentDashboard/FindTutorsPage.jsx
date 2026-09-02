@@ -23,6 +23,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { apiGet, clearAuth } from '../../lib/auth';
+import './FindTutorsPage.css';
 
 // Filter panel defaults; '' means "no filter applied".
 const EMPTY_FILTERS = {
@@ -159,15 +160,14 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
   const setDraftField = (field, value) => setDraft((prev) => ({ ...prev, [field]: value }));
 
   // Selects share the same look; kept here so the panel stays readable.
-  const selectClass = `w-full px-3 py-2 rounded-xl border text-xs outline-none font-medium ${
+  const selectClass = `find-tutors-select ${
     darkMode ? 'bg-[#12161f] border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-700'
   }`;
 
   return (
-    <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}>
+    <div className={`find-tutors-container font-sans antialiased transition-colors duration-300 ${bgClass}`}>
       
-      
-      <aside className={`w-64 shrink-0 flex flex-col justify-between p-6 border-r transition-colors duration-300 ${sidebarBg}`}>
+      <aside className={`find-tutors-sidebar ${sidebarBg}`}>
         <div>
           
           <div className="flex items-center gap-3 cursor-pointer mb-8" onClick={() => navigate('/')}>
@@ -175,7 +175,6 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             <span className="text-xl font-black bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">EduAUST</span>
           </div>
 
-          
           <nav className="space-y-1.5">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -211,7 +210,6 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             })}
           </nav>
         </div>
-        
         
         <div className={`pt-6 border-t ${darkMode ? 'border-slate-700/60' : 'border-slate-200'} space-y-4`}>
           <div className="flex items-center gap-3">
@@ -251,9 +249,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
         </div>
       </aside>
 
-      
-      <main className="flex-grow p-6 lg:p-10 space-y-8 overflow-y-auto max-h-screen">
-        
+      <main className="find-tutors-main space-y-8">
         
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -282,8 +278,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
           </div>
         </header>
 
-        
-        <div className={`p-4 rounded-2xl border flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm ${cardBg}`}>
+        <div className={`find-tutors-card flex flex-col md:flex-row items-center justify-between gap-4 ${cardBg}`}>
           <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border w-full md:w-96 ${darkMode ? 'bg-[#12161f] border-slate-700 text-white' : 'bg-slate-50 border-slate-200'}`}>
             <Search size={16} className="text-slate-400 shrink-0" />
             <input 
@@ -296,11 +291,9 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
           </div>
         </div>
 
-        
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
-          
-          <div className={`p-6 rounded-2xl border space-y-6 h-fit shadow-sm ${cardBg}`}>
+          <div className={`find-tutors-card space-y-6 h-fit ${cardBg}`}>
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-2">
                 <Filter size={16} className="text-emerald-500" />
@@ -314,7 +307,6 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
               </button>
             </div>
 
-            
             <div className="space-y-2">
               <label className={`text-xs font-bold ${textPrimary}`}>Subject</label>
               <select
@@ -407,10 +399,9 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </button>
           </div>
 
-          
           <div className="lg:col-span-3 space-y-6">
             {error && (
-              <div className={`p-4 rounded-2xl border border-rose-500/40 text-rose-500 text-xs font-semibold ${cardBg}`}>
+              <div className={`find-tutors-card border-rose-500/40 text-rose-500 text-xs font-semibold ${cardBg}`}>
                 {error}
               </div>
             )}
@@ -423,15 +414,14 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {loading ? (
-                <div className={`col-span-2 p-12 text-center rounded-2xl border ${cardBg}`}>
+                <div className={`find-tutors-card col-span-2 p-12 text-center ${cardBg}`}>
                   <Search size={40} className="mx-auto text-slate-400 mb-3 opacity-50 animate-pulse" />
                   <h4 className={`text-sm font-bold ${textPrimary}`}>Loading tutors…</h4>
                 </div>
               ) : tutors.length > 0 ? (
                 tutors.map((tutor) => (
-                  <div key={tutor.id} className={`p-6 rounded-2xl border shadow-sm flex flex-col justify-between space-y-4 transition hover:border-emerald-500/50 ${cardBg}`}>
+                  <div key={tutor.id} className={`find-tutors-card flex flex-col justify-between space-y-4 transition hover:border-emerald-500/50 ${cardBg}`}>
 
-                    {/* Header info */}
                     <div className="flex items-start gap-4">
                       {tutor.avatar ? (
                         <img src={tutor.avatar} alt={tutor.name} className="w-14 h-14 rounded-2xl object-cover ring-2 ring-emerald-500/20 shrink-0" />
@@ -454,7 +444,6 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                       </div>
                     </div>
 
-                    {/* Stats */}
                     <div className={`grid grid-cols-3 p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800/50 border-slate-700/60' : 'bg-slate-50 border-slate-200/80'}`}>
                       <div>
                         <p className="text-[10px] text-slate-400 font-medium">Experience</p>
@@ -470,7 +459,6 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                       </div>
                     </div>
 
-
                     <div className="flex flex-wrap gap-1.5">
                       {tutor.subjects.map((subject) => (
                         <span key={subject.id} className={`text-[10px] px-2.5 py-1 rounded-lg font-medium ${
@@ -480,7 +468,6 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                         </span>
                       ))}
                     </div>
-
 
                     <div className="flex items-center gap-3 pt-2">
                       <button
@@ -494,7 +481,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                   </div>
                 ))
               ) : (
-                <div className={`col-span-2 p-12 text-center rounded-2xl border ${cardBg}`}>
+                <div className={`find-tutors-card col-span-2 p-12 text-center ${cardBg}`}>
                   <Search size={40} className="mx-auto text-slate-400 mb-3 opacity-50" />
                   <h4 className={`text-sm font-bold ${textPrimary}`}>No tutors found</h4>
                   <p className={`text-xs mt-1 ${textSecondary}`}>Try adjusting your search query or filter options.</p>

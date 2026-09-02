@@ -29,6 +29,7 @@ import ChatHeader from '../../components/Messages/ChatHeader';
 import MessageBubble from '../../components/Messages/MessageBubble';
 import MessageComposer from '../../components/Messages/MessageComposer';
 import MessagesHeader from '../../components/Messages/MessagesHeader';
+import './MessagesPage.css';
 
 export default function MessagesPage({
   darkMode,
@@ -240,11 +241,11 @@ export default function MessagesPage({
 
   return (
     <div
-      className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 overflow-hidden ${bgClass}`}
+      className={`messages-container ${bgClass}`}
     >
       {/* Sidebar */}
       <aside
-        className={`w-64 shrink-0 flex flex-col justify-between p-6 border-r transition-colors duration-300 ${
+        className={`messages-sidebar ${
           darkMode
             ? 'bg-[#1a202c] border-slate-700/60'
             : 'bg-white border-slate-200 shadow-sm'
@@ -417,7 +418,7 @@ export default function MessagesPage({
       </aside>
 
       {/* Main */}
-      <main className="flex-grow flex flex-col h-screen p-4 lg:p-6 overflow-hidden space-y-4">
+      <main className="messages-main">
         <MessagesHeader
           darkMode={darkMode}
           toggleDarkMode={toggleDarkMode}
@@ -425,7 +426,7 @@ export default function MessagesPage({
 
         {/* Messaging layout */}
         <div
-          className={`rounded-2xl border grid grid-cols-1 md:grid-cols-12 overflow-hidden shadow-sm h-[calc(100vh-110px)] ${cardBg}`}
+          className={`messages-layout-grid ${cardBg}`}
         >
           <ConversationList
             darkMode={darkMode}
@@ -438,7 +439,7 @@ export default function MessagesPage({
           />
 
           {/* Chat pane */}
-          <div className="md:col-span-7 lg:col-span-8 flex flex-col h-full bg-slate-50/50 dark:bg-[#1a2230]/40 overflow-hidden">
+          <div className="chat-pane-container bg-slate-50/50 dark:bg-[#1a2230]/40">
             <ChatHeader
               activeChat={activeChatDetails}
               darkMode={darkMode}
@@ -452,7 +453,7 @@ export default function MessagesPage({
             )}
 
             {/* Messages */}
-            <div className="flex-grow p-4 overflow-y-auto space-y-3">
+            <div className="chat-messages-container space-y-3">
               {loadingThread ? (
                 <div className="text-center text-xs text-slate-400 py-8">
                   Loading messages…

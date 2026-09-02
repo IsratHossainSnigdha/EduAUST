@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { API_BASE, apiGet, apiPatch, firstError, isAuthenticated } from '../../lib/auth';
+import './CompleteProfilePage.css';
 
 /**
  * Collects the details a Google sign-in cannot provide.
@@ -112,10 +113,10 @@ export default function CompleteProfilePage({
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center px-4 py-12 ${themeClass}`}>
-      <div className={`w-full max-w-lg p-10 rounded-3xl border shadow-xl ${cardClass}`}>
+    <div className={`complete-profile-container ${themeClass}`}>
+      <div className={`complete-profile-card border shadow-xl ${cardClass}`}>
         <div className="text-center mb-8">
-          <div className="bg-emerald-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="complete-profile-icon-box">
             <Check size={24} strokeWidth={3} />
           </div>
           <h2 className={`text-2xl font-black tracking-tight ${textColor}`}>Almost there</h2>
@@ -130,7 +131,7 @@ export default function CompleteProfilePage({
           {user?.student_id ? (
             <div>
               <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelColor}`}>Student ID</label>
-              <input type="text" value={user.student_id} readOnly className={`w-full px-5 py-3.5 rounded-xl border opacity-70 ${inputBgClass}`} />
+              <input type="text" value={user.student_id} readOnly className={`complete-profile-input opacity-70 ${inputBgClass}`} />
             </div>
           ) : (
             <div>
@@ -140,7 +141,7 @@ export default function CompleteProfilePage({
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder="20230204017"
-                className={`w-full px-5 py-3.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${fieldErrors.student_id ? 'border-red-500' : ''} ${inputBgClass}`}
+                className={`complete-profile-input ${fieldErrors.student_id ? 'border-red-500' : ''} ${inputBgClass}`}
               />
               {fieldErrors.student_id && <p className="mt-2 text-xs text-red-500 font-medium">{fieldErrors.student_id}</p>}
             </div>
@@ -153,7 +154,7 @@ export default function CompleteProfilePage({
                 value={departmentId}
                 onChange={(e) => setDepartmentId(e.target.value)}
                 disabled={Boolean(user?.department_id)}
-                className={`w-full px-5 py-3.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-70 ${fieldErrors.department_id ? 'border-red-500' : ''} ${inputBgClass}`}
+                className={`complete-profile-input disabled:opacity-70 ${fieldErrors.department_id ? 'border-red-500' : ''} ${inputBgClass}`}
               >
                 <option value="">Select</option>
                 {departments.map((d) => (
@@ -168,7 +169,7 @@ export default function CompleteProfilePage({
               <select
                 value={semester}
                 onChange={(e) => setSemester(e.target.value)}
-                className={`w-full px-5 py-3.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${fieldErrors.semester ? 'border-red-500' : ''} ${inputBgClass}`}
+                className={`complete-profile-input ${fieldErrors.semester ? 'border-red-500' : ''} ${inputBgClass}`}
               >
                 <option value="">Select</option>
                 {['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2'].map((s) => (
@@ -187,7 +188,7 @@ export default function CompleteProfilePage({
               onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
               maxLength="11"
               placeholder="01XXXXXXXXX"
-              className={`w-full px-5 py-3.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${fieldErrors.phone ? 'border-red-500' : ''} ${inputBgClass}`}
+              className={`complete-profile-input ${fieldErrors.phone ? 'border-red-500' : ''} ${inputBgClass}`}
             />
             {fieldErrors.phone && <p className="mt-2 text-xs text-red-500 font-medium">{fieldErrors.phone}</p>}
           </div>
@@ -195,7 +196,7 @@ export default function CompleteProfilePage({
           <button
             type="submit"
             disabled={saving}
-            className="w-full mt-2 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold rounded-xl transition"
+            className="complete-profile-submit-btn"
           >
             {saving ? 'Saving…' : 'Finish and continue'}
           </button>
