@@ -1,0 +1,17 @@
+/* Custom scrollbar and layout polish for TuitionRequests */
+.tuition-requests-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tuition-requests-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tuition-requests-container::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+  border-radius: 9999px;
+}
+
+.tuition-requests-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.5);
+}
