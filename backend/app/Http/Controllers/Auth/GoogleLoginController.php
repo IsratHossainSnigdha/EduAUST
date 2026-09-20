@@ -43,8 +43,24 @@ class GoogleLoginController extends Controller
             ], 403);
         }
 
-        $existing = User::where('email', $email)->first();
+        $googleId = (string) ($claims['sub'] ?? '');
+
+        // Prefer Google's own identifier, which survives an address change,
+        // and fall back to the address for accounts linked before it was
+        // recorded or registered with a password.
+        $existing = ($googleId !== '' ? User::where('google_id', $googleId)->first() : null)
+            ?? User::where('email', $email)->first();
+
         $user = $existing ?? $this->register($email, (string) ($claims['name'] ?? ''));
+
+        // Signing in with Google is itself the link, so an account that
+        // registered with a password gains Google as a second way in.
+        if ($googleId !== '' && ! $user->hasGoogleLinked()) {
+            $user->forceFill([
+                'google_id' => $googleId,
+                'google_linked_at' => now(),
+            ])->save();
+        }
 
         // Google has confirmed the address, which is what account verification
         // means here — so a Google sign-up needs no emailed code.

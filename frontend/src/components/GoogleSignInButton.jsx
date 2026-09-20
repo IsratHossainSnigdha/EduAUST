@@ -12,7 +12,15 @@ const GSI_SRC = 'https://accounts.google.com/gsi/client';
  * script loads. Until then a matching button is shown in its place, so the
  * option is always visible rather than silently disappearing.
  */
-export default function GoogleSignInButton({ darkMode, onError, label = 'Continue with Google' }) {
+export default function GoogleSignInButton({
+  darkMode,
+  onError,
+  label = 'Continue with Google',
+  // Given a handler, the credential is passed to it instead of being
+  // exchanged for a session — which is how Settings links an account that is
+  // already signed in.
+  onCredential,
+}) {
   const containerRef = useRef(null);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -25,6 +33,16 @@ export default function GoogleSignInButton({ darkMode, onError, label = 'Continu
   handleCredential.current = async ({ credential }) => {
     onError?.('');
     setLoading(true);
+
+    if (onCredential) {
+      try {
+        await onCredential(credential);
+      } finally {
+        setLoading(false);
+      }
+
+      return;
+    }
 
     const { ok, body } = await apiPost('/auth/google', { id_token: credential });
 
@@ -69,6 +87,10 @@ export default function GoogleSignInButton({ darkMode, onError, label = 'Continu
           width: 320,
           text: 'continue_with',
           shape: 'pill',
+          // Without this Google labels the button in the browser's or the
+          // Google account's language, which on a Bangla locale left an
+          // otherwise English page with a Bangla button.
+          locale: 'en',
         });
 
         setGoogleRendered(true);

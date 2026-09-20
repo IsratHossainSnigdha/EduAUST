@@ -1,3 +1,4 @@
+import { useCurrentUser } from '../../lib/useCurrentUser';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -20,9 +21,10 @@ import {
   RotateCcw,
   Check,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Lock
 } from 'lucide-react';
-import { apiGet, clearAuth } from '../../lib/auth';
+import { apiGet, apiPost, clearAuth } from '../../lib/auth';
 
 // Filter panel defaults; '' means "no filter applied".
 const EMPTY_FILTERS = {
@@ -46,6 +48,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
+  const { user: currentUser } = useCurrentUser();
   const [activeMenu, setActiveMenu] = useState('Find Tutors');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentRole, setCurrentRole] = useState('student');
@@ -60,6 +63,90 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
   // Options for the dropdowns, and the listing itself.
   const [options, setOptions] = useState({ subjects: [], departments: [], languages: [] });
   const [tutors, setTutors] = useState([]);
+
+  // Per-tutor send state so each card can show its own progress without a
+  // page-wide spinner: 'sending' | 'sent' | an error message.
+  const [requestState, setRequestState] = useState({});
+  const [requestError, setRequestError] = useState('');
+
+  // What this student has already asked for, so each card can show its own
+  // state and only offer chat where a tutor has agreed to teach.
+  useEffect(() => {
+    let cancelled = false;
+
+    apiGet('/tuition-requests/mine').then(({ ok, body }) => {
+      if (cancelled || !ok) return;
+
+      const byTutor = {};
+
+      (body?.data ?? []).forEach((request) => {
+        // Keep the most favourable status per tutor: accepted wins.
+        if (byTutor[request.tutor_id] !== 'accepted') {
+          byTutor[request.tutor_id] = request.status;
+        }
+      });
+
+      setRequestState(byTutor);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /*
+   * Ask a tutor for tuition. The first subject on their profile is used, so
+   * the student can send from the card without another dialog.
+   */
+
+  /*
+   * Open the conversation with a tutor who has accepted. The backend refuses
+   * to create a thread without that agreement, so its message is shown if the
+   * state on screen has gone stale.
+   */
+  const handleMessageTutor = async (tutor) => {
+    setRequestError('');
+
+    const { ok, body } = await apiPost('/conversations', {
+      user_id: tutor.user_id,
+    });
+
+    if (!ok) {
+      setRequestError(
+        body?.message || 'You can message a tutor once they accept your request.'
+      );
+
+      return;
+    }
+
+    navigate('/messages');
+  };
+  const handleSendRequest = async (tutor) => {
+    const tutorId = tutor.user_id;
+
+    if (!tutorId) return;
+
+    setRequestError('');
+    setRequestState((state) => ({ ...state, [tutorId]: 'sending' }));
+
+    const { ok, body } = await apiPost('/tuition-requests', {
+      tutor_id: tutorId,
+      subject_id: tutor.subjects?.[0]?.id ?? null,
+    });
+
+    if (!ok) {
+      setRequestState((state) => ({ ...state, [tutorId]: undefined }));
+      setRequestError(
+        body?.errors?.tutor_id?.[0]
+          ?? body?.message
+          ?? 'Could not send your request. Please try again.'
+      );
+
+      return;
+    }
+
+    setRequestState((state) => ({ ...state, [tutorId]: 'pending' }));
+  };
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -143,8 +230,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
-    { name: 'Messages', icon: MessageSquare, badge: 2, path: '/messages' },
-    { name: 'Notifications', icon: Bell, badge: 3, path: '/notifications' },
+    { name: 'Messages', icon: MessageSquare, badge: undefined, path: '/messages' },
+    { name: 'Notifications', icon: Bell, badge: undefined, path: '/notifications' },
     { name: 'Settings', icon: Settings, path: '/settings' },
     { name: 'Help & Support', icon: HelpCircle, path: '/support' },
   ];
@@ -216,12 +303,12 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
         <div className={`pt-6 border-t ${darkMode ? 'border-slate-700/60' : 'border-slate-200'} space-y-4`}>
           <div className="flex items-center gap-3">
             <img
-              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"
+              src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'}
               alt="User"
               className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/30"
             />
             <div>
-              <h4 className={`text-xs ${textPrimary}`}>Ishrat Jahan Ifa</h4>
+              <h4 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h4>
               <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>Student.CSE 3.1</p>
             </div>
           </div>
@@ -273,9 +360,9 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
               <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
             </button>
             <div className={`flex items-center gap-3 pl-3 border-l ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
-              <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120" alt="Profile" className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" />
+              <img src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'} alt="Profile" className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" />
               <div className="hidden sm:block">
-                <h5 className={`text-xs ${textPrimary}`}>Ishrat Jahan Ifa</h5>
+                <h5 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h5>
                 <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>Student.CSE 3.1</p>
               </div>
             </div>
@@ -421,6 +508,12 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
               </p>
             )}
 
+            {requestError && (
+              <div className="mb-4 p-3 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-500 text-xs font-semibold">
+                {requestError}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {loading ? (
                 <div className={`col-span-2 p-12 text-center rounded-2xl border ${cardBg}`}>
@@ -484,10 +577,39 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
 
                     <div className="flex items-center gap-3 pt-2">
                       <button
-                        onClick={() => navigate('/messages')}
-                        className="flex-grow py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm"
+                        onClick={() => handleMessageTutor(tutor)}
+                        disabled={requestState[tutor.user_id] !== 'accepted'}
+                        title={
+                          requestState[tutor.user_id] === 'accepted'
+                            ? 'Open your conversation'
+                            : 'Available once this tutor accepts your request'
+                        }
+                        className={`flex-grow py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm ${
+                          requestState[tutor.user_id] === 'accepted'
+                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                            : 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
+                        }`}
                       >
-                        <MessageSquare size={14} /> Message Tutor
+                        {requestState[tutor.user_id] === 'accepted'
+                          ? <><MessageSquare size={14} /> Message Tutor</>
+                          : <><Lock size={13} /> Chat locked</>}
+                      </button>
+
+                      <button
+                        onClick={() => handleSendRequest(tutor)}
+                        disabled={Boolean(requestState[tutor.user_id])}
+                        className={`flex-grow py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border ${
+                          requestState[tutor.user_id]
+                            ? 'border-slate-300 dark:border-slate-700 text-slate-500 cursor-default'
+                            : 'border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+                        } disabled:opacity-80`}
+                      >
+                        {{
+                          sending: 'Sending…',
+                          pending: 'Awaiting reply',
+                          accepted: 'Accepted ✓',
+                          declined: 'Declined',
+                        }[requestState[tutor.user_id]] || 'Request Tuition'}
                       </button>
                     </div>
 

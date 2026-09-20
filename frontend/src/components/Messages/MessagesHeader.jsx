@@ -1,3 +1,4 @@
+import { useCurrentUser } from '../../lib/useCurrentUser';
 import React from 'react';
 import { Bell, Moon, Sun, ChevronDown } from 'lucide-react';
 
@@ -5,6 +6,7 @@ export default function MessagesHeader({
   darkMode,
   toggleDarkMode,
 }) {
+  const { user: currentUser } = useCurrentUser();
   const textPrimary = darkMode
     ? 'text-white font-extrabold'
     : 'text-slate-900 font-extrabold';
@@ -63,14 +65,14 @@ export default function MessagesHeader({
         {/* Profile */}
         <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200 dark:border-slate-800">
           <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120"
+            src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'}
             alt="Profile"
             className="w-8 h-8 rounded-full object-cover ring-2 ring-emerald-500/20"
           />
 
           <div className="hidden sm:block">
             <h5 className={`text-xs ${textPrimary}`}>
-              Ishrat Jahan Ifa
+              {currentUser?.name || 'Loading…'}
             </h5>
 
             <p

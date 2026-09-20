@@ -16,16 +16,44 @@ import {
   Share2
 } from 'lucide-react';
 
+import { isAuthenticated, apiGet } from '../lib/auth';
+
 export default function BecomeATutor({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const [isChecked, setIsChecked] = useState(false);
+  // Someone already signed in does not register again: they only add the
+  // tutoring details their account is still missing.
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated()) return undefined;
+
+    let cancelled = false;
+
+    apiGet('/auth/me').then(({ ok, body }) => {
+      if (cancelled || !ok) return;
+
+      // An account that already tutors has nothing to apply for.
+      if (body?.user?.isTutor) navigate('/tutor-dashboard', { replace: true });
+      else setSignedIn(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   const handleProceed = () => {
-    if (isChecked) {
-      navigate('/signup', { state: { step: 2, role: 'student' } });
-    } else {
+    if (!isChecked) {
       alert('Please agree to the terms & conditions before proceeding.');
+      return;
     }
+
+    // Signed in already: go straight to the tutoring details form, which
+    // upgrades the existing account instead of creating a second one.
+    navigate(signedIn ? '/tutor/create-profile' : '/signup', {
+      state: signedIn ? undefined : { step: 2, role: 'student' },
+    });
   };
 
   return (
@@ -184,7 +212,7 @@ export default function BecomeATutor({ darkMode, toggleDarkMode }) {
                 isChecked ? 'bg-emerald-600 hover:bg-emerald-700 cursor-pointer' : 'bg-emerald-400/60 cursor-not-allowed'
               }`}
             >
-              <span>Proceed to Student Sign Up</span>
+              <span>{signedIn ? 'Continue to Tutor Application' : 'Proceed to Student Sign Up'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -200,7 +228,11 @@ export default function BecomeATutor({ darkMode, toggleDarkMode }) {
           {/* Footer Note inside card */}
           <div className={`flex items-center justify-center gap-2 mt-6 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
             <Info className="w-4 h-4" />
-            <span>Already have a student account? <span onClick={() => navigate('/login')} className="text-emerald-600 dark:text-emerald-400 font-medium cursor-pointer hover:underline">Log in</span> first, then apply to become a tutor from your dashboard.</span>
+            {signedIn ? (
+              <span>You are signed in — your existing details will be used, so you only need to add your tutoring information.</span>
+            ) : (
+              <span>Already have a student account? <span onClick={() => navigate('/login')} className="text-emerald-600 dark:text-emerald-400 font-medium cursor-pointer hover:underline">Log in</span> first, then apply to become a tutor from your dashboard.</span>
+            )}
           </div>
 
         </div>

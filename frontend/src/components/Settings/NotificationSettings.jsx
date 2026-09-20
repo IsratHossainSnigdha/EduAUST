@@ -1,3 +1,4 @@
+import { usePushNotifications } from '../../lib/usePushNotifications';
 import React, { useState } from 'react';
 
 function Toggle({
@@ -29,6 +30,7 @@ function Toggle({
 export default function NotificationSettings({
   darkMode,
 }) {
+  const { permission, request, supported } = usePushNotifications({ enabled: false });
   const [messages, setMessages] =
     useState(true);
 
@@ -40,6 +42,46 @@ export default function NotificationSettings({
 
   return (
     <div className="space-y-4">
+      {/* Desktop notifications */}
+      <div
+        className={`p-4 rounded-xl border ${
+          darkMode ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-slate-50/60'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className={`text-xs font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              Desktop notifications
+            </h3>
+            <p className={`text-[11px] mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              {!supported
+                ? 'Your browser does not support desktop notifications.'
+                : permission === 'granted'
+                  ? 'On — new requests and messages appear while EduAUST is open.'
+                  : permission === 'denied'
+                    ? 'Blocked. Allow notifications for this site in your browser settings.'
+                    : 'Get alerted about new requests and messages while EduAUST is open.'}
+            </p>
+          </div>
+
+          {supported && permission === 'default' && (
+            <button
+              type="button"
+              onClick={request}
+              className="shrink-0 py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition"
+            >
+              Enable
+            </button>
+          )}
+
+          {permission === 'granted' && (
+            <span className="shrink-0 text-[10px] font-extrabold px-2 py-1 rounded bg-emerald-500/10 text-emerald-500">
+              Enabled
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h3

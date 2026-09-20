@@ -17,7 +17,14 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
-import { apiGet } from '../../lib/auth';
+import { apiGet, isAuthenticated, isUnauthenticated, clearAuth } from '../../lib/auth';
+
+// Status pill colours for the student's own requests.
+const REQUEST_STATUS_STYLES = {
+  pending: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/10',
+  accepted: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/10',
+  declined: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/10',
+};
 
 export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
@@ -25,6 +32,69 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   const [activeMenu, setActiveMenu] = useState('Dashboard');
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentRole, setCurrentRole] = useState('student');
+  // The signed-in user, so the profile card and the tutor switch reflect the
+  // real account rather than a placeholder.
+  const [me, setMe] = useState(null);
+
+  useEffect(() => {
+    // Without a session this page used to render anyway: the profile card
+    // showed placeholder text and every action quietly fell back to the
+    // signed-out path, which is why "Become a Tutor" led to registration.
+    if (!isAuthenticated()) {
+      navigate('/login', { replace: true });
+
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    apiGet('/auth/me').then(({ ok, body }) => {
+      if (cancelled) return;
+
+      if (!ok) {
+        // An expired or revoked token is a dead session, not a blank profile.
+        if (isUnauthenticated(body)) {
+          clearAuth();
+          navigate('/login', { replace: true });
+        }
+
+        return;
+      }
+
+      setMe(body?.user ?? null);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  // The student's own requests, so the dashboard reports real status rather
+  // than two fixed examples.
+  const [myRequests, setMyRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all([
+      apiGet('/tuition-requests/mine'),
+      apiGet('/conversations/unread-count'),
+    ]).then(([requests, messages]) => {
+      if (cancelled) return;
+
+      if (requests.ok) setMyRequests((requests.body?.data ?? []).slice(0, 4));
+      if (messages.ok) setUnreadMessages(messages.body?.unread_total ?? 0);
+
+      setLoadingRequests(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
 
   const bgClass = darkMode ? 'bg-[#0b0f19] text-slate-150' : 'bg-slate-50 text-slate-950';
   const sidebarBg = darkMode ? 'bg-[#111827] border-slate-800' : 'bg-white border-slate-100';
@@ -38,7 +108,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
     { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
-    { name: 'Messages', icon: MessageSquare, badge: 3, path: '/messages' },
+    { name: 'Messages', icon: MessageSquare, badge: unreadMessages || undefined, path: '/messages' },
     { name: 'Notifications', icon: Bell, badge: unreadCount || undefined, path: '/notifications' },
     { name: 'Settings', icon: Settings, path: '#' },
     { name: 'Help & Support', icon: HelpCircle, path: '#' },
@@ -113,35 +183,38 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
         <div className="pt-6 border-t border-slate-100 dark:border-slate-800/80 space-y-4">
           <div className="flex items-center gap-3">
             <img
-              src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120"
+              src={me?.profile_picture || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120'}
               alt="User"
               className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/30"
             />
             <div>
-              <h4 className={`text-xs ${textPrimary}`}>Ishrat Jahan Ifa</h4>
+              <h4 className={`text-xs ${textPrimary}`}>{me?.name ?? 'Student'}</h4>
               <p className={`text-[10px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                {currentRole === 'student' ? 'Student • CSE 3.1' : 'Tutor Mode'}
+                {currentRole === 'student' ? `Student • ${me?.semester ?? ''}` : 'Tutor Mode'}
               </p>
             </div>
           </div>
 
           <button
             onClick={() => {
-              if (currentRole === 'student') {
-                setCurrentRole('tutor');
-                navigate('/tutor-dashboard');
-              } else {
-                setCurrentRole('student');
-                navigate('/dashboard');
+              // Only an account that actually tutors has a tutor dashboard to
+              // reach; anyone else is sent to sign up as one rather than being
+              // bounced there by the route guard.
+              if (!me?.isTutor) {
+                navigate('/become-a-tutor');
+                return;
               }
+
+              setCurrentRole('tutor');
+              navigate('/tutor-dashboard');
             }}
             className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition"
           >
-            {currentRole === 'student' ? 'Switch to Tutor Dashboard' : 'Switch to Student Dashboard'}
+            {me?.isTutor ? 'Switch to Tutor Dashboard' : 'Become a Tutor'}
           </button>
 
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => { clearAuth(); navigate('/login', { replace: true }); }}
             className="w-full border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-2"
           >
             <LogOut size={14} />
@@ -181,9 +254,9 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
             </button>
 
             <div className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800">
-              <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120" alt="Profile" className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" />
+              <img src={me?.profile_picture || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120'} alt="Profile" className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" />
               <div className="hidden sm:block">
-                <h5 className={`text-xs ${textPrimary}`}>Ishrat Jahan Ifa</h5>
+                <h5 className={`text-xs ${textPrimary}`}>{me?.name ?? 'Student'}</h5>
                 <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-medium' : 'text-slate-500 font-medium'}`}>CSE • Semester 3.1</p>
               </div>
               <ChevronDown size={14} className="text-slate-450 dark:text-slate-350" />
@@ -200,7 +273,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
 
         <div className="space-y-1">
           <h1 className={`text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-            Let's Connect, Ishrat! <span className="animate-bounce">👋</span>
+            Let's Connect, {me?.name?.split(' ')[0] ?? 'there'}! <span className="animate-bounce">👋</span>
           </h1>
           <p className={`text-xs sm:text-sm ${textSecondary}`}>Find the right tutor and ace your studies.</p>
         </div>
@@ -209,8 +282,8 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
           {[
             { title: 'Find Tutors', desc: 'Search by course or subject', icon: Search, color: 'text-blue-500 bg-blue-500/10 border-blue-500/15', path: '/find-tutors' },
             { title: 'Saved Tutors', desc: 'View your saved tutor list', icon: Heart, color: 'text-pink-500 bg-pink-500/10 border-pink-500/15', path: '#' },
-            { title: 'My Requests', desc: 'Check the status of your requests', icon: GitPullRequest, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/15', badge: 2, path: '#' },
-            { title: 'Messages', desc: 'Chat with active tutors', icon: MessageSquare, color: 'text-violet-500 bg-violet-500/10 border-violet-500/15', badge: 3, path: '/messages' }
+            { title: 'My Requests', desc: 'Check the status of your requests', icon: GitPullRequest, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/15', badge: myRequests.filter((r) => r.status === 'pending').length || undefined, path: '#' },
+            { title: 'Messages', desc: 'Chat with active tutors', icon: MessageSquare, color: 'text-violet-500 bg-violet-500/10 border-violet-500/15', badge: unreadMessages || undefined, path: '/messages' }
           ].map((card, idx) => {
             const Icon = card.icon;
             return (
@@ -256,42 +329,46 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
               </div>
 
               <div className="space-y-3">
-                {[
-                  {
-                    subject: 'Data Structures',
-                    time: 'Requested 2 hours ago',
-                    status: 'Waiting',
-                    statusColor: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/10',
-                  },
-                  {
-                    subject: 'Discrete Mathematics',
-                    time: 'Requested yesterday',
-                    status: 'Accepted',
-                    statusColor: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/10',
-                  },
-                ].map((req, index) => (
+                {loadingRequests && (
+                  [0, 1].map((row) => (
+                    <div
+                      key={row}
+                      className={`h-14 rounded-xl animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}
+                    />
+                  ))
+                )}
+
+                {!loadingRequests && myRequests.length === 0 && (
+                  <div className={`py-8 text-center ${textMuted}`}>
+                    <BookOpen size={24} className="mx-auto mb-2 text-emerald-500/60" />
+                    <p className="text-xs font-bold">No requests yet</p>
+                    <p className="text-[11px] mt-1">Find a tutor and send your first request.</p>
+                  </div>
+                )}
+
+                {!loadingRequests && myRequests.map((req) => (
                   <div
-                    key={index}
+                    key={req.id}
                     className={`flex items-center justify-between p-3.5 rounded-xl border transition-colors ${darkMode ? 'bg-slate-800/70 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${darkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600'}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`p-2 rounded-lg shrink-0 ${darkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600'}`}>
                         <BookOpen size={14} />
                       </div>
 
-                      <div>
-                        <h4 className={`text-xs font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                          {req.subject}
+                      <div className="min-w-0">
+                        <h4 className={`text-xs font-black truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                          {req.subject ?? 'General tutoring'}
                         </h4>
 
-                        <p className={`text-[10px] ${textMuted}`}>
-                          {req.time}
+                        <p className={`text-[10px] truncate ${textMuted}`}>
+                          {req.tutor_name ?? 'Tutor'}
                         </p>
                       </div>
                     </div>
 
-                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded border ${req.statusColor}`}>
-                      {req.status}
+                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded border capitalize ${REQUEST_STATUS_STYLES[req.status] ?? REQUEST_STATUS_STYLES.pending}`}>
+                      {req.status === 'pending' ? 'Waiting' : req.status}
                     </span>
                   </div>
                 ))}

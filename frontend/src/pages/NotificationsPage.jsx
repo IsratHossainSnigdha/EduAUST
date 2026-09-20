@@ -1,3 +1,4 @@
+import { useCurrentUser } from '../lib/useCurrentUser';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -40,6 +41,7 @@ const TABS = [
 
 export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
+  const { user: currentUser } = useCurrentUser();
   const [activeMenu, setActiveMenu] = useState('Notifications');
   const [currentRole, setCurrentRole] = useState(() => {
   return localStorage.getItem('eduAUST_role') || 'student';
@@ -175,12 +177,12 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
         <div className={`pt-6 border-t ${darkMode ? 'border-slate-700/60' : 'border-slate-200'} space-y-4`}>
           <div className="flex items-center gap-3">
             <img
-              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"
+              src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'}
               alt="User"
               className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/30"
             />
             <div>
-              <h4 className={`text-xs ${textPrimary}`}>Ishrat Jahan Ifa</h4>
+              <h4 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h4>
              <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
   {currentRole === 'student'
     ? 'Student • CSE 3.1'
@@ -237,9 +239,9 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
               <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
             </button>
             <div className={`flex items-center gap-3 pl-3 border-l ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
-              <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120" alt="Profile" className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" />
+              <img src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'} alt="Profile" className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" />
               <div className="hidden sm:block">
-                <h5 className={`text-xs ${textPrimary}`}>Ishrat Jahan Ifa</h5>
+                <h5 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h5>
                <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
   {currentRole === 'student'
     ? 'Student • CSE 3.1'

@@ -9,10 +9,12 @@ use App\Http\Controllers\Auth\RegisterInfoController;
 use App\Http\Controllers\Auth\RegisterSecurityController;
 use App\Http\Controllers\Auth\RegisterVerifyController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\Auth\SignInMethodController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\TuitionRequestController;
 use App\Http\Controllers\TutorController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +44,10 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/', [ConversationController::class, 'store'])
             ->name('api.v1.conversations.store');
+
+        // Everyone the user can see in the message list, locked or not.
+        Route::get('/contacts', [ConversationController::class, 'contacts'])
+            ->name('api.v1.conversations.contacts');
 
         Route::get('/unread-count', [ConversationController::class, 'unreadCount'])
             ->name('api.v1.conversations.unread-count');
@@ -109,6 +115,31 @@ Route::prefix('v1')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Tuition Requests
+    |--------------------------------------------------------------------------
+    | Students send requests; tutors read and answer their own.
+    */
+
+    Route::middleware('auth.jwt')->prefix('tuition-requests')->group(function () {
+
+        Route::get('/mine', [TuitionRequestController::class, 'mine'])
+            ->name('api.v1.tuition-requests.mine');
+
+        Route::post('/', [TuitionRequestController::class, 'store'])
+            ->middleware('throttle:20,1')
+            ->name('api.v1.tuition-requests.store');
+    });
+
+    Route::middleware(['auth.jwt', 'tutor'])->prefix('tuition-requests')->group(function () {
+
+        Route::get('/', [TuitionRequestController::class, 'index'])
+            ->name('api.v1.tuition-requests.index');
+
+        Route::patch('/{tuitionRequest}', [TuitionRequestController::class, 'update'])
+            ->name('api.v1.tuition-requests.update');
+    });
+    /*
+    |--------------------------------------------------------------------------
     | Tutor Dashboard / Tutor-Only Routes
     |--------------------------------------------------------------------------
     | Requires both authentication AND isTutor = true.
@@ -118,6 +149,10 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/dashboard', [TutorController::class, 'dashboard'])
             ->name('api.v1.tutor.dashboard');
+
+        // Edit the public tutoring details.
+        Route::patch('/profile', [TutorController::class, 'updateProfile'])
+            ->name('api.v1.tutor.profile.update');
     });
 
     /*
@@ -182,6 +217,24 @@ Route::prefix('v1')->group(function () {
             // Supplies the details a Google sign-in cannot provide.
             Route::patch('/profile', [ProfileController::class, 'update'])
                 ->name('api.v1.auth.profile.update');
+
+            /*
+             * Sign-in methods: whichever way the account was created, the
+             * holder can add the other here.
+             */
+            Route::get('/sign-in-methods', [SignInMethodController::class, 'index'])
+                ->name('api.v1.auth.sign-in-methods.index');
+
+            Route::post('/password', [SignInMethodController::class, 'setPassword'])
+                ->middleware('throttle:10,1')
+                ->name('api.v1.auth.password.set');
+
+            Route::post('/google/link', [SignInMethodController::class, 'linkGoogle'])
+                ->middleware('throttle:10,1')
+                ->name('api.v1.auth.google.link');
+
+            Route::delete('/google/link', [SignInMethodController::class, 'unlinkGoogle'])
+                ->name('api.v1.auth.google.unlink');
         });
     });
 });

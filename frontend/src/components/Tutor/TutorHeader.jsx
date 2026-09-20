@@ -1,11 +1,17 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Search,
   Bell,
   ChevronDown,
   Sun,
   Moon,
+  User,
+  LogOut,
+  Settings as SettingsIcon,
 } from 'lucide-react';
+import UserAvatar from '../UserAvatar';
+import { useCurrentUser } from '../../lib/useCurrentUser';
+import { clearAuth } from '../../lib/auth';
 import { useNavigate } from 'react-router-dom';
 
 export default function TutorHeader({
@@ -17,6 +23,33 @@ export default function TutorHeader({
   showSearch = true,
 }) {
   const navigate = useNavigate();
+  const { user: currentUser } = useCurrentUser();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close the menu when the pointer goes elsewhere, as a menu that stays open
+  // over the page it links to is worse than no menu.
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    const onPointerDown = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuOpen]);
 
   const inputBg = darkMode
     ? 'bg-[#111827] border-slate-700 text-white placeholder-slate-400'
@@ -151,37 +184,107 @@ export default function TutorHeader({
             <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.42 1.42-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-2v-.08a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.42-1.42.06-.06A1.7 1.7 0 0 0 8.4 15a1.7 1.7 0 0 0-1.56-1.03H6.75v-2h.09A1.7 1.7 0 0 0 8.4 10.94a1.7 1.7 0 0 0-.34-1.88L8 9l1.42-1.42.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 12.39 6.4V6h2v.4a1.7 1.7 0 0 0 1.03 1.58 1.7 1.7 0 0 0 1.88-.34l.06-.06L18.78 9l-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 19.94 12h.06v2h-.06A1.7 1.7 0 0 0 19.4 15Z" />
           </svg>
         </button>
+        {/* Profile menu */}
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800 rounded-xl py-1 pr-2 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition"
+          >
+            <UserAvatar user={currentUser} size={36} className="ring-2 ring-emerald-500/20" />
 
-        {/* Profile */}
-        <div className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800">
-          <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120"
-            alt="Profile"
-            className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20"
-          />
+            <div className="hidden sm:block min-w-0 text-left">
+              <h5 className={`text-xs truncate max-w-[180px] ${textPrimary}`}>
+                {currentUser?.name || 'Loading…'}
+              </h5>
 
-          <div className="hidden sm:block">
-            <h5
-              className={`text-xs ${textPrimary}`}
-            >
-              Nusrat Jahan
-            </h5>
+              <p
+                className={`text-[10px] ${
+                  darkMode
+                    ? 'text-slate-400 font-medium'
+                    : 'text-slate-500 font-medium'
+                }`}
+              >
+                {currentUser?.isTutor ? 'Tutor' : 'Student'}
+              </p>
+            </div>
 
-            <p
-              className={`text-[10px] ${
+            <ChevronDown
+              size={14}
+              className={`text-slate-450 dark:text-slate-350 transition-transform ${
+                menuOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {menuOpen && (
+            <div
+              role="menu"
+              className={`absolute right-0 mt-2 w-60 rounded-2xl border shadow-xl overflow-hidden z-50 ${
                 darkMode
-                  ? 'text-slate-400 font-medium'
-                  : 'text-slate-500 font-medium'
+                  ? 'bg-[#111827] border-slate-800'
+                  : 'bg-white border-slate-200'
               }`}
             >
-              Tutor
-            </p>
-          </div>
+              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+                <p className={`text-xs font-black truncate ${textPrimary}`}>
+                  {currentUser?.name || '—'}
+                </p>
+                <p className="text-[10px] text-slate-400 truncate">
+                  {currentUser?.email || ''}
+                </p>
+              </div>
 
-          <ChevronDown
-            size={14}
-            className="text-slate-450 dark:text-slate-350"
-          />
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate('/settings');
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-bold transition ${
+                  darkMode
+                    ? 'text-slate-200 hover:bg-slate-800'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <User size={14} className="text-emerald-500" />
+                Edit profile
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate('/settings');
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-bold transition ${
+                  darkMode
+                    ? 'text-slate-200 hover:bg-slate-800'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <SettingsIcon size={14} className="text-emerald-500" />
+                Settings
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  clearAuth();
+                  navigate('/login', { replace: true });
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition border-t border-slate-100 dark:border-slate-800"
+              >
+                <LogOut size={14} />
+                Log out
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

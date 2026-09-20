@@ -1,3 +1,4 @@
+import { usePushNotifications } from './lib/usePushNotifications';
 import React, { useEffect, useState } from 'react';
 
 import {
@@ -29,6 +30,10 @@ import SettingsPage from './pages/Settings/SettingsPage';
 import SupportPage from './pages/SupportPage';
 
 export default function App() {
+  // Raise a desktop notification for anything that arrives while the app is
+  // open, for whichever account is signed in.
+  usePushNotifications();
+
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem(
       'eduAust_darkMode'
