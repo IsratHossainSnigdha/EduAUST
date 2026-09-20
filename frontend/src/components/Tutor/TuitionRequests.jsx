@@ -1,31 +1,15 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Inbox } from 'lucide-react';
 import RequestItem from './RequestItem';
 
 export default function TuitionRequests({
   darkMode,
   navigate,
+  requests,
+  loading,
+  onRespond,
 }) {
-  const requests = [
-    {
-      subject: 'Data Structures',
-      level: 'University Level',
-      time: '2 hours ago',
-      status: 'New',
-    },
-    {
-      subject: 'Discrete Mathematics',
-      level: 'HSC 2nd Year',
-      time: '5 hours ago',
-      status: 'New',
-    },
-    {
-      subject: 'Algorithms',
-      level: 'University Level',
-      time: '1 day ago',
-      status: 'Viewed',
-    },
-  ];
+  const items = requests ?? [];
 
   return (
     <div
@@ -58,13 +42,41 @@ export default function TuitionRequests({
         </div>
 
         <div className="space-y-3">
-          {requests.map((request) => (
-            <RequestItem
-              key={`${request.subject}-${request.time}`}
-              request={request}
-              darkMode={darkMode}
-            />
-          ))}
+          {loading && (
+            // Placeholder rows keep the card from collapsing while loading.
+            [0, 1, 2].map((row) => (
+              <div
+                key={row}
+                className={`h-16 rounded-xl animate-pulse ${
+                  darkMode ? 'bg-slate-800' : 'bg-slate-100'
+                }`}
+              />
+            ))
+          )}
+
+          {!loading && items.length === 0 && (
+            <div
+              className={`flex flex-col items-center justify-center py-10 text-center ${
+                darkMode ? 'text-slate-400' : 'text-slate-500'
+              }`}
+            >
+              <Inbox size={28} className="mb-2 text-emerald-500/60" />
+              <p className="text-xs font-bold">No requests yet</p>
+              <p className="text-[11px] mt-1">
+                Students who want your help will appear here.
+              </p>
+            </div>
+          )}
+
+          {!loading &&
+            items.map((request) => (
+              <RequestItem
+                key={request.id}
+                request={request}
+                darkMode={darkMode}
+                onRespond={onRespond}
+              />
+            ))}
         </div>
       </div>
 

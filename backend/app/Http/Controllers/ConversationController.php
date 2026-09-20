@@ -6,13 +6,17 @@ use App\Http\Requests\SendMessageRequest;
 use App\Http\Requests\StartConversationRequest;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\TuitionRequest;
 use App\Models\User;
+use App\Services\Notifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ConversationController extends Controller
 {
+    public function __construct(private Notifier $notifier) {}
+
     /**
      * The number of messages returned per page of a thread.
      */
@@ -60,8 +64,24 @@ class ConversationController extends Controller
     public function store(StartConversationRequest $request): JsonResponse
     {
         $user = $request->user();
+        $counterpartId = $request->counterpartId();
 
-        $conversation = Conversation::betweenIds($user->id, $request->counterpartId());
+        // Messaging is earned, not assumed: a thread may only be opened once
+        // a tutor has accepted a request from the student. An existing thread
+        // stays reachable so an accepted-then-finished arrangement does not
+        // strand the history.
+        $alreadyTalking = Conversation::query()
+            ->where(fn ($q) => $q->where('user_one_id', $user->id)->where('user_two_id', $counterpartId))
+            ->orWhere(fn ($q) => $q->where('user_one_id', $counterpartId)->where('user_two_id', $user->id))
+            ->exists();
+
+        if (! $alreadyTalking && ! TuitionRequest::acceptedBetween($user->id, $counterpartId)) {
+            return response()->json([
+                'message' => 'You can message a tutor once they have accepted your tuition request.',
+            ], 403);
+        }
+
+        $conversation = Conversation::betweenIds($user->id, $counterpartId);
         $conversation->load(['userOne.department', 'userTwo.department', 'latestMessage']);
 
         // `firstOrCreate` means an existing thread is returned untouched, so
@@ -131,6 +151,13 @@ class ConversationController extends Controller
         });
 
         $message->load('sender:id,name');
+
+        // Tell the other participant, who may not have the thread open.
+        $recipient = $thread->counterpartFor($user->id);
+
+        if ($recipient) {
+            $this->notifier->messageReceived($recipient, $user, $request->body());
+        }
 
         return response()->json([
             'message' => 'Message sent.',
@@ -244,5 +271,83 @@ class ConversationController extends Controller
             'created_at' => $message->created_at?->toIso8601String(),
             'time' => $message->created_at?->format('g:i A'),
         ];
+    }
+
+    /**
+     * Everyone the signed-in user can see in the message list.
+     *
+     * Every tutor appears, whether or not they have agreed to teach: the ones
+     * who have not are marked locked, so a student can see who is there and
+     * what is still needed to reach them, rather than facing an empty list.
+     */
+    public function contacts(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Threads already open, keyed by the other participant.
+        $threads = Conversation::query()
+            ->where('user_one_id', $user->id)
+            ->orWhere('user_two_id', $user->id)
+            ->with(['userOne.department', 'userTwo.department', 'latestMessage'])
+            ->withCount(['messages as unread_count' => fn ($q) => $q
+                ->where('sender_id', '!=', $user->id)
+                ->whereNull('read_at')])
+            ->get()
+            ->keyBy(fn (Conversation $c) => $c->counterpartFor($user->id)?->id);
+
+        // Whom this user is already entitled to talk to.
+        $unlocked = TuitionRequest::query()
+            ->where('status', TuitionRequest::STATUS_ACCEPTED)
+            ->where(fn ($q) => $q->where('student_id', $user->id)->orWhere('tutor_id', $user->id))
+            ->get()
+            ->flatMap(fn (TuitionRequest $r) => [$r->student_id, $r->tutor_id])
+            ->unique()
+            ->flip();
+
+        $tutors = User::query()
+            ->where('isTutor', true)
+            ->where('id', '!=', $user->id)
+            ->whereNotNull('email_verified_at')
+            ->with(['department', 'tutorProfile'])
+            ->orderBy('name')
+            ->get();
+
+        // Anyone already mid-conversation belongs in the list even if they do
+        // not tutor, so existing threads never disappear from view.
+        $others = $threads->keys()
+            ->filter(fn ($id) => $id && ! $tutors->contains('id', $id));
+
+        $extra = $others->isEmpty()
+            ? collect()
+            : User::query()->whereIn('id', $others)->with('department')->get();
+
+        $contacts = $tutors->concat($extra)
+            ->map(function (User $other) use ($threads, $unlocked, $user) {
+                $thread = $threads->get($other->id);
+                $locked = ! $unlocked->has($other->id) && $thread === null;
+
+                return [
+                    'user_id' => $other->id,
+                    'name' => $other->name,
+                    'avatar' => $other->profile_picture,
+                    'department' => $other->department?->code,
+                    'headline' => $other->tutorProfile?->headline,
+                    'is_tutor' => (bool) $other->isTutor,
+                    'locked' => $locked,
+                    'conversation_id' => $thread?->id,
+                    'unread_count' => (int) ($thread->unread_count ?? 0),
+                    'last_message' => $thread?->latestMessage ? [
+                        'body' => $thread->latestMessage->body,
+                        'sent_by_me' => $thread->latestMessage->sender_id === $user->id,
+                        'time' => $thread->latestMessage->created_at?->diffForHumans(),
+                    ] : null,
+                    'last_message_at' => $thread?->last_message_at?->toIso8601String(),
+                ];
+            })
+            // Live conversations first, then unlocked contacts, then the rest.
+            ->sortBy(fn (array $c) => [$c['locked'] ? 1 : 0, $c['last_message_at'] ? 0 : 1, $c['name']])
+            ->values();
+
+        return response()->json(['data' => $contacts->all()]);
     }
 }

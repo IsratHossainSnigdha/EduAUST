@@ -100,7 +100,7 @@ export default function ConversationList({
               }
               darkMode={darkMode}
               onClick={() =>
-                onSelectChat(conversation.id)
+                onSelectChat(conversation)
               }
             />
           ))

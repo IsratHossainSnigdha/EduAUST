@@ -1,6 +1,9 @@
 import React from 'react';
 
-export default function WelcomeSection({ darkMode }) {
+export default function WelcomeSection({ darkMode, name, loading }) {
+  // Greet by first name only; the full name goes in the profile card.
+  const firstName = name ? name.split(' ')[0] : '';
+
   return (
     <div className="space-y-1">
       <h2
@@ -10,7 +13,15 @@ export default function WelcomeSection({ darkMode }) {
             : 'text-slate-900'
         }`}
       >
-        Let's Connect, Nusrat! 👋
+        {loading && !firstName ? (
+          <span
+            className={`inline-block h-7 w-56 rounded-lg animate-pulse ${
+              darkMode ? 'bg-slate-700' : 'bg-slate-200'
+            }`}
+          />
+        ) : (
+          <>Let&apos;s Connect{firstName ? `, ${firstName}` : ''}! 👋</>
+        )}
       </h2>
 
       <p
@@ -20,7 +31,7 @@ export default function WelcomeSection({ darkMode }) {
             : 'text-slate-600 font-medium'
         }`}
       >
-        Here's an overview of your tutoring activity.
+        Here&apos;s an overview of your tutoring activity.
       </p>
     </div>
   );

@@ -135,6 +135,11 @@ export function apiPatch(path, payload) {
   return request(path, { method: 'PATCH', payload: payload ?? {} });
 }
 
+// DELETE; returns { ok, body }.
+export function apiDelete(path) {
+  return request(path, { method: 'DELETE' });
+}
+
 // Whether a failed response means the session is over and the user has to sign
 // in again, as opposed to an ordinary validation or server error.
 export function isUnauthenticated(body) {

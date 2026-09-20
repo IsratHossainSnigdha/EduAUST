@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\TuitionRequest;
 use App\Models\TutorProfile;
 use App\Models\User;
 use App\Services\JwtService;
@@ -21,6 +22,17 @@ class MessagingTest extends TestCase
         $this->withToken(app(JwtService::class)->tokensFor($user)['access_token']);
 
         return $user;
+    }
+
+    /**
+     * An accepted tuition request, which is what entitles two people to talk.
+     */
+    private function introduce(User $student, User $tutor): void
+    {
+        TuitionRequest::factory()->accepted()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $tutor->id,
+        ]);
     }
 
     /**
@@ -45,6 +57,7 @@ class MessagingTest extends TestCase
     {
         $me = $this->actingAsUser();
         $other = User::factory()->create(['name' => 'Fahim Rahman']);
+        $this->introduce($me, $other);
 
         $first = $this->postJson('/api/v1/conversations', ['user_id' => $other->id])
             ->assertCreated()
@@ -62,6 +75,7 @@ class MessagingTest extends TestCase
     {
         $me = $this->actingAsUser();
         $other = User::factory()->create();
+        $this->introduce($me, $other);
 
         $mine = $this->postJson('/api/v1/conversations', ['user_id' => $other->id])
             ->assertCreated()->json('data.id');
@@ -298,42 +312,66 @@ class MessagingTest extends TestCase
     /**
      * Tutoring is something an account has, not something it is: the same
      * person tutors one subject and takes lessons in another. Messaging must
-     * therefore never consult a role, in either direction.
+    /*
+     * Messaging is unlocked by an accepted request rather than by a role: the
+     * same person tutors one subject and takes lessons in another, so what
+     * matters is that one of them agreed to teach the other.
      */
-    public function test_any_two_accounts_can_converse_regardless_of_tutoring_status(): void
+    public function test_a_conversation_cannot_be_opened_without_an_accepted_request(): void
     {
-        $plainStudent = User::factory()->create(['name' => 'Plain Student']);
-        $alsoATutor = User::factory()->create(['name' => 'Student Who Tutors']);
-        TutorProfile::factory()->for($alsoATutor)->create();
+        $student = $this->actingAsUser();
+        $tutor = User::factory()->create(['isTutor' => true]);
+        TutorProfile::factory()->for($tutor)->create();
 
-        // The account that also tutors opens the thread and writes first.
-        $this->actingAsUser($alsoATutor);
-        $threadId = $this->postJson('/api/v1/conversations', ['user_id' => $plainStudent->id])
-            ->assertCreated()
-            ->json('data.id');
+        $this->postJson('/api/v1/conversations', ['user_id' => $tutor->id])
+            ->assertForbidden();
 
-        $this->postJson("/api/v1/conversations/{$threadId}/messages", ['body' => 'Free for a session?'])
+        $this->assertSame(0, Conversation::count());
+    }
+
+    public function test_a_pending_request_does_not_unlock_messaging(): void
+    {
+        $student = $this->actingAsUser();
+        $tutor = User::factory()->create(['isTutor' => true]);
+
+        TuitionRequest::factory()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $this->postJson('/api/v1/conversations', ['user_id' => $tutor->id])
+            ->assertForbidden();
+    }
+
+    public function test_a_declined_request_does_not_unlock_messaging(): void
+    {
+        $student = $this->actingAsUser();
+        $tutor = User::factory()->create(['isTutor' => true]);
+
+        TuitionRequest::factory()->declined()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $this->postJson('/api/v1/conversations', ['user_id' => $tutor->id])
+            ->assertForbidden();
+    }
+
+    public function test_an_accepted_request_lets_either_side_open_the_thread(): void
+    {
+        $student = $this->actingAsUser();
+        $tutor = User::factory()->create(['isTutor' => true]);
+        $this->introduce($student, $tutor);
+
+        $this->postJson('/api/v1/conversations', ['user_id' => $tutor->id])
             ->assertCreated();
 
-        // The plain student sees the same thread and can answer in it.
-        $this->actingAsUser($plainStudent);
-        $this->getJson('/api/v1/conversations')
-            ->assertOk()
-            ->assertJsonPath('data.0.id', $threadId)
-            ->assertJsonPath('data.0.participant.name', 'Student Who Tutors')
-            ->assertJsonPath('data.0.unread_count', 1);
-
-        $this->postJson("/api/v1/conversations/{$threadId}/messages", ['body' => 'Yes, tomorrow works.'])
-            ->assertCreated();
-
-        // And the reverse direction resolves to that one thread, not a second.
-        $this->actingAsUser($alsoATutor);
-        $this->postJson('/api/v1/conversations', ['user_id' => $plainStudent->id])
-            ->assertOk()
-            ->assertJsonPath('data.id', $threadId);
+        // The tutor may open the same thread from their side.
+        $this->actingAsUser($tutor);
+        $this->postJson('/api/v1/conversations', ['user_id' => $student->id])
+            ->assertOk();
 
         $this->assertSame(1, Conversation::count());
-        $this->assertSame(2, Message::count());
     }
 
     public function test_two_tutoring_accounts_can_message_each_other(): void
@@ -342,6 +380,7 @@ class MessagingTest extends TestCase
         $tutorB = User::factory()->create(['name' => 'Tutor B']);
         TutorProfile::factory()->for($tutorA)->create();
         TutorProfile::factory()->for($tutorB)->create();
+        $this->introduce($tutorA, $tutorB);
 
         $this->actingAsUser($tutorA);
         $threadId = $this->postJson('/api/v1/conversations', ['user_id' => $tutorB->id])

@@ -77,6 +77,11 @@ class RegisterInfoRequest extends FormRequest
 
         return [
             'email.regex' => "The email must be a valid AUST institutional address (@{$domain}).",
+            // Tutoring is something an existing account takes on, not a second
+            // registration, so an existing holder is pointed at signing in.
+            'email.unique' => 'An account already exists for this AUST email. Please sign in — you can become a tutor from your dashboard.',
+            'student_id.unique' => 'This student ID is already registered. Please sign in instead.',
+            'phone.unique' => 'This phone number is already registered. Please sign in instead.',
             'phone.regex' => 'The phone number must contain only digits and an optional leading +.',
             'student_id.regex' => 'The student ID may only contain letters, numbers, and hyphens.',
             'department_id.exists' => 'The selected department is invalid.',

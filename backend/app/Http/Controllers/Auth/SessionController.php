@@ -28,6 +28,11 @@ class SessionController extends Controller
                 'department_id' => $user->department_id,
                 'semester' => $user->semester,
                 'isTutor' => $user->isTutor,
+                'profile_picture' => $user->profile_picture,
+                // Which ways this account can be signed into, so the settings
+                // screen can offer whichever one is still missing.
+                'has_password' => $user->hasPassword(),
+                'google_linked' => $user->hasGoogleLinked(),
             ],
         ]);
     }

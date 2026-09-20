@@ -1,3 +1,4 @@
+import { useCurrentUser } from '../../lib/useCurrentUser';
 import React, {
   useState,
   useRef,
@@ -36,6 +37,7 @@ export default function MessagesPage({
   toggleDarkMode,
 }) {
   const navigate = useNavigate();
+  const { user: currentUser } = useCurrentUser();
 
   const [activeMenu, setActiveMenu] =
     useState('Messages');
@@ -80,8 +82,10 @@ export default function MessagesPage({
 
   const loadConversations =
     useCallback(async () => {
+      // Every tutor appears here, not just the ones already talking: locked
+      // entries show who is available and what is still needed to reach them.
       const { ok, body } =
-        await apiGet('/conversations');
+        await apiGet('/conversations/contacts');
 
       if (!ok) {
         setLoadingList(false);
@@ -99,8 +103,28 @@ export default function MessagesPage({
         return;
       }
 
-      setConversations(body.data ?? []);
-      setUnreadTotal(body.unread_total ?? 0);
+      const contacts = (body.data ?? []).map((contact) => ({
+        // Locked contacts have no thread yet, so the row is keyed by person.
+        id: contact.conversation_id ?? `user:${contact.user_id}`,
+        conversation_id: contact.conversation_id,
+        user_id: contact.user_id,
+        locked: contact.locked,
+        participant: {
+          id: contact.user_id,
+          name: contact.name,
+          avatar: contact.avatar,
+          department: contact.department,
+          headline: contact.headline,
+        },
+        last_message: contact.last_message,
+        last_message_at: contact.last_message_at,
+        unread_count: contact.unread_count ?? 0,
+      }));
+
+      setConversations(contacts);
+      setUnreadTotal(
+        contacts.reduce((total, c) => total + (c.unread_count ?? 0), 0)
+      );
       setLoadingList(false);
     }, [endExpiredSession]);
 
@@ -113,7 +137,9 @@ export default function MessagesPage({
       selectedChat === null &&
       conversations.length > 0
     ) {
-      setSelectedChat(conversations[0].id);
+      // Only an unlocked thread can be opened automatically.
+      const first = conversations.find((c) => !c.locked && c.conversation_id);
+      if (first) setSelectedChat(first.conversation_id);
     }
   }, [conversations, selectedChat]);
 
@@ -167,9 +193,39 @@ export default function MessagesPage({
     });
   }, [currentMessages, selectedChat]);
 
-  const handleSelectChat = (id) => {
-    setSelectedChat(id);
+  const handleSelectChat = async (contact) => {
     setError('');
+
+    // A tutor who has not accepted a request cannot be messaged yet; say so
+    // rather than opening an empty thread that could never be sent to.
+    if (contact.locked) {
+      setSelectedChat(null);
+      setError(
+        `You can message ${contact.participant?.name ?? 'this tutor'} once they accept your tuition request.`
+      );
+
+      return;
+    }
+
+    if (contact.conversation_id) {
+      setSelectedChat(contact.conversation_id);
+
+      return;
+    }
+
+    // Unlocked but never opened: create the thread on first click.
+    const { ok, body } = await apiPost('/conversations', {
+      user_id: contact.user_id,
+    });
+
+    if (!ok) {
+      setError(body?.message || 'Could not open that conversation.');
+
+      return;
+    }
+
+    setSelectedChat(body?.data?.id ?? null);
+    loadConversations();
   };
 
   const handleSendMessage = async (e) => {
@@ -289,7 +345,7 @@ export default function MessagesPage({
               {
                 name: 'Notifications',
                 icon: Bell,
-                badge: 3,
+                badge: unreadTotal || undefined,
                 path: '/notifications',
               },
               {
@@ -370,7 +426,7 @@ export default function MessagesPage({
         >
           <div className="flex items-center gap-3">
             <img
-              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"
+              src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'}
               alt="User"
               className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/30"
             />
@@ -383,7 +439,7 @@ export default function MessagesPage({
                     : 'text-slate-900 font-extrabold'
                 }`}
               >
-                Ishrat Jahan Ifa
+                {currentUser?.name || 'Loading…'}
               </h4>
 
               <p
@@ -393,22 +449,25 @@ export default function MessagesPage({
                     : 'text-slate-500 font-semibold'
                 }`}
               >
-                Student • CSE 3.1
+                {[currentUser?.isTutor ? 'Tutor' : 'Student', currentUser?.semester]
+                  .filter(Boolean)
+                  .join(' • ')}
               </p>
             </div>
           </div>
 
           <button
             onClick={() =>
-              navigate('/tutor-dashboard')
+              // Only an account that tutors has a tutor dashboard to reach.
+              navigate(currentUser?.isTutor ? '/tutor-dashboard' : '/become-a-tutor')
             }
             className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
           >
-            Switch to Tutor Dashboard
+            {currentUser?.isTutor ? 'Switch to Tutor Dashboard' : 'Become a Tutor'}
           </button>
 
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => { clearAuth(); navigate('/login', { replace: true }); }}
             className="w-full border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-2"
           >
             <LogOut size={14} />

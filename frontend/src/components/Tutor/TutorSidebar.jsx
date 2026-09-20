@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -9,6 +9,9 @@ import {
   LogOut,
   UserPlus,
 } from 'lucide-react';
+import UserAvatar from '../UserAvatar';
+import { useCurrentUser } from '../../lib/useCurrentUser';
+import { apiGet, clearAuth } from '../../lib/auth';
 
 export default function TutorSidebar({
   darkMode,
@@ -20,6 +23,7 @@ export default function TutorSidebar({
   profileLoading,
 }) {
   const navigate = useNavigate();
+  const { user: currentUser } = useCurrentUser();
 
   const sidebarBg = darkMode
     ? 'bg-[#111827] border-slate-800'
@@ -28,6 +32,42 @@ export default function TutorSidebar({
   const textPrimary = darkMode
     ? 'text-white font-extrabold'
     : 'text-slate-900 font-extrabold';
+
+  // Badge counts come from the API so the sidebar agrees with the pages it
+  // links to, instead of showing figures that were typed in by hand.
+  const [counts, setCounts] = useState({ requests: 0, messages: 0, notifications: 0 });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      const [requests, messages, notifications] = await Promise.all([
+        currentRole === 'tutor'
+          ? apiGet('/tuition-requests?status=pending')
+          : Promise.resolve({ ok: false }),
+        apiGet('/conversations/unread-count'),
+        apiGet('/notifications/unread-count'),
+      ]);
+
+      if (cancelled) return;
+
+      setCounts({
+        requests: requests.ok ? (requests.body?.meta?.total ?? 0) : 0,
+        messages: messages.ok
+          ? (messages.body?.unread_total ?? messages.body?.unread_count ?? 0)
+          : 0,
+        notifications: notifications.ok
+          ? (notifications.body?.by_audience?.tutor ?? notifications.body?.unread_count ?? 0)
+          : 0,
+      });
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentRole]);
 
   /*
    * Dashboard is the ONLY sidebar item
@@ -44,7 +84,7 @@ export default function TutorSidebar({
     {
       name: 'Tuition Requests',
       icon: UserPlus,
-      badge: 6,
+      badge: counts.requests || undefined,
       path: '/tutor-requests',
       requiresProfile: true,
     },
@@ -52,7 +92,7 @@ export default function TutorSidebar({
     {
       name: 'Messages',
       icon: MessageSquare,
-      badge: 3,
+      badge: counts.messages || undefined,
       path: '/messages',
       requiresProfile: true,
     },
@@ -60,6 +100,7 @@ export default function TutorSidebar({
     {
       name: 'Notifications',
       icon: Bell,
+      badge: counts.notifications || undefined,
       path: '/notifications',
       requiresProfile: true,
     },
@@ -218,19 +259,11 @@ export default function TutorSidebar({
 
         {/* User Information */}
         <div className="flex items-center gap-3">
+          <UserAvatar user={currentUser} size={40} />
 
-          <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120"
-            alt="User"
-            className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/30"
-          />
-
-          <div>
-
-            <h4
-              className={`text-xs ${textPrimary}`}
-            >
-              Nusrat Jahan
+          <div className="min-w-0">
+            <h4 className={`text-xs truncate ${textPrimary}`}>
+              {currentUser?.name || 'Loading…'}
             </h4>
 
             <p

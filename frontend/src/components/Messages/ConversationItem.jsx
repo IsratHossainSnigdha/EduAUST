@@ -1,3 +1,4 @@
+import { Lock } from 'lucide-react';
 import React from 'react';
 
 export default function ConversationItem({
@@ -20,7 +21,7 @@ export default function ConversationItem({
           : darkMode
           ? 'hover:bg-slate-800/40 border-l-4 border-transparent'
           : 'hover:bg-slate-50 border-l-4 border-transparent'
-      }`}
+      } ${conversation.locked ? 'opacity-60' : ''}`}
     >
       {/* Avatar */}
       <div className="relative shrink-0">
@@ -82,15 +83,22 @@ export default function ConversationItem({
               : 'font-normal text-slate-500'
           }`}
         >
-          {conversation.last_message
-            ? `${
-                conversation.last_message.sent_by_me
-                  ? 'You: '
-                  : ''
-              }${conversation.last_message.body}`
-            : 'No messages yet'}
+          {conversation.locked
+            ? 'Locked — send a request to start chatting'
+            : conversation.last_message
+              ? `${
+                  conversation.last_message.sent_by_me
+                    ? 'You: '
+                    : ''
+                }${conversation.last_message.body}`
+              : 'No messages yet'}
         </p>
       </div>
+
+      {/* Locked tutors cannot be opened until they accept a request. */}
+      {conversation.locked && (
+        <Lock size={13} className="shrink-0 text-slate-400" />
+      )}
 
       {/* Unread badge */}
       {hasUnread && (

@@ -33,6 +33,8 @@ class User extends Authenticatable
         'password',
         'isTutor',
         'email_verified_at',
+        'google_id',
+        'google_linked_at',
     ];
 
     /**
@@ -56,7 +58,27 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'isTutor' => 'boolean',
+            'google_linked_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Whether the account can sign in with an email and password.
+     *
+     * Accounts created through Google have no password until the holder sets
+     * one, so this is what the settings screen reports.
+     */
+    public function hasPassword(): bool
+    {
+        return filled($this->password);
+    }
+
+    /**
+     * Whether a Google account is linked to this one.
+     */
+    public function hasGoogleLinked(): bool
+    {
+        return filled($this->google_id);
     }
 
     /**

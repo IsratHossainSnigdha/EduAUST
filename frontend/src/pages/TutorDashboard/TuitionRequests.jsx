@@ -1,14 +1,72 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BookOpen } from 'lucide-react';
+
+import {
+  apiGet,
+  apiPatch,
+  clearAuth,
+  isUnauthenticated,
+} from '../../lib/auth';
 
 import TutorSidebar from '../../components/Tutor/TutorSidebar';
 import TutorHeader from '../../components/Tutor/TutorHeader';
-import TuitionRequestList, {
-  initialRequests,
-} from '../../components/Tutor/TuitionRequestList';
+import TuitionRequestList from '../../components/Tutor/TuitionRequestList';
 import RequestNotice from '../../components/Tutor/RequestNotice';
 import RequestDetailsModal from '../../components/Tutor/RequestDetailsModal';
 import './TuitionRequests.css'; // <-- External stylesheet imported here
+
+/*
+ * How long ago the request arrived, in the short form the cards use.
+ */
+function timeAgo(iso) {
+  if (!iso) return '';
+
+  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+
+  if (Number.isNaN(seconds)) return '';
+  if (seconds < 60) return 'just now';
+
+  const units = [
+    ['day', 86400],
+    ['hour', 3600],
+    ['minute', 60],
+  ];
+
+  for (const [label, size] of units) {
+    const amount = Math.floor(seconds / size);
+
+    if (amount >= 1) {
+      return `${amount} ${label}${amount > 1 ? 's' : ''} ago`;
+    }
+  }
+
+  return 'just now';
+}
+
+/*
+ * Map an API request onto the shape the existing cards render, so the UI
+ * stays exactly as it was while the data behind it becomes real.
+ */
+function toCard(request) {
+  const name = request.student?.name || 'Student';
+
+  return {
+    id: request.id,
+    name,
+    email: [request.student?.department, request.student?.semester]
+      .filter(Boolean)
+      .join(' • '),
+    subject: request.subject || 'General tutoring',
+    level: request.level || '',
+    description: request.message || 'No additional details were provided.',
+    time: timeAgo(request.created_at),
+    status: request.status,
+    initials: name.slice(0, 2).toUpperCase(),
+    icon: BookOpen,
+    iconColor: 'text-emerald-500 bg-emerald-500/10',
+  };
+}
 
 export default function TuitionRequests({
   darkMode,
@@ -26,33 +84,12 @@ export default function TuitionRequests({
       'tutor'
   );
 
-  const [requests, setRequests] = useState(() => {
-    try {
-      const savedStatuses = localStorage.getItem(
-        'eduAust_requestStatuses'
-      );
-
-      if (savedStatuses) {
-        const statuses = JSON.parse(savedStatuses);
-
-        return initialRequests.map((request) =>
-          statuses[request.id]
-            ? {
-                ...request,
-                status: statuses[request.id],
-              }
-            : request
-        );
-      }
-    } catch (error) {
-      console.error(
-        'Failed to load request statuses from localStorage',
-        error
-      );
-    }
-
-    return initialRequests;
-  });
+  // Requests come from the backend; statuses are no longer kept in
+  // localStorage, where they could disagree with what the tutor actually did.
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [selectedRequest, setSelectedRequest] =
     useState(null);
@@ -63,6 +100,42 @@ export default function TuitionRequests({
       currentRole
     );
   }, [currentRole]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError('');
+
+      const { ok, body } = await apiGet('/tuition-requests');
+
+      if (cancelled) return;
+
+      if (!ok) {
+        if (isUnauthenticated(body)) {
+          clearAuth();
+          navigate('/login', { replace: true });
+
+          return;
+        }
+
+        setError(body?.message || 'Could not load your requests.');
+        setLoading(false);
+
+        return;
+      }
+
+      setRequests((body?.data ?? []).map(toCard));
+      setLoading(false);
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, refreshKey]);
 
   const handleNavigation = (
     itemName,
@@ -75,34 +148,29 @@ export default function TuitionRequests({
     }
   };
 
-  const handleAccept = (id) => {
-    setRequests((previousRequests) => {
-      const updatedRequests = previousRequests.map(
-        (request) =>
-          request.id === id
-            ? {
-                ...request,
-                status: 'Accepted',
-              }
-            : request
-      );
+  /*
+   * Persist the tutor's answer, then reload so the list reflects what the
+   * backend stored rather than an optimistic guess.
+   */
+  const respond = async (id, status) => {
+    const { ok, body } = await apiPatch(
+      '/tuition-requests/' + id,
+      { status }
+    );
 
-      const statusMap = updatedRequests.reduce(
-        (accumulator, request) => ({
-          ...accumulator,
-          [request.id]: request.status,
-        }),
-        {}
-      );
+    if (!ok) {
+      setError(body?.message || 'Could not update that request.');
 
-      localStorage.setItem(
-        'eduAust_requestStatuses',
-        JSON.stringify(statusMap)
-      );
+      return;
+    }
 
-      return updatedRequests;
-    });
+    setSelectedRequest(null);
+    setRefreshKey((key) => key + 1);
   };
+
+  const handleAccept = (id) => respond(id, 'accepted');
+
+  const handleDecline = (id) => respond(id, 'declined');
 
   const handleViewDetails = (request) => {
     setSelectedRequest(request);
@@ -164,10 +232,25 @@ export default function TuitionRequests({
         </div>
 
         {/* Request List */}
+        {error && (
+          <div className="p-4 rounded-2xl border border-rose-500/40 bg-rose-500/10 text-rose-500 text-sm font-semibold flex items-center justify-between gap-4">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => setRefreshKey((key) => key + 1)}
+              className="shrink-0 px-3 py-1.5 rounded-lg border border-rose-500 text-xs font-bold hover:bg-rose-500 hover:text-white transition"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         <TuitionRequestList
           darkMode={darkMode}
           requests={requests}
+          loading={loading}
           onAccept={handleAccept}
+          onDecline={handleDecline}
           onViewDetails={handleViewDetails}
         />
 
