@@ -20,6 +20,7 @@ import WelcomeSection from '../../components/Tutor/WelcomeSection';
 import TutorStats from '../../components/Tutor/TutorStats';
 import TuitionRequests from '../../components/Tutor/TuitionRequests';
 import ProfileReminder from '../../components/Tutor/ProfileReminder';
+import './TutorDashboard.css';
 
 export default function TutorDashboard({
   darkMode,

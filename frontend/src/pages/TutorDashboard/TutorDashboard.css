@@ -1,0 +1,21 @@
+/* Custom scrollbar and transition for TutorDashboard */
+.tutor-dashboard-container {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.tutor-dashboard-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tutor-dashboard-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tutor-dashboard-container::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+  border-radius: 9999px;
+}
+
+.tutor-dashboard-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.5);
+}

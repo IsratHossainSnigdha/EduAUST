@@ -19,6 +19,8 @@ export default function TutorSidebar({
   currentRole,
   setCurrentRole,
   handleNavigation,
+  hasTutorProfile,
+  profileLoading,
 }) {
   const navigate = useNavigate();
   const { user: currentUser } = useCurrentUser();
@@ -67,47 +69,96 @@ export default function TutorSidebar({
     };
   }, [currentRole]);
 
+  /*
+   * Dashboard is the ONLY sidebar item
+   * accessible without a tutor profile.
+   */
   const menuItems = [
     {
       name: 'Dashboard',
       icon: LayoutDashboard,
       path: '/tutor-dashboard',
+      requiresProfile: false,
     },
+
     {
       name: 'Tuition Requests',
       icon: UserPlus,
       badge: counts.requests || undefined,
       path: '/tutor-requests',
+      requiresProfile: true,
     },
+
     {
       name: 'Messages',
       icon: MessageSquare,
       badge: counts.messages || undefined,
       path: '/messages',
+      requiresProfile: true,
     },
+
     {
       name: 'Notifications',
       icon: Bell,
       badge: counts.notifications || undefined,
       path: '/notifications',
+      requiresProfile: true,
     },
+
     {
       name: 'Settings',
       icon: Settings,
       path: '/settings',
+      requiresProfile: true,
     },
+
     {
       name: 'Help & Support',
       icon: HelpCircle,
       path: '/support',
+      requiresProfile: true,
     },
   ];
+
+  /*
+   * Check whether a menu item is locked.
+   */
+  const isItemLocked = (item) => {
+    return (
+      !profileLoading &&
+      !hasTutorProfile &&
+      item.requiresProfile
+    );
+  };
+
+  /*
+   * Handle sidebar navigation.
+   */
+  const handleItemClick = (item) => {
+    /*
+     * If the user does not have a tutor profile,
+     * prevent navigation to all locked items.
+     */
+    if (isItemLocked(item)) {
+      return;
+    }
+
+    handleNavigation(
+      item.name,
+      item.path
+    );
+  };
 
   return (
     <aside
       className={`w-64 shrink-0 flex flex-col justify-between p-6 border-r transition-colors duration-300 ${sidebarBg}`}
     >
+
+      {/* =====================================================
+          TOP SECTION
+      ===================================================== */}
       <div>
+
         {/* Logo */}
         <div
           className="flex items-center gap-3 cursor-pointer mb-8"
@@ -122,56 +173,91 @@ export default function TutorSidebar({
           </span>
         </div>
 
-        {/* Navigation */}
+        {/* =================================================
+            NAVIGATION
+        ================================================= */}
         <nav className="space-y-1.5">
+
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeMenu === item.name;
+
+            const isActive =
+              activeMenu === item.name;
+
+            const locked =
+              isItemLocked(item);
 
             return (
               <button
                 key={item.name}
+                type="button"
                 onClick={() =>
-                  handleNavigation(item.name, item.path)
+                  handleItemClick(item)
+                }
+                disabled={locked}
+                title={
+                  locked
+                    ? 'Tutor profile required'
+                    : undefined
                 }
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold tracking-wide transition-all ${
                   isActive
                     ? 'bg-emerald-600 text-white shadow-md'
+                    : locked
+                    ? 'text-slate-400 dark:text-slate-600 opacity-50 cursor-not-allowed'
                     : 'text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
+
+                {/* Icon + Name */}
                 <div className="flex items-center gap-3">
+
                   <Icon
                     size={16}
                     className={
                       isActive
                         ? 'text-white'
+                        : locked
+                        ? 'text-slate-400 dark:text-slate-600'
                         : 'text-slate-400 dark:text-slate-300'
                     }
                   />
 
-                  <span>{item.name}</span>
+                  <span>
+                    {item.name}
+                  </span>
+
                 </div>
 
+                {/* Badge */}
                 {item.badge && (
                   <span
                     className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
                       isActive
                         ? 'bg-white text-emerald-600'
+                        : locked
+                        ? 'bg-slate-300 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
                         : 'bg-emerald-600 text-white'
                     }`}
                   >
                     {item.badge}
                   </span>
                 )}
+
               </button>
             );
           })}
+
         </nav>
+
       </div>
 
-      {/* User section */}
+      {/* =====================================================
+          BOTTOM USER SECTION
+      ===================================================== */}
       <div className="pt-6 border-t border-slate-100 dark:border-slate-800/80 space-y-4">
+
+        {/* User Information */}
         <div className="flex items-center gap-3">
           <UserAvatar user={currentUser} size={40} />
 
@@ -191,11 +277,16 @@ export default function TutorSidebar({
                 ? 'Tutor Dashboard'
                 : 'Student Mode'}
             </p>
+
           </div>
+
         </div>
 
-        {/* Switch dashboard */}
+        {/* =================================================
+            SWITCH DASHBOARD
+        ================================================= */}
         <button
+          type="button"
           onClick={() => {
             const nextRole =
               currentRole === 'tutor'
@@ -203,6 +294,7 @@ export default function TutorSidebar({
                 : 'tutor';
 
             setCurrentRole(nextRole);
+
             localStorage.setItem(
               'eduAUST_role',
               nextRole
@@ -221,15 +313,22 @@ export default function TutorSidebar({
             : 'Switch to Tutor Dashboard'}
         </button>
 
-        {/* Logout */}
+        {/* =================================================
+            LOGOUT
+        ================================================= */}
         <button
-          onClick={() => navigate('/login')}
+          type="button"
+          onClick={() =>
+            navigate('/login')
+          }
           className="w-full border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-2"
         >
           <LogOut size={14} />
           Logout
         </button>
+
       </div>
+
     </aside>
   );
 }

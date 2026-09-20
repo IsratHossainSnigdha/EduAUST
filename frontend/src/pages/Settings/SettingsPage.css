@@ -1,0 +1,41 @@
+/* SettingsPage.css */
+
+.settings-container {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.settings-main {
+  flex-grow: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+@media (min-width: 1024px) {
+  .settings-main {
+    padding: 2.5rem;
+  }
+}
+
+.settings-content-wrapper {
+  max-width: 56rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.settings-content-wrapper > * + * {
+  margin-top: 2rem;
+}
+
+/* Custom Scrollbar */
+.settings-main::-webkit-scrollbar {
+  width: 6px;
+}
+
+.settings-main::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 9999px;
+}

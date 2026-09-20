@@ -1,0 +1,21 @@
+/* Custom scrollbar and smooth transitions for TutorAccountPage */
+.tutor-account-container {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.tutor-account-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tutor-account-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tutor-account-container::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+  border-radius: 9999px;
+}
+
+.tutor-account-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.5);
+}

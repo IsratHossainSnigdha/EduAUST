@@ -18,6 +18,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { apiGet, isAuthenticated, isUnauthenticated, clearAuth } from '../../lib/auth';
+import './StudentDashboard.css';
 
 // Status pill colours for the student's own requests.
 const REQUEST_STATUS_STYLES = {
