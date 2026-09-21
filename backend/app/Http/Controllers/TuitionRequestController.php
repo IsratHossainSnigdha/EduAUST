@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TuitionRequest;
+use App\Models\TutorProfile;
 use App\Models\User;
 use App\Services\Notifier;
 use Illuminate\Http\JsonResponse;
@@ -139,6 +140,8 @@ class TuitionRequestController extends Controller
             'responded_at' => now(),
         ]);
 
+        $this->syncStudentCount($tuitionRequest->tutor_id);
+
         // Acceptance also unlocks messaging, so the student needs to know.
         $this->notifier->tuitionAnswered($tuitionRequest->load(['tutor', 'subject']));
 
@@ -146,6 +149,29 @@ class TuitionRequestController extends Controller
             'message' => 'Request updated.',
             'data' => $this->present($tuitionRequest->load(['student.department', 'subject'])),
         ]);
+    }
+
+    /**
+     * Bring a tutor's student count in line with the requests they have
+     * actually accepted.
+     *
+     * The column was written once as 0 when the tutor account was created and
+     * never touched again, so the dashboard reported "students taught: 0" no
+     * matter how many students a tutor took on — and the seeded tutors carried
+     * invented figures instead. Counting distinct students keeps it honest,
+     * and keeps the stored column that the tutor listing filters and sorts on.
+     */
+    private function syncStudentCount(string $tutorId): void
+    {
+        $students = TuitionRequest::query()
+            ->where('tutor_id', $tutorId)
+            ->where('status', TuitionRequest::STATUS_ACCEPTED)
+            ->distinct()
+            ->count('student_id');
+
+        TutorProfile::query()
+            ->where('user_id', $tutorId)
+            ->update(['student_count' => $students]);
     }
 
     /**
