@@ -20,8 +20,15 @@ export default function TutorSidebar({
   currentRole,
   setCurrentRole,
   handleNavigation,
-  hasTutorProfile,
-  profileLoading,
+  /*
+   * Only the tutor dashboard knows whether a tutor profile exists, and only it
+   * needs to gate the menu on one. Every other page that reuses this sidebar —
+   * Settings among them, which students open too — leaves these out, and used
+   * to get `undefined`: read as "no profile", which locked all but Dashboard
+   * and stranded the user on whatever page they had just opened.
+   */
+  hasTutorProfile = true,
+  profileLoading = false,
 }) {
   const navigate = useNavigate();
   const { user: currentUser } = useCurrentUser();
