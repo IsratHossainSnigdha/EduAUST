@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import UserAvatar from '../UserAvatar';
 import { useCurrentUser } from '../../lib/useCurrentUser';
-import { apiGet, clearAuth } from '../../lib/auth';
+import { clearAuth } from '../../lib/auth';
+import { useBadgeCounts } from '../../lib/useBadgeCounts';
 
 export default function TutorSidebar({
   darkMode,
@@ -19,8 +20,15 @@ export default function TutorSidebar({
   currentRole,
   setCurrentRole,
   handleNavigation,
-  hasTutorProfile,
-  profileLoading,
+  /*
+   * Only the tutor dashboard knows whether a tutor profile exists, and only it
+   * needs to gate the menu on one. Every other page that reuses this sidebar —
+   * Settings among them, which students open too — leaves these out, and used
+   * to get `undefined`: read as "no profile", which locked all but Dashboard
+   * and stranded the user on whatever page they had just opened.
+   */
+  hasTutorProfile = true,
+  profileLoading = false,
 }) {
   const navigate = useNavigate();
   const { user: currentUser } = useCurrentUser();
@@ -34,40 +42,16 @@ export default function TutorSidebar({
     : 'text-slate-900 font-extrabold';
 
   // Badge counts come from the API so the sidebar agrees with the pages it
-  // links to, instead of showing figures that were typed in by hand.
-  const [counts, setCounts] = useState({ requests: 0, messages: 0, notifications: 0 });
+  // links to, instead of showing figures that were typed in by hand. The hook
+  // is shared with the dashboard behind this sidebar, so the two of them make
+  // one request between them rather than each making their own.
+  const { counts: shared } = useBadgeCounts({ includeRequests: currentRole === 'tutor' });
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      const [requests, messages, notifications] = await Promise.all([
-        currentRole === 'tutor'
-          ? apiGet('/tuition-requests?status=pending')
-          : Promise.resolve({ ok: false }),
-        apiGet('/conversations/unread-count'),
-        apiGet('/notifications/unread-count'),
-      ]);
-
-      if (cancelled) return;
-
-      setCounts({
-        requests: requests.ok ? (requests.body?.meta?.total ?? 0) : 0,
-        messages: messages.ok
-          ? (messages.body?.unread_total ?? messages.body?.unread_count ?? 0)
-          : 0,
-        notifications: notifications.ok
-          ? (notifications.body?.by_audience?.tutor ?? notifications.body?.unread_count ?? 0)
-          : 0,
-      });
-    };
-
-    load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentRole]);
+  const counts = {
+    requests: shared.requests,
+    messages: shared.messages,
+    notifications: shared.notifications[currentRole === 'tutor' ? 'tutor' : 'student'],
+  };
 
   /*
    * Dashboard is the ONLY sidebar item
@@ -318,9 +302,13 @@ export default function TutorSidebar({
         ================================================= */}
         <button
           type="button"
-          onClick={() =>
-            navigate('/login')
-          }
+          onClick={() => {
+            // Navigating alone left the token in place, so the account was
+            // still signed in: going back, or opening any dashboard, walked
+            // straight back into the session this button claimed to end.
+            clearAuth();
+            navigate('/login', { replace: true });
+          }}
           className="w-full border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-2"
         >
           <LogOut size={14} />

@@ -40,7 +40,14 @@ return [
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    /*
+     * Every authenticated call carries an Authorization header, which makes it
+     * a non-simple request: the browser sends a preflight OPTIONS first. At 0
+     * that preflight is never cached, so each call cost two round trips, and a
+     * dashboard that opens four endpoints at once paid eight — noticeably slow
+     * against `artisan serve`, which answers one request at a time.
+     */
+    'max_age' => 86400,
 
     'supports_credentials' => true,
 

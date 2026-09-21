@@ -230,4 +230,68 @@ class TutorDashboardTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors('status');
     }
+
+    public function test_accepting_a_request_counts_the_student_as_taught(): void
+    {
+        $tutor = $this->tutor();
+        $student = User::factory()->create();
+
+        $request = TuitionRequest::factory()->create([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+        ]);
+
+        $this->signIn($tutor);
+
+        $this->patchJson('/api/v1/tuition-requests/'.$request->id, ['status' => 'accepted'])
+            ->assertOk();
+
+        // The factory seeds a figure of its own; accepting replaces it with
+        // the number of students actually taken on.
+        $this->getJson('/api/v1/tutor/dashboard')
+            ->assertOk()
+            ->assertJsonPath('stats.students_taught', 1);
+    }
+
+    public function test_students_taught_counts_each_student_once(): void
+    {
+        $tutor = $this->tutor();
+        $student = User::factory()->create();
+
+        // Two subjects with the same student is still one student taught.
+        foreach (Subject::factory()->count(2)->create() as $subject) {
+            $request = TuitionRequest::factory()->create([
+                'tutor_id' => $tutor->id,
+                'student_id' => $student->id,
+                'subject_id' => $subject->id,
+            ]);
+
+            $this->signIn($tutor);
+            $this->patchJson('/api/v1/tuition-requests/'.$request->id, ['status' => 'accepted']);
+        }
+
+        $this->getJson('/api/v1/tutor/dashboard')
+            ->assertOk()
+            ->assertJsonPath('stats.accepted_requests', 2)
+            ->assertJsonPath('stats.students_taught', 1);
+    }
+
+    public function test_a_declined_request_does_not_count_as_a_student(): void
+    {
+        $tutor = $this->tutor();
+
+        $request = TuitionRequest::factory()->create([
+            'tutor_id' => $tutor->id,
+            'student_id' => User::factory()->create()->id,
+        ]);
+
+        $this->signIn($tutor);
+
+        $this->patchJson('/api/v1/tuition-requests/'.$request->id, ['status' => 'declined'])
+            ->assertOk();
+
+        $this->getJson('/api/v1/tutor/dashboard')
+            ->assertOk()
+            ->assertJsonPath('stats.students_taught', 0);
+    }
 }

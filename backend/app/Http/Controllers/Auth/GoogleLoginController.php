@@ -104,12 +104,31 @@ class GoogleLoginController extends Controller
         }
 
         return User::create([
-            'name' => $name !== '' ? $name : $this->nameFromEmail($email),
+            'name' => $this->displayName($name, $email),
             'email' => $email,
             'student_id' => $studentId,
             'department_id' => $department?->id,
             'email_verified_at' => now(),
         ]);
+    }
+
+    /**
+     * The name to show for a Google account.
+     *
+     * An institutional account whose holder never set a display name comes
+     * back with the address itself as the name, so checking only for an empty
+     * one left profiles reading "shaikh.cse.20230204005@aust.edu". Anything
+     * that still looks like an address is treated as no name at all.
+     */
+    private function displayName(string $name, string $email): string
+    {
+        $name = trim($name);
+
+        if ($name === '' || str_contains($name, '@')) {
+            return $this->nameFromEmail($email);
+        }
+
+        return $name;
     }
 
     /**

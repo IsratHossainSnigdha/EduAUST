@@ -17,7 +17,8 @@ import {
   UserCheck,
   AlertCircle
 } from 'lucide-react';
-import { apiGet, apiPatch } from '../lib/auth';
+import { apiGet, apiPatch, clearAuth, isAuthenticated, isUnauthenticated } from '../lib/auth';
+import { useBadgeCounts } from '../lib/useBadgeCounts';
 import './NotificationsPage.css'; // <-- External stylesheet imported here
 
 // How each backend category is rendered in the list.
@@ -49,6 +50,10 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   });
   const [activeTab, setActiveTab] = useState('All');
 
+  // The sidebar badges were fixed numbers typed into this file; they now read
+  // the same shared counts as every other page.
+  const { counts: badges } = useBadgeCounts({ includeRequests: currentRole === 'tutor' });
+
   // Live data from the API, scoped to whichever dashboard is active.
   const [groups, setGroups] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -66,12 +71,19 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
 
     if (!ok) {
       setGroups([]);
-      setError(
-        body?.message === 'Unauthenticated.'
-          ? 'Your session has expired. Please sign in again.'
-          : body?.message || 'Could not load notifications.'
-      );
+
+      // A dead session used to leave the page sitting there telling the user
+      // to sign in again, with nothing on it that would let them.
+      if (isUnauthenticated(body)) {
+        clearAuth();
+        navigate('/login', { replace: true });
+
+        return;
+      }
+
+      setError(body?.message || 'Could not load notifications.');
       setLoading(false);
+
       return;
     }
 
@@ -81,8 +93,16 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   }, [activeTab, currentRole]);
 
   useEffect(() => {
+    // Without a session there is nothing to show and no way to sign in from
+    // this page, so send them where they can.
+    if (!isAuthenticated()) {
+      navigate('/login', { replace: true });
+
+      return;
+    }
+
     loadNotifications();
-  }, [loadNotifications]);
+  }, [loadNotifications, navigate]);
 
   // Mark every notification on this dashboard as read
   const handleMarkAllAsRead = async () => {
@@ -115,8 +135,8 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
     },
     ...(currentRole === 'student'
       ? [{ name: 'Find Tutors', icon: Search, path: '/find-tutors' }]
-      : [{ name: 'Tuition Requests', icon: BookOpen, badge: 6, path: '/tutor-requests' }]),
-    { name: 'Messages', icon: MessageSquare, badge: 2, path: '/messages' },
+      : [{ name: 'Tuition Requests', icon: BookOpen, badge: badges.requests || undefined, path: '/tutor-requests' }]),
+    { name: 'Messages', icon: MessageSquare, badge: badges.messages || undefined, path: '/messages' },
     { name: 'Notifications', icon: Bell, badge: unreadCount || undefined, path: '/notifications' },
     { name: 'Settings', icon: Settings, path: '/settings' },
     { name: 'Help & Support', icon: HelpCircle, path: '/support' },
@@ -207,7 +227,12 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
           </button>
 
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => {
+              // Without clearing the token this only changed page: the account
+              // stayed signed in and any dashboard let them straight back in.
+              clearAuth();
+              navigate('/login', { replace: true });
+            }}
             className="w-full border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-2"
           >
             <LogOut size={14} />

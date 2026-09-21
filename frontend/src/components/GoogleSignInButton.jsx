@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { apiPost, saveAuth, firstError } from '../lib/auth';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const GSI_SRC = 'https://accounts.google.com/gsi/client';
+// Google picks the button's language when this script loads, from the
+// browser's own language rather than the page's. `hl` is the only thing that
+// overrides it: passing `locale` to initialize() or renderButton() does not,
+// which is why a Bangla-configured Chrome kept rendering a Bangla button on an
+// otherwise English page.
+const GSI_SRC = 'https://accounts.google.com/gsi/client?hl=en';
 
 /**
  * Sign in or register with an AUST institutional Google account.
