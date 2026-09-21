@@ -18,6 +18,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { apiGet, isAuthenticated, isUnauthenticated, clearAuth } from '../../lib/auth';
+import { useBadgeCounts } from '../../lib/useBadgeCounts';
 import './StudentDashboard.css';
 
 // Status pill colours for the student's own requests.
@@ -31,7 +32,6 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMenu, setActiveMenu] = useState('Dashboard');
-  const [unreadCount, setUnreadCount] = useState(0);
   const [currentRole, setCurrentRole] = useState('student');
   // The signed-in user, so the profile card and the tutor switch reflect the
   // real account rather than a placeholder.
@@ -74,19 +74,20 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   // than two fixed examples.
   const [myRequests, setMyRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
-  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  // The unread badges are shared with every other page that shows them, so
+  // one request serves them all rather than each page asking again.
+  const { counts: badges } = useBadgeCounts();
+  const unreadMessages = badges.messages;
+  const unreadCount = badges.notifications.student;
 
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([
-      apiGet('/tuition-requests/mine'),
-      apiGet('/conversations/unread-count'),
-    ]).then(([requests, messages]) => {
+    apiGet('/tuition-requests/mine').then(({ ok, body }) => {
       if (cancelled) return;
 
-      if (requests.ok) setMyRequests((requests.body?.data ?? []).slice(0, 4));
-      if (messages.ok) setUnreadMessages(messages.body?.unread_total ?? 0);
+      if (ok) setMyRequests((body?.data ?? []).slice(0, 4));
 
       setLoadingRequests(false);
     });
@@ -125,20 +126,6 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   localStorage.setItem('eduAUST_role', 'student');
 }, []);
 
-  // Badge count for this dashboard only; the API reports each side separately.
-  useEffect(() => {
-    let cancelled = false;
-
-    apiGet('/notifications/unread-count').then(({ ok, body }) => {
-      if (!cancelled && ok) {
-        setUnreadCount(body?.by_audience?.student ?? 0);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}>

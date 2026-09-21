@@ -14,6 +14,8 @@ import {
   isUnauthenticated,
 } from '../../lib/auth';
 
+import { useBadgeCounts } from '../../lib/useBadgeCounts';
+
 import TutorSidebar from '../../components/Tutor/TutorSidebar';
 import TutorHeader from '../../components/Tutor/TutorHeader';
 import WelcomeSection from '../../components/Tutor/WelcomeSection';
@@ -35,8 +37,13 @@ export default function TutorDashboard({
 
   const [activeMenu, setActiveMenu] =
     useState('Dashboard');
-  const [unreadCount, setUnreadCount] =
-    useState(0);
+
+  /*
+   * The sidebar shows the same unread counts, so both read them through the
+   * shared hook and one request serves the whole screen.
+   */
+  const { counts: badges } = useBadgeCounts({ includeRequests: true });
+  const unreadCount = badges.notifications.tutor;
 
   // Real dashboard data from the backend, replacing the placeholder figures
   // the cards used to hard-code.
@@ -106,35 +113,6 @@ export default function TutorDashboard({
       'tutor'
     );
   }, [setCurrentRole]);
-
-  /*
-   * Notifications
-   */
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadNotifications = async () => {
-      const { ok, body } =
-        await apiGet(
-          '/notifications/unread-count'
-        );
-
-      if (
-        !cancelled &&
-        ok
-      ) {
-        setUnreadCount(
-          body?.by_audience?.tutor ?? 0
-        );
-      }
-    };
-
-    loadNotifications();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
 
   /*

@@ -327,7 +327,12 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
           </button>
 
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => {
+              // Without clearing the token this only changed page: the account
+              // stayed signed in and any dashboard let them straight back in.
+              clearAuth();
+              navigate('/login', { replace: true });
+            }}
             className="w-full border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl py-2 text-xs font-bold transition flex items-center justify-center gap-2"
           >
             <LogOut size={14} />
