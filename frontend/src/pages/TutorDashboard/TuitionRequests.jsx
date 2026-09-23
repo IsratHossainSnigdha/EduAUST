@@ -14,6 +14,7 @@ import TutorHeader from '../../components/Tutor/TutorHeader';
 import TuitionRequestList from '../../components/Tutor/TuitionRequestList';
 import RequestNotice from '../../components/Tutor/RequestNotice';
 import RequestDetailsModal from '../../components/Tutor/RequestDetailsModal';
+import { setRole, TUTOR, useRole } from '../../lib/useRole';
 import './TuitionRequests.css'; // <-- External stylesheet imported here
 
 /*
@@ -78,11 +79,9 @@ export default function TuitionRequests({
     'Tuition Requests'
   );
 
-  const [currentRole, setCurrentRole] = useState(
-    () =>
-      localStorage.getItem('eduAUST_role') ||
-      'tutor'
-  );
+  // TutorRoute has already confirmed this account tutors; useRole owns the
+  // stored role rather than this page keeping its own copy.
+  const { role: currentRole, setRole: setCurrentRole } = useRole();
 
   // Requests come from the backend; statuses are no longer kept in
   // localStorage, where they could disagree with what the tutor actually did.
@@ -91,15 +90,17 @@ export default function TuitionRequests({
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // The inbox opens on the requests awaiting an answer, so an accepted or
+  // declined one drops out once it is answered. The other tabs keep the
+  // history reachable.
+  const [statusTab, setStatusTab] = useState('pending');
+
   const [selectedRequest, setSelectedRequest] =
     useState(null);
 
   useEffect(() => {
-    localStorage.setItem(
-      'eduAUST_role',
-      currentRole
-    );
-  }, [currentRole]);
+    setRole(TUTOR);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,7 +109,8 @@ export default function TuitionRequests({
       setLoading(true);
       setError('');
 
-      const { ok, body } = await apiGet('/tuition-requests');
+      const query = statusTab === 'all' ? '' : `?status=${statusTab}`;
+      const { ok, body } = await apiGet(`/tuition-requests${query}`);
 
       if (cancelled) return;
 
@@ -135,7 +137,7 @@ export default function TuitionRequests({
     return () => {
       cancelled = true;
     };
-  }, [navigate, refreshKey]);
+  }, [navigate, refreshKey, statusTab]);
 
   const handleNavigation = (
     itemName,
@@ -231,6 +233,32 @@ export default function TuitionRequests({
           </p>
         </div>
 
+        {/* Status tabs — the inbox defaults to pending so an answered request
+            leaves the list, with the history a click away. */}
+        <div className="flex items-center gap-2">
+          {[
+            { key: 'pending', label: 'Pending' },
+            { key: 'accepted', label: 'Accepted' },
+            { key: 'declined', label: 'Declined' },
+            { key: 'all', label: 'All' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setStatusTab(tab.key)}
+              className={`text-xs font-bold px-3.5 py-1.5 rounded-full transition ${
+                statusTab === tab.key
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : darkMode
+                  ? 'bg-slate-800 text-slate-300 hover:text-white'
+                  : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* Request List */}
         {error && (
           <div className="p-4 rounded-2xl border border-rose-500/40 bg-rose-500/10 text-rose-500 text-sm font-semibold flex items-center justify-between gap-4">
@@ -264,6 +292,10 @@ export default function TuitionRequests({
           onClose={handleCloseDetails}
           onAccept={(id) => {
             handleAccept(id);
+            handleCloseDetails();
+          }}
+          onDecline={(id) => {
+            handleDecline(id);
             handleCloseDetails();
           }}
         />

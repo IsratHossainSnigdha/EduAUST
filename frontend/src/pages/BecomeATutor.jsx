@@ -255,8 +255,8 @@ export default function BecomeATutor({ darkMode, toggleDarkMode }) {
           <div>
             <h4 className={`font-semibold mb-3 text-xs uppercase tracking-wider ${darkMode ? 'text-white' : 'text-slate-900'}`}>Support</h4>
             <ul className={`space-y-2 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              <li><a href="#" className="hover:text-emerald-600">Help Center</a></li>
-              <li><a href="#" className="hover:text-emerald-600">Contact Us</a></li>
+              <li><button type="button" onClick={() => navigate('/support')} className="hover:text-emerald-600">Help Center</button></li>
+              <li><button type="button" onClick={() => navigate('/support')} className="hover:text-emerald-600">Contact Us</button></li>
               <li><a href="#" className="hover:text-emerald-600">Privacy Policy</a></li>
               <li><a href="#" className="hover:text-emerald-600">Terms of Service</a></li>
             </ul>

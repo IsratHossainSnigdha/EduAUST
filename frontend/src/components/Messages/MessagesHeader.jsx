@@ -1,15 +1,27 @@
 import { useCurrentUser } from '../../lib/useCurrentUser';
 import React from 'react';
 import { Bell, Moon, Sun, ChevronDown } from 'lucide-react';
+import UserAvatar from '../UserAvatar';
 
 export default function MessagesHeader({
   darkMode,
   toggleDarkMode,
+  currentRole = 'student',
 }) {
   const { user: currentUser } = useCurrentUser();
+  const isTutorView = currentRole === 'tutor';
   const textPrimary = darkMode
     ? 'text-white font-extrabold'
     : 'text-slate-900 font-extrabold';
+
+  // The chrome follows the dashboard being used: a tutor is talking with the
+  // students who approached them, a student with the tutors they can reach.
+  const subtitle = isTutorView
+    ? 'Chat with your students and answer their questions.'
+    : 'Chat with tutors and manage your conversations.';
+  const roleLabel = isTutorView
+    ? 'Tutor'
+    : ['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ');
 
   return (
     <header className="flex items-center justify-between shrink-0">
@@ -29,7 +41,7 @@ export default function MessagesHeader({
               : 'text-slate-600 font-medium'
           }`}
         >
-          Chat with tutors and manage your conversations.
+          {subtitle}
         </p>
       </div>
 
@@ -64,11 +76,7 @@ export default function MessagesHeader({
 
         {/* Profile */}
         <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200 dark:border-slate-800">
-          <img
-            src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'}
-            alt="Profile"
-            className="w-8 h-8 rounded-full object-cover ring-2 ring-emerald-500/20"
-          />
+          <UserAvatar user={currentUser} size={32} />
 
           <div className="hidden sm:block">
             <h5 className={`text-xs ${textPrimary}`}>
@@ -82,7 +90,7 @@ export default function MessagesHeader({
                   : 'text-slate-500 font-medium'
               }`}
             >
-              Student
+              {roleLabel}
             </p>
           </div>
 

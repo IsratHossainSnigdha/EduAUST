@@ -216,4 +216,67 @@ class GoogleLoginTest extends TestCase
             'password' => 'Str0ng!Pass',
         ])->assertOk()->assertJsonStructure(['access_token']);
     }
+
+    /**
+     * An institutional account whose holder never set a display name comes
+     * back with the address itself as the name.
+     */
+    public function test_an_address_returned_as_the_name_is_not_used_as_one(): void
+    {
+        Department::factory()->create(['code' => 'CSE']);
+
+        $this->googleReturns([
+            'iss' => 'https://accounts.google.com',
+            'email' => 'shaikh.cse.20230204005@aust.edu',
+            'email_verified' => true,
+            'name' => 'shaikh.cse.20230204005@aust.edu',
+        ]);
+
+        $this->postJson('/api/v1/auth/google', ['id_token' => 'stub'])
+            ->assertCreated()
+            ->assertJsonPath('user.name', 'Shaikh');
+    }
+
+    public function test_an_account_with_no_name_at_all_falls_back_to_the_address(): void
+    {
+        Department::factory()->create(['code' => 'CSE']);
+
+        $this->googleReturns([
+            'iss' => 'https://accounts.google.com',
+            'email' => 'rafi.cse.20230204099@aust.edu',
+            'email_verified' => true,
+            'name' => '',
+        ]);
+
+        $this->postJson('/api/v1/auth/google', ['id_token' => 'stub'])
+            ->assertCreated()
+            ->assertJsonPath('user.name', 'Rafi');
+    }
+
+    /**
+     * A Google sign-up is a student like any other: tutoring is something an
+     * account gains later, never something the sign-in grants.
+     */
+    public function test_a_google_signup_does_not_tutor(): void
+    {
+        Department::factory()->create(['code' => 'CSE']);
+
+        $this->googleReturns([
+            'iss' => 'https://accounts.google.com',
+            'email' => 'nadia.cse.20230204077@aust.edu',
+            'email_verified' => true,
+            'name' => 'Nadia Rahman',
+        ]);
+
+        $this->postJson('/api/v1/auth/google', ['id_token' => 'stub'])
+            ->assertCreated()
+            ->assertJsonPath('user.isTutor', false);
+
+        $user = User::where('email', 'nadia.cse.20230204077@aust.edu')->firstOrFail();
+
+        // And the tutor dashboard stays shut to them.
+        $this->withToken(app(JwtService::class)->tokensFor($user)['access_token'])
+            ->getJson('/api/v1/tutor/dashboard')
+            ->assertForbidden();
+    }
 }

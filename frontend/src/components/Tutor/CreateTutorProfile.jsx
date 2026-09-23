@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { setRole, TUTOR } from '../../lib/useRole';
 import {
   apiGet,
   apiPost,
@@ -212,10 +213,7 @@ export default function TutorAccountForm({
      *
      * Save tutor role locally before navigating.
      */
-    localStorage.setItem(
-      'eduAUST_role',
-      'tutor'
-    );
+    setRole(TUTOR);
 
     /*
      * Tell parent about success if needed.

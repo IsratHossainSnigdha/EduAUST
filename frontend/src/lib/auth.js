@@ -37,6 +37,11 @@ export function clearAuth() {
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
   localStorage.removeItem(USER_KEY);
+  // The active dashboard belongs to the account that just signed out; leaving
+  // it behind would hand the next account the previous one's role. useRole
+  // owns this key — it is removed here rather than imported, so that every one
+  // of the sign-out paths clears it without having to remember to.
+  localStorage.removeItem('eduAUST_role');
 }
 
 // A page that fires several requests at once would otherwise spend its refresh

@@ -63,6 +63,9 @@ class LoginController extends Controller
                 'email' => $user->email,
                 'student_id' => $user->student_id,
                 'department_id' => $user->department_id,
+                // Lets the client send a tutor to their own dashboard rather
+                // than the student one, the same as the Google response does.
+                'isTutor' => (bool) $user->isTutor,
             ],
         ], $jwt->tokensFor($user, $request->wantsRemember())));
     }

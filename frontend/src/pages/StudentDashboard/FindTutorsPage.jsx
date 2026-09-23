@@ -13,7 +13,6 @@ import {
   Sun,
   Moon,
   Filter,
-  Star,
   BookOpen,
   MapPin,
   Users,
@@ -22,10 +21,13 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Lock
+  Lock,
+  Heart
 } from 'lucide-react';
-import { apiGet, apiPost, clearAuth } from '../../lib/auth';
+import { apiDelete, apiGet, apiPost, clearAuth } from '../../lib/auth';
+import StarRating from '../../components/StarRating';
 import './FindTutorsPage.css';
+import UserAvatar from '../../components/UserAvatar';
 
 // Filter panel defaults; '' means "no filter applied".
 const EMPTY_FILTERS = {
@@ -51,8 +53,11 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const { user: currentUser } = useCurrentUser();
   const [activeMenu, setActiveMenu] = useState('Find Tutors');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentRole, setCurrentRole] = useState('student');
+  // The dashboard search box hands its query over in the URL, so arriving
+  // from there lands on the results rather than an unfiltered list.
+  const [searchQuery, setSearchQuery] = useState(
+    () => new URLSearchParams(window.location.search).get('search') ?? ''
+  );
   const [currentPage, setCurrentPage] = useState(1);
 
   // Filter panel state. `applied` is what the API is actually queried with, so
@@ -69,6 +74,59 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
   // page-wide spinner: 'sending' | 'sent' | an error message.
   const [requestState, setRequestState] = useState({});
   const [requestError, setRequestError] = useState('');
+
+  // The student's shortlist, so each card knows whether it is already saved.
+  const [saved, setSaved] = useState(() => new Set());
+  const [savingId, setSavingId] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    apiGet('/student/saved-tutors').then(({ ok, body }) => {
+      if (cancelled || !ok) return;
+
+      setSaved(new Set((body?.data ?? []).map((s) => s.tutor_id)));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /**
+   * Save or unsave, updating the card straight away and putting it back if
+   * the server disagrees — a shortlist toggle should not wait on a round trip.
+   */
+  const toggleSaved = async (tutorId) => {
+    const wasSaved = saved.has(tutorId);
+
+    setSavingId(tutorId);
+    setSaved((current) => {
+      const next = new Set(current);
+      if (wasSaved) next.delete(tutorId);
+      else next.add(tutorId);
+
+      return next;
+    });
+
+    const { ok } = wasSaved
+      ? await apiDelete(`/student/saved-tutors/${tutorId}`)
+      : await apiPost('/student/saved-tutors', { tutor_id: tutorId });
+
+    setSavingId(null);
+
+    if (!ok) {
+      setSaved((current) => {
+        const next = new Set(current);
+        if (wasSaved) next.add(tutorId);
+        else next.delete(tutorId);
+
+        return next;
+      });
+
+      setRequestError('Could not update your saved tutors. Please try again.');
+    }
+  };
 
   // What this student has already asked for, so each card can show its own
   // state and only offer chat where a tutor has agreed to teach.
@@ -300,30 +358,22 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
         
         <div className={`pt-6 border-t ${darkMode ? 'border-slate-700/60' : 'border-slate-200'} space-y-4`}>
           <div className="flex items-center gap-3">
-            <img
-              src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'}
-              alt="User"
-              className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/30"
-            />
+            <UserAvatar user={currentUser} size={40} />
             <div>
               <h4 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h4>
-              <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>Student.CSE 3.1</p>
+              <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
+                {['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
+              </p>
             </div>
           </div>
           
           <button
-            onClick={() => {
-              if (currentRole === 'student') {
-                setCurrentRole('tutor');
-                navigate('/tutor-dashboard');
-              } else {
-                setCurrentRole('student');
-                navigate('/dashboard');
-              }
-            }}
+            onClick={() =>
+              navigate(currentUser?.isTutor ? '/tutor-dashboard' : '/become-a-tutor')
+            }
             className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
           >
-            {currentRole === 'student' ? 'Switch to Tutor Dashboard' : 'Switch to Student Dashboard'}
+            {currentUser?.isTutor ? 'Switch to Tutor Dashboard' : 'Become a Tutor'}
           </button>
 
           <button
@@ -361,10 +411,12 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
               <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
             </button>
             <div className={`flex items-center gap-3 pl-3 border-l ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
-              <img src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'} alt="Profile" className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" />
+              <UserAvatar user={currentUser} size={36} />
               <div className="hidden sm:block">
                 <h5 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h5>
-                <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>Student.CSE 3.1</p>
+                <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
+                  {['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
+                </p>
               </div>
             </div>
           </div>
@@ -536,8 +588,15 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                           </span>
                         </div>
                         <p className="text-[11px] text-emerald-600 font-bold">{tutor.headline}</p>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400 flex-wrap">
                           <span className="flex items-center gap-1"><MapPin size={12} /> {tutor.department ?? 'AUST'}</span>
+                          {/* What students made of them — the cards carried a
+                              star icon with nothing behind it until now. */}
+                          <StarRating
+                            value={tutor.rating ?? 0}
+                            count={tutor.rating_count}
+                            darkMode={darkMode}
+                          />
                         </div>
                       </div>
                     </div>
@@ -568,6 +627,25 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                     </div>
 
                     <div className="flex items-center gap-3 pt-2">
+                      {/* Keeping a tutor is separate from asking them: a
+                          student can shortlist a few and request later. */}
+                      <button
+                        type="button"
+                        onClick={() => toggleSaved(tutor.user_id)}
+                        disabled={savingId === tutor.user_id}
+                        title={saved.has(tutor.user_id) ? 'Remove from saved' : 'Save for later'}
+                        aria-pressed={saved.has(tutor.user_id)}
+                        className={`shrink-0 p-2 rounded-xl border transition disabled:opacity-50 ${
+                          saved.has(tutor.user_id)
+                            ? 'border-pink-500 text-pink-500 bg-pink-500/10'
+                            : darkMode
+                              ? 'border-slate-700 text-slate-400 hover:text-pink-400 hover:border-pink-500/50'
+                              : 'border-slate-200 text-slate-400 hover:text-pink-500 hover:border-pink-300'
+                        }`}
+                      >
+                        <Heart size={14} fill={saved.has(tutor.user_id) ? 'currentColor' : 'none'} />
+                      </button>
+
                       <button
                         onClick={() => handleMessageTutor(tutor)}
                         disabled={requestState[tutor.user_id] !== 'accepted'}

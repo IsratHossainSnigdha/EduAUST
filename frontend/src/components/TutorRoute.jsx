@@ -11,6 +11,8 @@ import {
   apiGet,
 } from '../lib/auth';
 
+import { setRole, TUTOR } from '../lib/useRole';
+
 export default function TutorRoute({
   children,
 }) {
@@ -40,10 +42,8 @@ export default function TutorRoute({
           user.isTutor === '1';
 
         if (tutorStatus) {
-          localStorage.setItem(
-            'eduAUST_role',
-            'tutor'
-          );
+          // Landing on a tutor route is the move to the tutor side.
+          setRole(TUTOR);
 
           setStatus('tutor');
         } else {

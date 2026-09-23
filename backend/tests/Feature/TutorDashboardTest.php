@@ -57,7 +57,54 @@ class TutorDashboardTest extends TestCase
             ->assertJsonPath('tutor.id', $tutor->id)
             ->assertJsonPath('tutor.name', $tutor->name)
             ->assertJsonPath('tutor.headline', 'DSA Tutor')
-            ->assertJsonPath('stats.students_taught', 12);
+            // Derived from real requests, not the factory's stored figure: a
+            // tutor with no accepted requests has taught nobody yet.
+            ->assertJsonPath('stats.currently_teaching', 0)
+            ->assertJsonPath('stats.students_taught', 0);
+    }
+
+    public function test_ending_an_arrangement_lowers_currently_teaching_but_not_taught(): void
+    {
+        $tutor = $this->tutor();
+        $student = User::factory()->create();
+
+        $request = TuitionRequest::factory()->accepted()->create([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+        ]);
+
+        $this->signIn($tutor);
+
+        $this->getJson('/api/v1/tutor/dashboard')
+            ->assertOk()
+            ->assertJsonPath('stats.currently_teaching', 1)
+            ->assertJsonPath('stats.students_taught', 1);
+
+        // End the arrangement — they stop being taught now, but were taught.
+        $this->deleteJson('/api/v1/tuition-requests/'.$request->id)->assertOk();
+
+        $this->getJson('/api/v1/tutor/dashboard')
+            ->assertOk()
+            ->assertJsonPath('stats.currently_teaching', 0)
+            ->assertJsonPath('stats.students_taught', 1);
+    }
+
+    public function test_only_the_owning_tutor_can_end_an_arrangement(): void
+    {
+        $tutor = $this->tutor();
+        $request = TuitionRequest::factory()->accepted()->create(['tutor_id' => $tutor->id]);
+
+        $this->signIn($this->tutor());
+        $this->deleteJson('/api/v1/tuition-requests/'.$request->id)->assertNotFound();
+    }
+
+    public function test_a_pending_request_cannot_be_ended(): void
+    {
+        $tutor = $this->tutor();
+        $request = TuitionRequest::factory()->create(['tutor_id' => $tutor->id]);
+
+        $this->signIn($tutor);
+        $this->deleteJson('/api/v1/tuition-requests/'.$request->id)->assertStatus(422);
     }
 
     public function test_stats_count_requests_by_status(): void
@@ -293,5 +340,110 @@ class TutorDashboardTest extends TestCase
         $this->getJson('/api/v1/tutor/dashboard')
             ->assertOk()
             ->assertJsonPath('stats.students_taught', 0);
+    }
+
+    public function test_the_dashboard_dates_the_students_it_lists(): void
+    {
+        $tutor = $this->tutor();
+        $started = now()->subMonths(3);
+
+        TuitionRequest::factory()->accepted()->create([
+            'tutor_id' => $tutor->id,
+            'student_id' => User::factory()->create(['name' => 'Ada Lovelace'])->id,
+            'subject_id' => Subject::factory()->create(['name' => 'Algorithms'])->id,
+            'responded_at' => $started,
+        ]);
+
+        $this->signIn($tutor);
+
+        $response = $this->getJson('/api/v1/tutor/dashboard')->assertOk()
+            ->assertJsonCount(1, 'students')
+            ->assertJsonPath('students.0.name', 'Ada Lovelace')
+            // A tutor may stop whenever they need to.
+            ->assertJsonPath('students.0.can_end', true);
+
+        $this->assertSame(
+            $started->toIso8601String(),
+            $response->json('students.0.since')
+        );
+        $this->assertNull($response->json('students.0.ended_at'));
+    }
+
+    public function test_an_ended_student_moves_to_the_past_list_with_both_dates(): void
+    {
+        $tutor = $this->tutor();
+        $student = User::factory()->create();
+
+        $arrangement = TuitionRequest::factory()->accepted()->create([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'responded_at' => now()->subMonths(6),
+        ]);
+
+        $this->signIn($tutor);
+        $this->deleteJson('/api/v1/tuition-requests/'.$arrangement->id)->assertOk();
+
+        $response = $this->getJson('/api/v1/tutor/dashboard')->assertOk()
+            ->assertJsonCount(0, 'students')
+            ->assertJsonCount(1, 'past_students')
+            ->assertJsonPath('past_students.0.student_id', $student->id)
+            // What has finished cannot be finished again.
+            ->assertJsonPath('past_students.0.can_end', false);
+
+        $this->assertNotNull($response->json('past_students.0.since'));
+        $this->assertNotNull($response->json('past_students.0.ended_at'));
+    }
+
+    public function test_a_student_still_being_taught_is_not_a_past_student(): void
+    {
+        $tutor = $this->tutor();
+        $student = User::factory()->create();
+
+        TuitionRequest::factory()->create([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'status' => TuitionRequest::STATUS_ENDED,
+            'responded_at' => now()->subMonths(5),
+            'ended_at' => now()->subMonths(2),
+        ]);
+
+        TuitionRequest::factory()->accepted()->create([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'responded_at' => now()->subMonths(1),
+        ]);
+
+        $this->signIn($tutor);
+
+        $this->getJson('/api/v1/tutor/dashboard')->assertOk()
+            ->assertJsonCount(1, 'students')
+            ->assertJsonCount(0, 'past_students');
+    }
+
+    public function test_the_relationship_is_dated_from_its_earliest_arrangement(): void
+    {
+        $tutor = $this->tutor();
+        $student = User::factory()->create();
+        $earliest = now()->subMonths(8);
+
+        foreach ([$earliest, now()->subMonths(2)] as $when) {
+            TuitionRequest::factory()->accepted()->create([
+                'tutor_id' => $tutor->id,
+                'student_id' => $student->id,
+                'subject_id' => Subject::factory()->create()->id,
+                'responded_at' => $when,
+            ]);
+        }
+
+        $this->signIn($tutor);
+
+        $response = $this->getJson('/api/v1/tutor/dashboard')->assertOk()
+            ->assertJsonCount(1, 'students');
+
+        // Adding a second subject does not restart the relationship.
+        $this->assertSame(
+            $earliest->toIso8601String(),
+            $response->json('students.0.since')
+        );
     }
 }

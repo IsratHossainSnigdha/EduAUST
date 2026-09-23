@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\Review;
 use App\Models\Subject;
 use App\Models\TuitionRequest;
 use App\Models\TutorProfile;
@@ -99,7 +100,11 @@ class TutorController extends Controller
 
         $query = TutorProfile::query()
             ->listable()
-            ->with(['user.department', 'subjects']);
+            ->with(['user.department', 'subjects'])
+            // Aggregated in the same query rather than per card, so a page of
+            // tutors does not become a page of extra round trips.
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews');
 
         // A tutor browsing the listing should not be offered their own card.
         if ($request->user()) {
@@ -194,6 +199,13 @@ class TutorController extends Controller
             'student_count' => $tutor->student_count,
             'languages' => $tutor->languages ?? [],
             'is_available' => (bool) $tutor->is_available,
+            // The cards have shown stars since the listing was built, read
+            // from nothing. Null means nobody has rated them yet, which is
+            // not the same as a rating of zero.
+            'rating' => $tutor->reviews_avg_rating !== null
+                ? round((float) $tutor->reviews_avg_rating, 1)
+                : null,
+            'rating_count' => (int) ($tutor->reviews_count ?? 0),
             'subjects' => $tutor->subjects
                 ->map(fn (Subject $subject) => [
                     'id' => $subject->id,
@@ -226,6 +238,8 @@ class TutorController extends Controller
             ->groupBy('status')
             ->pluck('total', 'status');
 
+        $rating = Review::summaryFor($user->id);
+
         return response()->json([
             'tutor' => [
                 'id' => $user->id,
@@ -248,8 +262,15 @@ class TutorController extends Controller
                 'accepted_requests' => (int) ($counts[TuitionRequest::STATUS_ACCEPTED] ?? 0),
                 'declined_requests' => (int) ($counts[TuitionRequest::STATUS_DECLINED] ?? 0),
                 'total_requests' => (int) $counts->sum(),
-                'students_taught' => (int) ($profile?->student_count ?? 0),
+                // Students being taught right now, versus everyone ever taken
+                // on — the latter does not fall when an arrangement ends.
+                'currently_teaching' => TuitionRequest::currentlyTeaching($user->id),
+                'students_taught' => TuitionRequest::studentsTaught($user->id),
                 'subjects_count' => $profile ? $profile->subjects->count() : 0,
+                // What students made of the teaching, which is the figure a
+                // tutor most wants on their own dashboard.
+                'rating' => $rating['average'],
+                'rating_count' => $rating['count'],
             ],
             // A profile with nothing filled in looks broken on a public card,
             // so the dashboard can prompt the tutor to finish it.
@@ -257,7 +278,100 @@ class TutorController extends Controller
             'recent_requests' => $requests
                 ->map(fn (TuitionRequest $r) => TuitionRequestController::presentRequest($r))
                 ->all(),
+            // The students being taught right now, so the dashboard can act on
+            // them — message, rate or stop teaching — without hunting through
+            // the request list for the right row.
+            'students' => $this->students($user->id, TuitionRequest::STATUS_ACCEPTED),
+            'past_students' => $this->students($user->id, TuitionRequest::STATUS_ENDED),
         ]);
+    }
+
+    /**
+     * The tutor's active students, each with what is needed to act on them.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    /**
+     * The students on one side of this tutor's history, grouped one row each.
+     *
+     * Accepted gives who is being taught now; ended gives who was. A student
+     * who is still being taught for one subject is not "past" because another
+     * arrangement with them finished, so they only ever appear in one list.
+     */
+    private function students(string $tutorId, string $status): array
+    {
+        $arrangements = TuitionRequest::query()
+            ->where('tutor_id', $tutorId)
+            ->where('status', $status)
+            ->with(['student.department', 'subject'])
+            ->latest($status === TuitionRequest::STATUS_ENDED ? 'ended_at' : 'responded_at')
+            ->get()
+            ->filter(fn (TuitionRequest $r) => $r->student !== null);
+
+        if ($status === TuitionRequest::STATUS_ENDED) {
+            $current = TuitionRequest::query()
+                ->where('tutor_id', $tutorId)
+                ->where('status', TuitionRequest::STATUS_ACCEPTED)
+                ->pluck('student_id')
+                ->unique();
+
+            $arrangements = $arrangements->reject(
+                fn (TuitionRequest $r) => $current->contains($r->student_id)
+            );
+        }
+
+        // What this tutor already said about each of them, so a rated student
+        // offers "edit" rather than asking again.
+        $myRatings = Review::query()
+            ->where('tutor_id', $tutorId)
+            ->where('direction', Review::TUTOR_TO_STUDENT)
+            ->get()
+            ->keyBy('student_id');
+
+        return $arrangements
+            // One row per student: several subjects with the same student is
+            // still one student to manage.
+            ->groupBy('student_id')
+            ->map(function ($forStudent) use ($myRatings, $status) {
+                $first = $forStudent->first();
+                $student = $first->student;
+                $rating = $myRatings->get($student->id);
+
+                // The longest-running of them is the one that dates the
+                // relationship, not whichever subject was added last.
+                $started = $forStudent->map(fn (TuitionRequest $r) => $r->startedAt())
+                    ->filter()
+                    ->min();
+
+                $ended = $forStudent->map(fn (TuitionRequest $r) => $r->ended_at)
+                    ->filter()
+                    ->max();
+
+                return [
+                    'request_id' => $first->id,
+                    'student_id' => $student->id,
+                    'name' => $student->name,
+                    'avatar' => $student->profile_picture,
+                    'department' => $student->department?->code,
+                    'semester' => $student->semester,
+                    'subjects' => $forStudent
+                        ->map(fn (TuitionRequest $r) => $r->subject?->name)
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->all(),
+                    'since' => $started?->toIso8601String(),
+                    'ended_at' => $ended?->toIso8601String(),
+                    'my_rating' => $rating?->rating,
+                    // A tutor is giving their own time, so they may stop
+                    // whenever they need to. What has already finished cannot
+                    // be finished again.
+                    'can_end' => $status === TuitionRequest::STATUS_ACCEPTED,
+                    'end_blocked_reason' => null,
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     /**

@@ -13,9 +13,12 @@ use App\Http\Controllers\Auth\SignInMethodController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\StudentDashboardController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TuitionRequestController;
 use App\Http\Controllers\TutorController;
+use App\Http\Controllers\UserProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -130,6 +133,15 @@ Route::prefix('v1')->group(function () {
         Route::post('/', [TuitionRequestController::class, 'store'])
             ->middleware('throttle:20,1')
             ->name('api.v1.tuition-requests.store');
+
+        /*
+         * End an active arrangement. Either side may do it — a student who has
+         * stopped working with a tutor used to be stuck waiting for the tutor
+         * to end it — so this is not behind the tutor middleware. The
+         * controller refuses anyone who is not one of the two.
+         */
+        Route::delete('/{tuitionRequest}', [TuitionRequestController::class, 'end'])
+            ->name('api.v1.tuition-requests.end');
     });
 
     Route::middleware(['auth.jwt', 'tutor'])->prefix('tuition-requests')->group(function () {
@@ -140,6 +152,63 @@ Route::prefix('v1')->group(function () {
         Route::patch('/{tuitionRequest}', [TuitionRequestController::class, 'update'])
             ->name('api.v1.tuition-requests.update');
     });
+    /*
+    |--------------------------------------------------------------------------
+    | Reviews
+    |--------------------------------------------------------------------------
+    | Students rate the tutors who taught them; anyone signed in can read a
+    | tutor's ratings, since that is what they weigh up before asking.
+    */
+
+    Route::middleware('auth.jwt')->group(function () {
+
+        Route::get('/users/{user}/profile', [UserProfileController::class, 'show'])
+            ->name('api.v1.users.profile');
+
+        Route::get('/users/{user}/student-reviews', [UserProfileController::class, 'studentReviews'])
+            ->name('api.v1.users.student-reviews');
+
+        Route::get('/tutors/{tutor}/reviews', [ReviewController::class, 'index'])
+            ->name('api.v1.tutors.reviews.index');
+
+        Route::get('/reviews/mine', [ReviewController::class, 'mine'])
+            ->name('api.v1.reviews.mine');
+
+        Route::post('/reviews', [ReviewController::class, 'store'])
+            ->middleware('throttle:30,1')
+            ->name('api.v1.reviews.store');
+
+        Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])
+            ->name('api.v1.reviews.destroy');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student Dashboard
+    |--------------------------------------------------------------------------
+    | Every account is a student, tutors included, so none of this is behind
+    | the tutor middleware: a tutor reading it sees their own student side.
+    */
+
+    Route::middleware('auth.jwt')->prefix('student')->group(function () {
+
+        Route::get('/dashboard', [StudentDashboardController::class, 'show'])
+            ->name('api.v1.student.dashboard');
+
+        Route::get('/requests', [StudentDashboardController::class, 'requests'])
+            ->name('api.v1.student.requests');
+
+        Route::get('/saved-tutors', [StudentDashboardController::class, 'savedTutors'])
+            ->name('api.v1.student.saved-tutors.index');
+
+        Route::post('/saved-tutors', [StudentDashboardController::class, 'save'])
+            ->middleware('throttle:60,1')
+            ->name('api.v1.student.saved-tutors.store');
+
+        Route::delete('/saved-tutors/{tutor}', [StudentDashboardController::class, 'unsave'])
+            ->name('api.v1.student.saved-tutors.destroy');
+    });
+
     /*
     |--------------------------------------------------------------------------
     | Tutor Dashboard / Tutor-Only Routes

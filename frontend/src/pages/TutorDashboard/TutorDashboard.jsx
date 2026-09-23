@@ -8,6 +8,7 @@ import {
 } from 'react-router-dom';
 
 import {
+  apiDelete,
   apiGet,
   apiPatch,
   clearAuth,
@@ -21,8 +22,12 @@ import TutorHeader from '../../components/Tutor/TutorHeader';
 import WelcomeSection from '../../components/Tutor/WelcomeSection';
 import TutorStats from '../../components/Tutor/TutorStats';
 import TuitionRequests from '../../components/Tutor/TuitionRequests';
+import MyStudents from '../../components/Tutor/MyStudents';
 import ProfileReminder from '../../components/Tutor/ProfileReminder';
+import TutorReviews from '../../components/Reviews/TutorReviews';
+import ProfileModal from '../../components/Messages/ProfileModal';
 import './TutorDashboard.css';
+import { setRole, TUTOR } from '../../lib/useRole';
 
 export default function TutorDashboard({
   darkMode,
@@ -59,6 +64,9 @@ export default function TutorDashboard({
   // Bumped after a request is answered so the figures and the list reload.
   const [refreshKey, setRefreshKey] =
     useState(0);
+
+  // Whose profile is open, if any — opened from a student row.
+  const [profileUserId, setProfileUserId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,13 +114,10 @@ export default function TutorDashboard({
    * Therefore DO NOT call /auth/me here again.
    */
   useEffect(() => {
-    setCurrentRole('tutor');
-
-    localStorage.setItem(
-      'eduAUST_role',
-      'tutor'
-    );
-  }, [setCurrentRole]);
+    // TutorRoute has already confirmed this account tutors, so the switch is
+    // allowed; useRole owns the stored value.
+    setRole(TUTOR);
+  }, []);
 
 
   /*
@@ -137,6 +142,39 @@ export default function TutorDashboard({
 
     return true;
   };
+
+  /*
+   * Stop teaching a student. They leave "currently teaching" and the
+   * conversation closes, but they still count as taught.
+   */
+  const handleStopTeaching = async (student) => {
+    if (!student?.request_id) return;
+
+    const { ok, body } = await apiDelete('/tuition-requests/' + student.request_id);
+
+    if (!ok) {
+      setDashboardError(
+        body?.errors?.status?.[0] || body?.message || 'Could not update that student.'
+      );
+
+      return;
+    }
+
+    setRefreshKey((key) => key + 1);
+  };
+
+  // The header search filters what is on the dashboard rather than setting
+  // state nobody reads, which is all it did before.
+  const term = searchQuery.trim().toLowerCase();
+
+  const filteredRequests = !term
+    ? dashboard?.recent_requests
+    : (dashboard?.recent_requests ?? []).filter(
+        (r) =>
+          r.student?.name?.toLowerCase().includes(term) ||
+          r.subject?.toLowerCase().includes(term) ||
+          r.status?.toLowerCase().includes(term)
+      );
   const handleNavigation = (
     itemName,
     itemPath
@@ -206,10 +244,42 @@ export default function TutorDashboard({
         <TuitionRequests
           darkMode={darkMode}
           navigate={navigate}
-          requests={dashboard?.recent_requests}
+          requests={filteredRequests}
           loading={loadingDashboard}
           onRespond={handleRespond}
         />
+
+        {/* The students being taught, with the actions that belong to them. */}
+        <MyStudents
+          darkMode={darkMode}
+          students={dashboard?.students}
+          pastStudents={dashboard?.past_students}
+          loading={loadingDashboard}
+          searchQuery={searchQuery}
+          onOpenProfile={setProfileUserId}
+          onMessage={() => navigate('/messages')}
+          onRemove={handleStopTeaching}
+          onRated={() => setRefreshKey((key) => key + 1)}
+        />
+
+        {/* What students made of the teaching — the dashboard reported every
+            other figure about it and nothing about how it was received. */}
+        <div
+          id="tutor-reviews"
+          className={`p-5 rounded-2xl border space-y-4 ${
+            darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-100'
+          }`}
+        >
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
+            Reviews &amp; Ratings
+          </h3>
+
+          <TutorReviews
+            darkMode={darkMode}
+            tutorId={dashboard?.tutor?.id}
+            cardClass={darkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}
+          />
+        </div>
 
         {!loadingDashboard && dashboard && !dashboard.profile_complete && (
           <ProfileReminder
@@ -218,6 +288,14 @@ export default function TutorDashboard({
         )}
 
       </main>
+
+      {/* Opening a student from their row, with the rating form inside. */}
+      <ProfileModal
+        darkMode={darkMode}
+        userId={profileUserId}
+        onClose={() => setProfileUserId(null)}
+        onReviewed={() => setRefreshKey((key) => key + 1)}
+      />
     </div>
   );
 }

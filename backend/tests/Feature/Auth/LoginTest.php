@@ -199,4 +199,25 @@ class LoginTest extends TestCase
 
         $response->assertUnprocessable()->assertJsonValidationErrors(['identifier', 'password']);
     }
+
+    /**
+     * The client routes a tutor to their own dashboard off this flag, so the
+     * login response has to carry it — it used to omit isTutor entirely.
+     */
+    public function test_the_login_response_reports_whether_the_account_tutors(): void
+    {
+        $this->user(['email' => 'tutor@aust.edu', 'student_id' => '20200104999', 'isTutor' => true]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'identifier' => 'tutor@aust.edu',
+            'password' => 'Str0ng!Pass',
+        ])->assertOk()->assertJsonPath('user.isTutor', true);
+
+        $this->user(['email' => 'learner@aust.edu', 'student_id' => '20200104888', 'isTutor' => false]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'identifier' => 'learner@aust.edu',
+            'password' => 'Str0ng!Pass',
+        ])->assertOk()->assertJsonPath('user.isTutor', false);
+    }
 }

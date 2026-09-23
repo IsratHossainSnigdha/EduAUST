@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserPlus, CheckCircle, Users, BookOpen } from 'lucide-react';
+import { UserPlus, CheckCircle, Users, BookOpen, Star } from 'lucide-react';
 import StatCard from './StatCard';
 
 export default function TutorStats({
@@ -28,9 +28,17 @@ export default function TutorStats({
       path: '/tutor-requests',
     },
     {
+      title: 'Currently Teaching',
+      value: value('currently_teaching'),
+      description: 'Active students right now',
+      icon: Users,
+      // Jumps to the panel that lists and manages them.
+      anchor: 'my-students',
+    },
+    {
       title: 'Students Taught',
       value: value('students_taught'),
-      description: 'Across all subjects',
+      description: 'Everyone you have taken on',
       icon: Users,
     },
     {
@@ -38,6 +46,16 @@ export default function TutorStats({
       value: value('subjects_count'),
       description: 'On your profile',
       icon: BookOpen,
+    },
+    {
+      title: 'Rating',
+      // No ratings yet is not a rating of zero, which would read as terrible.
+      value: loading || !stats ? '—' : (stats.rating ?? '—'),
+      description: stats?.rating_count
+        ? `From ${stats.rating_count} review${stats.rating_count === 1 ? '' : 's'}`
+        : 'No ratings yet',
+      icon: Star,
+      anchor: 'tutor-reviews',
     },
   ];
 
@@ -51,7 +69,14 @@ export default function TutorStats({
           onClick={
             card.path
               ? () => navigate(card.path)
-              : undefined
+              : card.anchor
+                // Some figures are explained by a panel further down this
+                // page rather than by another page.
+                ? () =>
+                    document
+                      .getElementById(card.anchor)
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                : undefined
           }
         />
       ))}

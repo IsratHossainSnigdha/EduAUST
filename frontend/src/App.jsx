@@ -1,4 +1,5 @@
 import { usePushNotifications } from './lib/usePushNotifications';
+import { useRole } from './lib/useRole';
 import React, { useEffect, useState } from 'react';
 
 import {
@@ -16,9 +17,13 @@ import BecomeATutor from './pages/BecomeATutor';
 
 import StudentDashboard from './pages/StudentDashboard/StudentDashboard';
 import FindTutorsPage from './pages/StudentDashboard/FindTutorsPage';
+import MyRequestsPage from './pages/StudentDashboard/MyRequestsPage';
+import SavedTutorsPage from './pages/StudentDashboard/SavedTutorsPage';
+import MyTutorsPage from './pages/StudentDashboard/MyTutorsPage';
 
 import TutorDashboard from './pages/TutorDashboard/TutorDashboard';
 import TuitionRequests from './pages/TutorDashboard/TuitionRequests';
+import MyStudentsPage from './pages/TutorDashboard/MyStudentsPage';
 
 import TutorRoute from './components/TutorRoute';
 
@@ -28,6 +33,7 @@ import MessagesPage from './pages/Messages/MessagesPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/Settings/SettingsPage';
 import SupportPage from './pages/SupportPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
   // Raise a desktop notification for anything that arrives while the app is
@@ -44,11 +50,11 @@ export default function App() {
       : false;
   });
 
-  const [currentRole, setCurrentRole] = useState(
-    () =>
-      localStorage.getItem('eduAUST_role') ||
-      'student'
-  );
+  // Which dashboard the account is looking at. useRole owns the stored value;
+  // App used to keep a second copy synced to the same key, and because parent
+  // effects run after child effects, that copy overwrote whatever a page had
+  // just set — so the student dashboard could never take the role off 'tutor'.
+  const { role: currentRole, setRole: setCurrentRole } = useRole();
 
   useEffect(() => {
     localStorage.setItem(
@@ -57,12 +63,6 @@ export default function App() {
     );
   }, [darkMode]);
 
-  useEffect(() => {
-    localStorage.setItem(
-      'eduAUST_role',
-      currentRole
-    );
-  }, [currentRole]);
 
   const toggleDarkMode = () => {
     setDarkMode((previous) => !previous);
@@ -164,6 +164,37 @@ export default function App() {
             }
           />
 
+          {/* The two cards the dashboard has always offered, now with
+              somewhere to go. */}
+          <Route
+            path="/my-requests"
+            element={
+              <MyRequestsPage
+                {...sharedProps}
+              />
+            }
+          />
+
+          <Route
+            path="/saved-tutors"
+            element={
+              <SavedTutorsPage
+                {...sharedProps}
+              />
+            }
+          />
+
+          {/* The tutors teaching them right now: the student's half of the
+              same relationship the tutor manages under /my-students. */}
+          <Route
+            path="/my-tutors"
+            element={
+              <MyTutorsPage
+                {...sharedProps}
+              />
+            }
+          />
+
           {/* ==================== Tutor Dashboard ==================== */}
 
           <Route
@@ -182,6 +213,17 @@ export default function App() {
             element={
               <TutorRoute>
                 <TuitionRequests
+                  {...sharedProps}
+                />
+              </TutorRoute>
+            }
+          />
+
+          <Route
+            path="/my-students"
+            element={
+              <TutorRoute>
+                <MyStudentsPage
                   {...sharedProps}
                 />
               </TutorRoute>
@@ -252,6 +294,17 @@ export default function App() {
             path="/support"
             element={
               <SupportPage
+                {...sharedProps}
+              />
+            }
+          />
+
+          {/* Anything unmatched: a real page with a way back, rather than the
+              blank white screen an unmatched route rendered before. */}
+          <Route
+            path="*"
+            element={
+              <NotFoundPage
                 {...sharedProps}
               />
             }

@@ -8,11 +8,15 @@ import {
   HelpCircle,
   LogOut,
   UserPlus,
+  Search,
+  Users,
+  GraduationCap,
 } from 'lucide-react';
 import UserAvatar from '../UserAvatar';
 import { useCurrentUser } from '../../lib/useCurrentUser';
 import { clearAuth } from '../../lib/auth';
 import { useBadgeCounts } from '../../lib/useBadgeCounts';
+import { setRole } from '../../lib/useRole';
 
 export default function TutorSidebar({
   darkMode,
@@ -57,21 +61,52 @@ export default function TutorSidebar({
    * Dashboard is the ONLY sidebar item
    * accessible without a tutor profile.
    */
+  // The sidebar is shared by every dashboard page, so its links follow the
+  // active role: a student sees their dashboard and Find Tutors, a tutor sees
+  // theirs and Tuition Requests. It used to be hardcoded to the tutor side,
+  // which sent a student on Settings or Support to the tutor dashboard.
+  const isTutorView = currentRole === 'tutor';
+
   const menuItems = [
     {
       name: 'Dashboard',
       icon: LayoutDashboard,
-      path: '/tutor-dashboard',
+      path: isTutorView ? '/tutor-dashboard' : '/dashboard',
       requiresProfile: false,
     },
 
-    {
-      name: 'Tuition Requests',
-      icon: UserPlus,
-      badge: counts.requests || undefined,
-      path: '/tutor-requests',
-      requiresProfile: true,
-    },
+    isTutorView
+      ? {
+          name: 'Tuition Requests',
+          icon: UserPlus,
+          badge: counts.requests || undefined,
+          path: '/tutor-requests',
+          requiresProfile: true,
+        }
+      : {
+          name: 'Find Tutors',
+          icon: Search,
+          path: '/find-tutors',
+          requiresProfile: false,
+        },
+
+    /*
+     * The people on the other end of an active arrangement. Each side manages
+     * the same relationship, so each side gets an entry for it.
+     */
+    isTutorView
+      ? {
+          name: 'My Students',
+          icon: Users,
+          path: '/my-students',
+          requiresProfile: true,
+        }
+      : {
+          name: 'My Tutors',
+          icon: GraduationCap,
+          path: '/my-tutors',
+          requiresProfile: false,
+        },
 
     {
       name: 'Messages',
@@ -277,15 +312,14 @@ export default function TutorSidebar({
                 ? 'student'
                 : 'tutor';
 
-            setCurrentRole(nextRole);
+            // setRole refuses 'tutor' on an account that does not tutor, so
+            // follow where it actually landed rather than where we asked.
+            const applied = setRole(nextRole);
 
-            localStorage.setItem(
-              'eduAUST_role',
-              nextRole
-            );
+            setCurrentRole?.(applied);
 
             navigate(
-              nextRole === 'student'
+              applied === 'student'
                 ? '/dashboard'
                 : '/tutor-dashboard'
             );

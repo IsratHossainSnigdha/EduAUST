@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A user's public tutoring profile, as listed on the Find Tutor page.
@@ -97,6 +98,22 @@ class TutorProfile extends Model
     public function subjects(): BelongsToMany
     {
         return $this->belongsToMany(Subject::class);
+    }
+
+    /**
+     * Ratings students have left for this tutor.
+     *
+     * Reviews are recorded against the account, not the profile, so that a
+     * tutor who rebuilds their profile does not shed their history.
+     *
+     * @return HasMany<Review, $this>
+     */
+    public function reviews(): HasMany
+    {
+        // Only reviews written about the tutor count towards their rating —
+        // not the ones they wrote about their own students.
+        return $this->hasMany(Review::class, 'tutor_id', 'user_id')
+            ->where('direction', Review::STUDENT_TO_TUTOR);
     }
 
     /**

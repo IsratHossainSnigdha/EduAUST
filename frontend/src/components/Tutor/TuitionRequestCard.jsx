@@ -1,13 +1,26 @@
 import React from 'react';
-import { Check } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
 export default function TuitionRequestCard({
   request,
   darkMode,
   onAccept,
+  onDecline,
   onViewDetails,
 }) {
   const SubjectIcon = request.icon;
+
+  // The backend sends lowercase statuses ('pending' / 'accepted' / 'declined').
+  // This card used to compare against 'Accepted', which never matched, so the
+  // Accept button stayed on a request that was already answered.
+  const status = (request.status || 'pending').toLowerCase();
+  const isPending = status === 'pending';
+
+  const STATUS_BADGE = {
+    pending: 'bg-amber-500/15 text-amber-500',
+    accepted: 'bg-emerald-500/15 text-emerald-500',
+    declined: 'bg-rose-500/15 text-rose-500',
+  };
 
   return (
     <div
@@ -101,15 +114,11 @@ export default function TuitionRequestCard({
           </span>
 
           <span
-            className={`text-[9px] font-extrabold px-2 py-0.5 rounded ${
-              request.status === 'New'
-                ? 'bg-amber-500/15 text-amber-500'
-                : request.status === 'Accepted'
-                ? 'bg-emerald-500/15 text-emerald-500'
-                : 'bg-slate-500/15 text-slate-400'
+            className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded ${
+              STATUS_BADGE[status] || STATUS_BADGE.pending
             }`}
           >
-            {request.status}
+            {status}
           </span>
         </div>
 
@@ -126,22 +135,35 @@ export default function TuitionRequestCard({
             View Details
           </button>
 
-          {/* Accept */}
-          {request.status !== 'Accepted' ? (
-            <button
-              onClick={() => onAccept(request.id)}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm"
-            >
-              Accept
-            </button>
+          {/* Only a pending request can be answered; once answered the card
+              carries its outcome instead of the action buttons. */}
+          {isPending ? (
+            <>
+              <button
+                onClick={() => onDecline?.(request.id)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition ${
+                  darkMode
+                    ? 'border-rose-500/60 text-rose-400 hover:bg-rose-500 hover:text-white'
+                    : 'border-rose-300 text-rose-500 hover:bg-rose-500 hover:text-white'
+                }`}
+              >
+                Decline
+              </button>
+              <button
+                onClick={() => onAccept(request.id)}
+                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm"
+              >
+                Accept
+              </button>
+            </>
+          ) : status === 'accepted' ? (
+            <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-500 text-xs font-bold flex items-center gap-1">
+              <Check size={12} /> Accepted
+            </span>
           ) : (
-            <button
-              disabled
-              className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-500 text-xs font-bold cursor-not-allowed flex items-center gap-1"
-            >
-              <Check size={12} />
-              Accepted
-            </button>
+            <span className="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 text-xs font-bold flex items-center gap-1">
+              <X size={12} /> Declined
+            </span>
           )}
         </div>
       </div>

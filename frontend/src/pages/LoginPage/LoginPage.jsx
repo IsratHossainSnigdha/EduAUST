@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiPost, saveAuth, firstError } from '../../lib/auth';
+import { setRole, STUDENT, TUTOR } from '../../lib/useRole';
 import GoogleSignInButton from '../../components/GoogleSignInButton';
 import './LoginPage.css';
 
@@ -51,7 +52,17 @@ export default function LoginPage({
     }
 
     saveAuth(body);
-    navigate('/dashboard');
+
+    // A tutor lands on their own dashboard, not the student one; setRole keeps
+    // the rest of the app in step. Non-tutors, and dual-role accounts, default
+    // to the student side.
+    if (body.user?.isTutor) {
+      setRole(TUTOR);
+      navigate('/tutor-dashboard');
+    } else {
+      setRole(STUDENT);
+      navigate('/dashboard');
+    }
   };
 
   return (

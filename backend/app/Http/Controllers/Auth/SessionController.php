@@ -16,7 +16,7 @@ class SessionController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user()->loadMissing('department');
 
         return response()->json([
             'user' => [
@@ -26,6 +26,9 @@ class SessionController extends Controller
                 'student_id' => $user->student_id,
                 'phone' => $user->phone,
                 'department_id' => $user->department_id,
+                // The code, e.g. "CSE", so headers can show it without the
+                // separate lookup they were hardcoding a value in place of.
+                'department' => $user->department?->code,
                 'semester' => $user->semester,
                 'isTutor' => $user->isTutor,
                 'profile_picture' => $user->profile_picture,

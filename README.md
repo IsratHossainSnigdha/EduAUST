@@ -245,17 +245,20 @@ The main `DatabaseSeeder` runs:
 
 ---
 
-## 🧪 Demo Account
+## 🧪 Demo Accounts
 
-For testing without an AUST student account:
+For testing without registering, two seeded accounts cover both sides of the app:
 
 ```text
-Email: demo.student@aust.edu
-Password: password
-Student ID: DEMO001
+Student   Email: demo.student@aust.edu   Password: DemoPassword123
+Tutor     Email: demo.tutor@aust.edu     Password: DemoPassword123
 ```
 
-> The demo account uses an `@aust.edu` email because EduAUST only accepts valid AUST email addresses.
+Sign in on `/login` using the AUST email field. The tutor account can accept
+tuition requests; the student account can send them, message an accepted tutor,
+and leave a review.
+
+> The demo accounts use `@aust.edu` emails because EduAUST only accepts valid AUST email addresses.
 
 Create the demo and development data with:
 
@@ -276,6 +279,8 @@ If you get a duplicate `DEMO001` error, the demo account already exists in the d
 | Sign Up | `/signup` |
 | Student Dashboard | `/dashboard` |
 | Find Tutors | `/find-tutors` |
+| My Requests | `/my-requests` |
+| Saved Tutors | `/saved-tutors` |
 | Become a Tutor | `/become-a-tutor` |
 | Tutor Dashboard | `/tutor-dashboard` |
 | Tutor Requests | `/tutor-requests` |

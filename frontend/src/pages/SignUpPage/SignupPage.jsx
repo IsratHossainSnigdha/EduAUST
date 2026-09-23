@@ -57,21 +57,15 @@ export default function SignUpPage({
 
   useEffect(() => {
     fetch(`${API_BASE}/departments`)
-      .then((res) => {
-        console.log("Response status:", res.status);
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((body) => {
-        console.log("API response:", body);
         const list = body.data ?? [];
-        console.log("Department list:", list);
         setDepartments(list);
         if (list.length) {
           setDepartmentId(String(list[0].id));
         }
       })
-      .catch((err) => {
-        console.error("Fetch error:", err);
+      .catch(() => {
         setDepartments([]);
       });
   }, []);
