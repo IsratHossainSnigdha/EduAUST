@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { buildDashboardMenu } from '../../lib/dashboardMenu';
 
 import {
@@ -37,6 +37,13 @@ export default function MessagesPage({
   toggleDarkMode,
 }) {
   const navigate = useNavigate();
+
+  // ?with={userId} opens that person's conversation, which is where a
+  // message or acceptance notification leads.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const handledWith = useRef(false);
+  // Set once the address has chosen someone, so nothing else overrides it.
+  const openedFromLink = useRef(false);
   const { user: currentUser } = useCurrentUser();
   // Whose chat list this is: a tutor sees the students who approached them.
   const { role: currentRole } = useRole();
@@ -171,16 +178,6 @@ export default function MessagesPage({
     };
   }, [currentRole, conversations]);
 
-  useEffect(() => {
-    if (
-      selectedChat === null &&
-      conversations.length > 0
-    ) {
-      // Only an unlocked thread can be opened automatically.
-      const first = conversations.find((c) => !c.locked && c.conversation_id);
-      if (first) setSelectedChat(first.conversation_id);
-    }
-  }, [conversations, selectedChat]);
 
   useEffect(() => {
     if (!selectedChat) return;
@@ -232,7 +229,7 @@ export default function MessagesPage({
     });
   }, [currentMessages, selectedChat]);
 
-  const handleSelectChat = async (contact) => {
+  const handleSelectChat = useCallback(async (contact) => {
     setError('');
 
     // A tutor who has not accepted cannot be messaged yet, but the student is
@@ -266,7 +263,43 @@ export default function MessagesPage({
 
     setSelectedChat(body?.data?.id ?? null);
     loadConversations();
-  };
+  }, [loadConversations]);
+
+  /*
+   * Once the list has loaded, open something. A conversation named in the
+   * address comes first; it is handled like a click on that person, so a
+   * thread that does not exist yet is created and a locked tutor shows the
+   * request panel. Otherwise the first open thread is shown.
+   */
+  useEffect(() => {
+    if (selectedChat !== null || conversations.length === 0) return;
+
+    // A thread being created, or a request panel for a locked tutor, is
+    // still the link's choice; the first-thread fallback must not replace it.
+    if (openedFromLink.current) return;
+
+    const withId = searchParams.get('with');
+
+    if (withId && !handledWith.current) {
+      handledWith.current = true;
+
+      // The address has done its job; leave it plain.
+      setSearchParams({}, { replace: true });
+
+      const target = conversations.find((c) => c.user_id === withId);
+
+      if (target) {
+        openedFromLink.current = true;
+        handleSelectChat(target);
+
+        return;
+      }
+    }
+
+    // Only an unlocked thread can be opened automatically.
+    const first = conversations.find((c) => !c.locked && c.conversation_id);
+    if (first) setSelectedChat(first.conversation_id);
+  }, [conversations, selectedChat, searchParams, setSearchParams, handleSelectChat]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();

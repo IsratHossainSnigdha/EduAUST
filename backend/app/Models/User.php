@@ -59,7 +59,55 @@ class User extends Authenticatable
             'password' => 'hashed',
             'isTutor' => 'boolean',
             'google_linked_at' => 'datetime',
+            'notification_preferences' => 'array',
         ];
+    }
+
+    /**
+     * The kinds of notification an account can switch off, keyed by the name
+     * the settings screen uses, each mapped to the category it covers.
+     */
+    public const NOTIFICATION_TOPICS = [
+        'messages' => Notification::CATEGORY_MESSAGE,
+        'requests' => Notification::CATEGORY_REQUEST,
+        'sessions' => Notification::CATEGORY_SESSION,
+        'system' => Notification::CATEGORY_SYSTEM,
+    ];
+
+    /**
+     * Every topic and whether it is on.
+     *
+     * Only topics someone has turned off are ever stored, so anything missing,
+     * including a topic added later, counts as on.
+     *
+     * @return array<string, bool>
+     */
+    public function notificationPreferences(): array
+    {
+        $stored = $this->notification_preferences ?? [];
+
+        $preferences = [];
+
+        foreach (array_keys(self::NOTIFICATION_TOPICS) as $topic) {
+            $preferences[$topic] = (bool) ($stored[$topic] ?? true);
+        }
+
+        return $preferences;
+    }
+
+    /**
+     * Whether this account wants to be told about a notification category.
+     */
+    public function wantsNotificationsAbout(string $category): bool
+    {
+        $topic = array_search($category, self::NOTIFICATION_TOPICS, true);
+
+        // A category nobody can switch off is always delivered.
+        if ($topic === false) {
+            return true;
+        }
+
+        return $this->notificationPreferences()[$topic];
     }
 
     /**

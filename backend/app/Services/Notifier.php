@@ -59,7 +59,7 @@ class Notifier
                 : "{$tutor} declined your request{$about}.",
             // Acceptance opens the conversation, so take them to it; a
             // decline has nothing to open but the list it came from.
-            $accepted ? '/messages' : '/my-requests',
+            $accepted ? '/messages?with='.$request->tutor_id : '/my-requests',
         );
     }
 
@@ -111,6 +111,37 @@ class Notifier
      */
     public function messageReceived(User $recipient, User $sender, string $body): void
     {
+        if (! $recipient->wantsNotificationsAbout(Notification::CATEGORY_MESSAGE)) {
+            return;
+        }
+
+        // Straight to that person's conversation, not just the message box.
+        $link = '/messages?with='.$sender->id;
+
+        /*
+         * One notification per conversation, not per message. A burst of ten
+         * messages used to leave ten rows; while the last one is still unread
+         * it is brought up to date instead. The link names the sender by id,
+         * so two people who share a name are never merged.
+         */
+        $existing = Notification::query()
+            ->where('user_id', $recipient->id)
+            ->where('category', Notification::CATEGORY_MESSAGE)
+            ->where('link', $link)
+            ->unread()
+            ->latest()
+            ->first();
+
+        if ($existing) {
+            $existing->forceFill([
+                'body' => Str::limit($body, 120),
+                // Moved to the top, as a new notification would be.
+                'created_at' => now(),
+            ])->save();
+
+            return;
+        }
+
         $this->to(
             $recipient->id,
             // A conversation is not tied to a role, so either dashboard shows it.
@@ -118,7 +149,7 @@ class Notifier
             Notification::CATEGORY_MESSAGE,
             "New message from {$sender->name}",
             Str::limit($body, 120),
-            '/messages',
+            $link,
         );
     }
 
@@ -203,9 +234,9 @@ class Notifier
     }
 
     /**
-     * Record one notification.
-     */
-    /**
+     * Record one notification, unless the recipient has switched that kind
+     * off in their settings.
+     *
      * @param  string|null  $link  Where opening this notification should go.
      */
     private function to(
@@ -216,6 +247,12 @@ class Notifier
         string $body,
         ?string $link = null,
     ): void {
+        $recipient = User::find($userId);
+
+        if (! $recipient || ! $recipient->wantsNotificationsAbout($category)) {
+            return;
+        }
+
         Notification::create([
             'user_id' => $userId,
             'audience' => $audience,

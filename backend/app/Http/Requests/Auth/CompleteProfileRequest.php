@@ -30,7 +30,9 @@ class CompleteProfileRequest extends FormRequest
         $userId = $this->user()->id;
 
         return [
-            'name' => ['sometimes', 'string', 'max:255'],
+            // Present means required: clearing the box used to fail with the
+            // puzzling "must be a string" rather than saying a name is needed.
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
             'student_id' => [
                 'sometimes',
                 'string',
@@ -46,7 +48,8 @@ class CompleteProfileRequest extends FormRequest
             ],
             'department_id' => ['sometimes', 'integer', Rule::exists('departments', 'id')],
             'semester' => ['sometimes', 'string', 'max:10'],
-            'profile_picture' => ['sometimes', 'nullable', 'string', 'max:2048'],
+            // A web address for the avatar image, not any string at all.
+            'profile_picture' => ['sometimes', 'nullable', 'url:http,https', 'max:2048'],
         ];
     }
 

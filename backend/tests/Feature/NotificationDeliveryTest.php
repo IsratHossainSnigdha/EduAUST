@@ -185,7 +185,8 @@ class NotificationDeliveryTest extends TestCase
         $this->assertDatabaseHas('notifications', [
             'user_id' => $student->id,
             'title' => 'Request accepted',
-            'link' => '/messages',
+            // That tutor's conversation, not just the message box.
+            'link' => '/messages?with='.$tutor->id,
         ]);
     }
 

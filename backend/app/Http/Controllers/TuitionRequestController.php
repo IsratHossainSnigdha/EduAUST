@@ -81,6 +81,17 @@ class TuitionRequestController extends Controller
             ]);
         }
 
+        /*
+         * A tutor who has switched off "Accepting new students" is hidden from
+         * Find Tutors, but saved tutors and the message box still list them,
+         * and both offer a request. The switch has to hold everywhere.
+         */
+        if (! $tutor->tutorProfile?->is_available) {
+            throw ValidationException::withMessages([
+                'tutor_id' => ['This tutor is not taking new students right now.'],
+            ]);
+        }
+
         // A second request for the same subject would just be noise in the
         // tutor's inbox while the first is still unanswered.
         $duplicate = TuitionRequest::query()

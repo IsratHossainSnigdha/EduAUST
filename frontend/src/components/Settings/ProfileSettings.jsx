@@ -3,11 +3,14 @@ import { apiGet, apiPatch, firstError } from '../../lib/auth';
 import { useCurrentUser } from '../../lib/useCurrentUser';
 import UserAvatar from '../UserAvatar';
 
+const SEMESTERS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2'];
+
 /*
- * The signed-in user's own profile, loaded from and saved to the backend.
+ * The account's own details: name, picture, department, semester and phone.
  *
- * Both dashboards read the same account, so an edit here is reflected
- * everywhere the name, department or picture is shown.
+ * Both dashboards read the same account, so an edit here shows everywhere the
+ * name, department or picture appears. What students see on a tutor card is
+ * edited under Tutoring profile instead, so this tab stays short.
  */
 export default function ProfileSettings({ darkMode }) {
   const { user, loading, refresh } = useCurrentUser();
@@ -20,13 +23,6 @@ export default function ProfileSettings({ darkMode }) {
     profile_picture: '',
   });
 
-  const [tutorForm, setTutorForm] = useState({
-    headline: '',
-    bio: '',
-    hourly_rate: '',
-    is_available: true,
-  });
-
   const [departments, setDepartments] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
   const [status, setStatus] = useState('');
@@ -36,8 +32,14 @@ export default function ProfileSettings({ darkMode }) {
   const inputClass = darkMode
     ? 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-600'
     : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400';
-
-  const labelClass = darkMode ? 'text-slate-300' : 'text-slate-700';
+  const labelClass = `block text-xs font-extrabold mb-2 uppercase tracking-wider ${
+    darkMode ? 'text-slate-300' : 'text-slate-700'
+  }`;
+  const hintClass = `mt-1.5 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`;
+  const fieldClass = (name) =>
+    `w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
+      fieldErrors[name] ? 'border-red-500' : ''
+    } ${inputClass}`;
 
   // Seed the form once the account has loaded.
   useEffect(() => {
@@ -53,29 +55,24 @@ export default function ProfileSettings({ darkMode }) {
   }, [user]);
 
   useEffect(() => {
+    let cancelled = false;
+
     apiGet('/departments').then(({ ok, body }) => {
-      if (ok) setDepartments(body?.data ?? []);
+      if (!cancelled && ok) setDepartments(body?.data ?? []);
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // A tutor also owns the details shown on their public card.
-  useEffect(() => {
-    if (!user?.isTutor) return;
+  const set = (field) => (event) => {
+    setForm((current) => ({ ...current, [field]: event.target.value }));
+    setStatus('');
+  };
 
-    apiGet('/tutor/dashboard').then(({ ok, body }) => {
-      if (!ok || !body?.tutor) return;
-
-      setTutorForm({
-        headline: body.tutor.headline ?? '',
-        bio: body.tutor.bio ?? '',
-        hourly_rate: body.tutor.hourly_rate ? String(body.tutor.hourly_rate) : '',
-        is_available: Boolean(body.tutor.is_available),
-      });
-    });
-  }, [user?.isTutor]);
-
-  const handleSave = async (e) => {
-    e.preventDefault();
+  const handleSave = async (event) => {
+    event.preventDefault();
     setError('');
     setStatus('');
     setFieldErrors({});
@@ -109,28 +106,6 @@ export default function ProfileSettings({ darkMode }) {
       return;
     }
 
-    // Tutors save their public card in the same action.
-    if (user?.isTutor) {
-      const tutorPayload = {
-        headline: tutorForm.headline.trim() || null,
-        bio: tutorForm.bio.trim() || null,
-        is_available: tutorForm.is_available,
-      };
-
-      if (tutorForm.hourly_rate !== '') {
-        tutorPayload.hourly_rate = Number(tutorForm.hourly_rate);
-      }
-
-      const tutorResult = await apiPatch('/tutor/profile', tutorPayload);
-
-      if (!tutorResult.ok) {
-        setSaving(false);
-        setError(firstError(tutorResult.body, 'Could not save your tutor details.'));
-
-        return;
-      }
-    }
-
     await refresh();
     setSaving(false);
     setStatus('Your profile has been saved.');
@@ -138,182 +113,147 @@ export default function ProfileSettings({ darkMode }) {
 
   if (loading && !user) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3" aria-busy="true">
         {[0, 1, 2].map((row) => (
           <div
             key={row}
-            className={`h-12 rounded-xl animate-pulse ${
-              darkMode ? 'bg-slate-800' : 'bg-slate-100'
-            }`}
+            className={`h-12 rounded-xl animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}
           />
         ))}
       </div>
     );
   }
 
+  // A semester recorded before the list existed still shows as chosen.
+  const semesters =
+    form.semester && !SEMESTERS.includes(form.semester) ? [form.semester, ...SEMESTERS] : SEMESTERS;
+
   return (
-    <form onSubmit={handleSave} className="space-y-5">
+    <form onSubmit={handleSave} className="space-y-5" noValidate>
       <div className="flex items-center gap-4">
         <UserAvatar user={{ ...user, profile_picture: form.profile_picture }} size={64} />
 
         <div className="flex-1 min-w-0">
-          <label htmlFor="profile-profile-picture-url" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+          <label htmlFor="profile-picture" className={labelClass}>
             Profile picture URL
           </label>
-          <input id="profile-profile-picture-url"
+          <input
+            id="profile-picture"
             type="url"
+            inputMode="url"
             value={form.profile_picture}
-            onChange={(e) => setForm({ ...form, profile_picture: e.target.value })}
+            onChange={set('profile_picture')}
             placeholder="https://…"
-            className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${inputClass}`}
+            className={fieldClass('profile_picture')}
           />
+          {fieldErrors.profile_picture && (
+            <p className="mt-1.5 text-xs text-red-500 font-medium">{fieldErrors.profile_picture}</p>
+          )}
         </div>
       </div>
 
       <div>
-        <label htmlFor="profile-full-name" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-            Full name
-          </label>
-        <input id="profile-full-name"
+        <label htmlFor="profile-name" className={labelClass}>
+          Full name
+        </label>
+        <input
+          id="profile-name"
           type="text"
+          autoComplete="name"
           value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
-            fieldErrors.name ? 'border-red-500' : ''
-          } ${inputClass}`}
+          onChange={set('name')}
+          className={fieldClass('name')}
         />
         {fieldErrors.name && <p className="mt-1.5 text-xs text-red-500 font-medium">{fieldErrors.name}</p>}
       </div>
 
       <div>
-        <label htmlFor="profile-aust-email" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-            AUST email
-          </label>
-        <input id="profile-aust-email"
+        <label htmlFor="profile-email" className={labelClass}>
+          AUST email
+        </label>
+        <input
+          id="profile-email"
           type="email"
           value={user?.email ?? ''}
           readOnly
-          className={`w-full px-4 py-3 rounded-xl border opacity-70 cursor-not-allowed ${inputClass}`}
+          aria-describedby="profile-email-hint"
+          className={`${fieldClass('email')} opacity-70 cursor-not-allowed`}
         />
-        <p className={`mt-1.5 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+        <p id="profile-email-hint" className={hintClass}>
           Your institutional address identifies your account and cannot be changed.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="profile-department" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+          <label htmlFor="profile-department" className={labelClass}>
             Department
           </label>
-          <select id="profile-department"
+          <select
+            id="profile-department"
             value={form.department_id}
-            onChange={(e) => setForm({ ...form, department_id: e.target.value })}
-            className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${inputClass}`}
+            onChange={set('department_id')}
+            className={fieldClass('department_id')}
           >
             <option value="">Select</option>
             {departments.map((d) => (
-              <option key={d.id} value={d.id}>{d.code}</option>
+              <option key={d.id} value={d.id}>
+                {d.code}
+              </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="profile-semester" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+          <label htmlFor="profile-semester" className={labelClass}>
             Semester
           </label>
-          <select id="profile-semester"
+          <select
+            id="profile-semester"
             value={form.semester}
-            onChange={(e) => setForm({ ...form, semester: e.target.value })}
-            className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${inputClass}`}
+            onChange={set('semester')}
+            className={fieldClass('semester')}
           >
             <option value="">Select</option>
-            {['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2'].map((s) => (
-              <option key={s} value={s}>{s}</option>
+            {semesters.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
         </div>
       </div>
 
       <div>
-        <label htmlFor="profile-phone-number" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-            Phone number
-          </label>
-        <input id="profile-phone-number"
+        <label htmlFor="profile-phone" className={labelClass}>
+          Phone number
+        </label>
+        <input
+          id="profile-phone"
           type="tel"
+          autoComplete="tel"
+          inputMode="tel"
           value={form.phone}
-          onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/[^0-9+]/g, '') })}
+          onChange={(e) => {
+            setForm((current) => ({ ...current, phone: e.target.value.replace(/[^0-9+]/g, '') }));
+            setStatus('');
+          }}
           placeholder="01XXXXXXXXX"
-          className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
-            fieldErrors.phone ? 'border-red-500' : ''
-          } ${inputClass}`}
+          className={fieldClass('phone')}
         />
         {fieldErrors.phone && <p className="mt-1.5 text-xs text-red-500 font-medium">{fieldErrors.phone}</p>}
       </div>
 
-      {user?.isTutor && (
-        <div className="pt-5 border-t border-slate-200 dark:border-slate-800 space-y-5">
-          <h4 className={`text-xs font-black uppercase tracking-wider ${labelClass}`}>
-            Tutoring details
-          </h4>
-
-          <div>
-            <label htmlFor="profile-headline" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-            Headline
-          </label>
-            <input id="profile-headline"
-              type="text"
-              value={tutorForm.headline}
-              onChange={(e) => setTutorForm({ ...tutorForm, headline: e.target.value })}
-              placeholder="e.g. Data Structures & Algorithms Tutor"
-              className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${inputClass}`}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="profile-about-your-tutoring" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-            About your tutoring
-          </label>
-            <textarea id="profile-about-your-tutoring"
-              rows={3}
-              value={tutorForm.bio}
-              onChange={(e) => setTutorForm({ ...tutorForm, bio: e.target.value })}
-              className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${inputClass}`}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 items-end">
-            <div>
-              <label htmlFor="profile-hourly-rate" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-            Hourly rate (৳)
-          </label>
-              <input id="profile-hourly-rate"
-                type="number"
-                min="0"
-                value={tutorForm.hourly_rate}
-                onChange={(e) => setTutorForm({ ...tutorForm, hourly_rate: e.target.value })}
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${inputClass}`}
-              />
-            </div>
-
-            <label className={`flex items-center gap-2 pb-3 cursor-pointer ${labelClass}`}>
-              <input
-                type="checkbox"
-                checked={tutorForm.is_available}
-                onChange={(e) => setTutorForm({ ...tutorForm, is_available: e.target.checked })}
-                className="w-4 h-4 accent-emerald-600 rounded"
-              />
-              <span className="text-xs font-bold">Accepting students</span>
-            </label>
-          </div>
-        </div>
-      )}
-
       {error && (
-        <p className="text-sm text-red-500 font-semibold bg-red-500/10 p-3 rounded-xl">{error}</p>
+        <p role="alert" className="text-sm text-red-500 font-semibold bg-red-500/10 p-3 rounded-xl">
+          {error}
+        </p>
       )}
 
       {status && (
-        <p className="text-sm text-emerald-600 font-semibold bg-emerald-500/10 p-3 rounded-xl">{status}</p>
+        <p role="status" className="text-sm text-emerald-600 font-semibold bg-emerald-500/10 p-3 rounded-xl">
+          {status}
+        </p>
       )}
 
       <button

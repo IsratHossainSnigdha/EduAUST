@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Check, KeyRound, ShieldCheck } from 'lucide-react';
+import { Check, KeyRound, ShieldCheck, X } from 'lucide-react';
 import { apiDelete, apiGet, apiPost, firstError } from '../../lib/auth';
 import { useCurrentUser } from '../../lib/useCurrentUser';
 import GoogleSignInButton from '../GoogleSignInButton';
+import DeleteAccount from './DeleteAccount';
+import { checkPassword } from '../../lib/passwordRules';
 
 /*
  * The ways this account can be signed into.
@@ -51,6 +53,8 @@ export default function AccountSettings({ darkMode }) {
 
   const hasPassword = Boolean(methods?.password?.enabled);
   const googleLinked = Boolean(methods?.google?.enabled);
+
+  const { results: passwordRules } = checkPassword(form.password);
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
@@ -142,11 +146,11 @@ export default function AccountSettings({ darkMode }) {
   return (
     <div className="space-y-6">
       {error && (
-        <p className="text-sm text-red-500 font-semibold bg-red-500/10 p-3 rounded-xl">{error}</p>
+        <p role="alert" className="text-sm text-red-500 font-semibold bg-red-500/10 p-3 rounded-xl">{error}</p>
       )}
 
       {status && (
-        <p className="text-sm text-emerald-600 font-semibold bg-emerald-500/10 p-3 rounded-xl">
+        <p role="status" className="text-sm text-emerald-600 font-semibold bg-emerald-500/10 p-3 rounded-xl">
           {status}
         </p>
       )}
@@ -227,6 +231,7 @@ export default function AccountSettings({ darkMode }) {
           </label>
               <input id="account-current-password"
                 type="password"
+                autoComplete="current-password"
                 value={form.current_password}
                 onChange={(e) => setForm({ ...form, current_password: e.target.value })}
                 className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
@@ -245,6 +250,8 @@ export default function AccountSettings({ darkMode }) {
           </label>
             <input id="account-new-password"
               type="password"
+              autoComplete="new-password"
+              aria-describedby="account-password-rules"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder="••••••••"
@@ -255,9 +262,23 @@ export default function AccountSettings({ darkMode }) {
             {fieldErrors.password && (
               <p className="mt-1.5 text-xs text-red-500 font-medium">{fieldErrors.password}</p>
             )}
-            <p className={`mt-1.5 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              At least 8 characters with upper and lower case, a number and a symbol.
-            </p>
+            {/* The server's own rule, ticked off as it is met. */}
+            <ul id="account-password-rules" className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2">
+              {passwordRules.map((rule) => (
+                <li
+                  key={rule.key}
+                  className={`flex items-center gap-1.5 text-xs font-semibold ${
+                    rule.met ? 'text-emerald-600' : darkMode ? 'text-slate-400' : 'text-slate-500'
+                  }`}
+                >
+                  {rule.met ? <Check size={12} aria-hidden="true" /> : <X size={12} aria-hidden="true" />}
+                  <span>
+                    {rule.label}
+                    <span className="sr-only">{rule.met ? ' (met)' : ' (not yet)'}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div>
@@ -266,6 +287,7 @@ export default function AccountSettings({ darkMode }) {
           </label>
             <input id="account-confirm-new-password"
               type="password"
+              autoComplete="new-password"
               value={form.password_confirmation}
               onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })}
               placeholder="••••••••"
@@ -282,6 +304,8 @@ export default function AccountSettings({ darkMode }) {
           </button>
         </form>
       </div>
+
+      <DeleteAccount darkMode={darkMode} hasPassword={hasPassword} />
     </div>
   );
 }

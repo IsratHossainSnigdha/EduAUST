@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\AccountController;
 use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Auth\SignInMethodController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StudentDashboardController;
 use App\Http\Controllers\SubjectController;
@@ -83,6 +85,13 @@ Route::prefix('v1')->group(function () {
 
         Route::patch('/read-all', [NotificationController::class, 'markAllAsRead'])
             ->name('api.v1.notifications.read-all');
+
+        // Which kinds of notification this account wants.
+        Route::get('/preferences', [NotificationPreferenceController::class, 'show'])
+            ->name('api.v1.notifications.preferences.show');
+
+        Route::patch('/preferences', [NotificationPreferenceController::class, 'update'])
+            ->name('api.v1.notifications.preferences.update');
 
         Route::patch('/{notification}/read', [NotificationController::class, 'markAsRead'])
             ->name('api.v1.notifications.read');
@@ -249,7 +258,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard', [TutorController::class, 'dashboard'])
             ->name('api.v1.tutor.dashboard');
 
-        // Edit the public tutoring details.
+        // Read and edit the public tutoring details.
+        Route::get('/profile', [TutorController::class, 'showProfile'])
+            ->name('api.v1.tutor.profile.show');
+
         Route::patch('/profile', [TutorController::class, 'updateProfile'])
             ->name('api.v1.tutor.profile.update');
     });
@@ -334,6 +346,11 @@ Route::prefix('v1')->group(function () {
 
             Route::delete('/google/link', [SignInMethodController::class, 'unlinkGoogle'])
                 ->name('api.v1.auth.google.unlink');
+
+            // Close the account for good, after confirming it is really them.
+            Route::delete('/account', [AccountController::class, 'destroy'])
+                ->middleware('throttle:5,1')
+                ->name('api.v1.auth.account.destroy');
         });
     });
 });
