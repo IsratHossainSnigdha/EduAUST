@@ -6,6 +6,7 @@ use App\Models\TutorProfile;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Faker\Factory as FakerFactory;
 
 class TutorSeeder extends Seeder
 {
@@ -14,6 +15,14 @@ class TutorSeeder extends Seeder
      */
     public function run(): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Create Faker instance
+        |--------------------------------------------------------------------------
+        */
+
+        $faker = FakerFactory::create();
+
         /*
         |--------------------------------------------------------------------------
         | Get existing departments
@@ -85,12 +94,12 @@ class TutorSeeder extends Seeder
             */
 
             $user = User::create([
-                'name' => fake()->name(),
+                'name' => $faker->name(),
 
                 /*
                 | Random unique AUST-style student ID.
                 */
-                'student_id' => $this->generateStudentId(),
+                'student_id' => $this->generateStudentId($faker),
 
                 /*
                 | Fake AUST email.
@@ -100,7 +109,7 @@ class TutorSeeder extends Seeder
                 /*
                 | Random Bangladeshi phone number.
                 */
-                'phone' => '01' . fake()->randomElement([
+                'phone' => '01' . $faker->randomElement([
                     '3',
                     '4',
                     '5',
@@ -108,19 +117,19 @@ class TutorSeeder extends Seeder
                     '7',
                     '8',
                     '9',
-                ]) . fake()->numerify('########'),
+                ]) . $faker->numerify('########'),
 
                 /*
                 | Existing department.
                 */
-                'department_id' => fake()->randomElement(
+                'department_id' => $faker->randomElement(
                     $departments
                 ),
 
                 /*
                 | Existing semester values.
                 */
-                'semester' => fake()->randomElement([
+                'semester' => $faker->randomElement([
                     '1.1',
                     '1.2',
                     '2.1',
@@ -167,7 +176,7 @@ class TutorSeeder extends Seeder
                 /*
                 | Short title displayed on tutor cards.
                 */
-                'headline' => fake()->randomElement([
+                'headline' => $faker->randomElement([
                     'Experienced CSE Tutor',
                     'Programming & Algorithm Tutor',
                     'Mathematics Tutor',
@@ -183,14 +192,14 @@ class TutorSeeder extends Seeder
                 /*
                 | Tutor introduction.
                 */
-                'bio' => fake()->paragraph(
-                    fake()->numberBetween(2, 4)
+                'bio' => $faker->paragraph(
+                    $faker->numberBetween(2, 4)
                 ),
 
                 /*
                 | Random hourly rate in BDT.
                 */
-                'hourly_rate' => fake()->randomElement([
+                'hourly_rate' => $faker->randomElement([
                     300,
                     350,
                     400,
@@ -206,7 +215,7 @@ class TutorSeeder extends Seeder
                 /*
                 | Teaching experience.
                 */
-                'experience_years' => fake()->numberBetween(
+                'experience_years' => $faker->numberBetween(
                     1,
                     8
                 ),
@@ -214,7 +223,7 @@ class TutorSeeder extends Seeder
                 /*
                 | Number of students taught.
                 */
-                'student_count' => fake()->numberBetween(
+                'student_count' => $faker->numberBetween(
                     0,
                     50
                 ),
@@ -222,19 +231,19 @@ class TutorSeeder extends Seeder
                 /*
                 | Languages spoken.
                 */
-                'languages' => fake()->randomElements(
+                'languages' => $faker->randomElements(
                     [
                         'Bangla',
                         'English',
                         'Hindi',
                     ],
-                    fake()->numberBetween(1, 3)
+                    $faker->numberBetween(1, 3)
                 ),
 
                 /*
                 | Most tutors are available.
                 */
-                'is_available' => fake()->boolean(80),
+                'is_available' => $faker->boolean(80),
             ]);
 
             /*
@@ -244,7 +253,7 @@ class TutorSeeder extends Seeder
             */
 
             $numberOfSubjects = min(
-                fake()->numberBetween(1, 4),
+                $faker->numberBetween(1, 4),
                 count($subjects)
             );
 
@@ -273,14 +282,14 @@ class TutorSeeder extends Seeder
     /**
      * Generate a unique fake student ID.
      */
-    private function generateStudentId(): string
+    private function generateStudentId($faker): string
     {
         do {
             /*
             | Example:
             | 230204001
             */
-            $studentId = fake()->numerify(
+            $studentId = $faker->numerify(
                 '#########'
             );
 
@@ -294,3 +303,4 @@ class TutorSeeder extends Seeder
         return $studentId;
     }
 }
+
