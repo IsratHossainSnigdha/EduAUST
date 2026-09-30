@@ -1,8 +1,7 @@
 // Small auth helper shared across pages: API base, token storage, and a
 // fetch wrapper that attaches the Bearer token and parses JSON.
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-
+export const API_BASE = '/api/v1';
 const ACCESS_KEY = 'eduaust_access_token';
 const REFRESH_KEY = 'eduaust_refresh_token';
 const USER_KEY = 'eduaust_user';

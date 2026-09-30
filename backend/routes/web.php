@@ -2,6 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return ['Laravel' => app()->version()];
-});
+Route::get('/{any?}', fn () =>
+    response()->file(public_path('app/index.html'))
+)->where('any', '(?!api/|up$).*');
