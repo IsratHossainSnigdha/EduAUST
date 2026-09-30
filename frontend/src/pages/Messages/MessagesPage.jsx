@@ -59,6 +59,15 @@ export default function MessagesPage({
 
   const messagesEndRef = useRef(null);
 
+  // The scrolling list, and how far from its bottom the reader was before
+  // older messages were added above, so they are not thrown to the end.
+  const threadRef = useRef(null);
+  const keepFromBottom = useRef(null);
+
+  // Bumped whenever a thread is (re)loaded, so an older page that arrives
+  // after another conversation was opened is dropped.
+  const threadLoads = useRef(0);
+
   // The locked contact whose request form is open, if any.
   const [requesting, setRequesting] = useState(null);
 
@@ -76,6 +85,9 @@ export default function MessagesPage({
 
   const [currentMessages, setCurrentMessages] =
     useState([]);
+
+  // Older pages of the open thread. The server sends the newest page first.
+  const [earlier, setEarlier] = useState({ hasMore: false, nextPage: 2, loading: false });
 
   const [unreadTotal, setUnreadTotal] =
     useState(0);
@@ -184,6 +196,7 @@ export default function MessagesPage({
 
     let cancelled = false;
 
+    threadLoads.current += 1;
     setLoadingThread(true);
 
     apiGet(
@@ -193,6 +206,7 @@ export default function MessagesPage({
 
       if (!ok) {
         setCurrentMessages([]);
+        setEarlier({ hasMore: false, nextPage: 2, loading: false });
         setLoadingThread(false);
 
         if (isUnauthenticated(body)) {
@@ -209,6 +223,7 @@ export default function MessagesPage({
       }
 
       setCurrentMessages(body.data ?? []);
+      setEarlier({ hasMore: Boolean(body.meta?.has_earlier), nextPage: 2, loading: false });
       setLoadingThread(false);
 
       loadConversations();
@@ -224,10 +239,65 @@ export default function MessagesPage({
   ]);
 
   useEffect(() => {
+    const container = threadRef.current;
+
+    // Older messages were added above: keep the reader where they were.
+    if (keepFromBottom.current !== null && container) {
+      container.scrollTop = container.scrollHeight - keepFromBottom.current;
+      keepFromBottom.current = null;
+
+      return;
+    }
+
     messagesEndRef.current?.scrollIntoView({
       behavior: 'smooth',
     });
   }, [currentMessages, selectedChat]);
+
+  /*
+   * Fetch the next page back. A thread longer than one page used to open
+   * on its oldest messages with no way forward; it opens on the newest now,
+   * and this reaches the rest.
+   */
+  const loadEarlier = async () => {
+    if (!selectedChat || earlier.loading || !earlier.hasMore) return;
+
+    const load = threadLoads.current;
+    const page = earlier.nextPage;
+
+    setEarlier((current) => ({ ...current, loading: true }));
+
+    const { ok, body } = await apiGet(`/conversations/${selectedChat}/messages?page=${page}`);
+
+    // Another conversation was opened meanwhile.
+    if (load !== threadLoads.current) return;
+
+    if (!ok) {
+      setEarlier((current) => ({ ...current, loading: false }));
+
+      if (isUnauthenticated(body)) {
+        endExpiredSession();
+        return;
+      }
+
+      setError(body?.message || 'Could not load earlier messages.');
+
+      return;
+    }
+
+    const container = threadRef.current;
+    keepFromBottom.current = container ? container.scrollHeight - container.scrollTop : null;
+
+    // A message sent since the first page shifts every page along by one, so
+    // anything already shown is skipped rather than shown twice.
+    setCurrentMessages((current) => {
+      const shown = new Set(current.map((m) => m.id));
+
+      return [...(body.data ?? []).filter((m) => !shown.has(m.id)), ...current];
+    });
+
+    setEarlier({ hasMore: Boolean(body.meta?.has_earlier), nextPage: page + 1, loading: false });
+  };
 
   const handleSelectChat = useCallback(async (contact) => {
     setError('');
@@ -639,7 +709,24 @@ export default function MessagesPage({
             ) : (
               <>
                 {/* Messages */}
-                <div className="chat-messages-container space-y-3">
+                <div ref={threadRef} className="chat-messages-container space-y-3">
+                  {!loadingThread && earlier.hasMore && (
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={loadEarlier}
+                        disabled={earlier.loading}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-full border transition disabled:opacity-60 ${
+                          darkMode
+                            ? 'border-slate-700 text-slate-300 hover:bg-slate-800'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {earlier.loading ? 'Loading…' : 'Load earlier messages'}
+                      </button>
+                    </div>
+                  )}
+
                   {loadingThread ? (
                     <div className="text-center text-xs text-slate-400 py-8">
                       Loading messages…

@@ -614,4 +614,51 @@ class MessagingTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.request_status', 'ended');
     }
+
+    public function test_a_long_thread_opens_on_its_newest_messages(): void
+    {
+        $me = $this->actingAsUser();
+        $other = User::factory()->create();
+        $thread = $this->threadBetween($me, $other);
+
+        foreach (range(1, 60) as $i) {
+            Message::factory()->for($thread)->from($i % 2 ? $other : $me)->create([
+                'body' => "message {$i}",
+                'created_at' => now()->subMinutes(61 - $i),
+            ]);
+        }
+
+        // The first page used to be the oldest fifty, so everything after
+        // message 50 never appeared, including anything just sent.
+        $response = $this->getJson("/api/v1/conversations/{$thread->id}/messages")->assertOk();
+
+        $bodies = array_column($response->json('data'), 'body');
+
+        $this->assertCount(50, $bodies);
+        $this->assertSame('message 11', $bodies[0]);
+        $this->assertSame('message 60', $bodies[49]);
+        $response->assertJsonPath('meta.has_earlier', true);
+    }
+
+    public function test_earlier_messages_come_a_page_at_a_time_still_in_order(): void
+    {
+        $me = $this->actingAsUser();
+        $other = User::factory()->create();
+        $thread = $this->threadBetween($me, $other);
+
+        foreach (range(1, 60) as $i) {
+            Message::factory()->for($thread)->from($other)->create([
+                'body' => "message {$i}",
+                'created_at' => now()->subMinutes(61 - $i),
+            ]);
+        }
+
+        $response = $this->getJson("/api/v1/conversations/{$thread->id}/messages?page=2")->assertOk();
+
+        $this->assertSame(
+            array_map(fn ($i) => "message {$i}", range(1, 10)),
+            array_column($response->json('data'), 'body')
+        );
+        $response->assertJsonPath('meta.has_earlier', false);
+    }
 }
