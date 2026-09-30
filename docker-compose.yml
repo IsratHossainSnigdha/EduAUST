@@ -42,7 +42,9 @@ services:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
     environment:
-      - VITE_API_BASE_URL=http://localhost:8000
+      # The app calls /api on its own origin; the dev server forwards those
+      # calls to the backend container. Nothing read the old VITE_API_BASE_URL.
+      - VITE_API_PROXY_TARGET=http://backend:8000
       # Same reasoning as the backend: forwarded only when the host sets it,
       # otherwise Vite reads frontend/.env through the mounted source.
       - VITE_GOOGLE_CLIENT_ID
