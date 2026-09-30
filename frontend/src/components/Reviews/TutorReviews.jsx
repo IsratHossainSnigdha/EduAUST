@@ -62,14 +62,14 @@ export default function TutorReviews({ darkMode, tutorId, cardClass }) {
       <div className={`flex items-center gap-4 p-4 rounded-xl border ${cardClass}`}>
         <div className="text-center shrink-0">
           <p className={`text-3xl font-black ${heading}`}>{summary.average}</p>
-          <p className={`text-[10px] font-semibold ${muted}`}>
+          <p className={`text-[11px] font-semibold ${muted}`}>
             {summary.count} review{summary.count === 1 ? '' : 's'}
           </p>
         </div>
 
         <div className="border-l border-slate-200 dark:border-slate-700 pl-4">
           <StarRating value={summary.average} size={18} darkMode={darkMode} />
-          <p className={`text-[11px] mt-1 ${muted}`}>Average rating from your students.</p>
+          <p className={`text-xs mt-1 ${muted}`}>Average rating from your students.</p>
         </div>
       </div>
 
@@ -91,7 +91,7 @@ export default function TutorReviews({ darkMode, tutorId, cardClass }) {
                 </div>
 
                 {review.comment && (
-                  <p className={`text-[11px] mt-1.5 ${muted}`}>{review.comment}</p>
+                  <p className={`text-xs mt-1.5 ${muted}`}>{review.comment}</p>
                 )}
               </div>
             </div>

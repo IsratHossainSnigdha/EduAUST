@@ -149,4 +149,104 @@ class NotificationDeliveryTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['title' => 'New tuition request']);
     }
+
+    public function test_a_request_notification_points_the_tutor_at_their_inbox(): void
+    {
+        $tutor = $this->tutor();
+        $student = $this->signIn(User::factory()->create());
+
+        $this->postJson('/api/v1/tuition-requests', [
+            'tutor_id' => $tutor->id,
+            'subject_id' => Subject::factory()->create()->id,
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $tutor->id,
+            'title' => 'New tuition request',
+            'link' => '/tutor-requests',
+        ]);
+    }
+
+    public function test_an_acceptance_points_the_student_at_the_conversation_it_opened(): void
+    {
+        $tutor = $this->tutor();
+        $student = User::factory()->create();
+
+        $request = TuitionRequest::factory()->create([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+        ]);
+
+        $this->signIn($tutor);
+        $this->patchJson('/api/v1/tuition-requests/'.$request->id, ['status' => 'accepted'])
+            ->assertOk();
+
+        // Acceptance is what unlocks messaging, so that is where it leads.
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $student->id,
+            'title' => 'Request accepted',
+            'link' => '/messages',
+        ]);
+    }
+
+    public function test_a_decline_points_the_student_at_their_own_request_list(): void
+    {
+        $tutor = $this->tutor();
+        $student = User::factory()->create();
+
+        $request = TuitionRequest::factory()->create([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+        ]);
+
+        $this->signIn($tutor);
+        $this->patchJson('/api/v1/tuition-requests/'.$request->id, ['status' => 'declined'])
+            ->assertOk();
+
+        // A decline has no conversation to open.
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $student->id,
+            'title' => 'Request declined',
+            'link' => '/my-requests',
+        ]);
+    }
+
+    public function test_ending_an_arrangement_points_each_side_at_their_own_list(): void
+    {
+        $tutor = $this->tutor();
+        $student = User::factory()->create();
+
+        $request = TuitionRequest::factory()->accepted()->create([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'responded_at' => now()->subMonths(3),
+        ]);
+
+        $this->signIn($tutor);
+        $this->deleteJson('/api/v1/tuition-requests/'.$request->id)->assertOk();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $student->id,
+            'title' => 'Tutoring ended',
+            'link' => '/my-tutors',
+        ]);
+    }
+
+    public function test_the_api_hands_the_destination_to_the_browser(): void
+    {
+        $tutor = $this->tutor();
+        $student = $this->signIn(User::factory()->create());
+
+        $this->postJson('/api/v1/tuition-requests', [
+            'tutor_id' => $tutor->id,
+            'subject_id' => Subject::factory()->create()->id,
+        ])->assertCreated();
+
+        $this->signIn($tutor);
+
+        $this->getJson('/api/v1/notifications?audience=tutor')
+            ->assertOk()
+            // The payload is grouped by day before it reaches the browser.
+            ->assertJsonPath('groups.0.notifications.0.link', '/tutor-requests');
+    }
 }

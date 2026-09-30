@@ -111,22 +111,22 @@ export default function BecomeATutor({ darkMode, toggleDarkMode }) {
               <div className={`become-tutor-badge-box ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex justify-center mb-2 text-emerald-600 dark:text-emerald-400"><ShieldCheck className="w-6 h-6" /></div>
                 <h3 className={`font-bold text-xs mb-1 ${darkMode ? 'text-slate-200' : 'text-slate-900'}`}>Verify Students</h3>
-                <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We verify every tutor is an AUST student.</p>
+                <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We verify every tutor is an AUST student.</p>
               </div>
               <div className={`become-tutor-badge-box ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex justify-center mb-2 text-emerald-600 dark:text-emerald-400"><UserCheck className="w-6 h-6" /></div>
                 <h3 className={`font-bold text-xs mb-1 ${darkMode ? 'text-slate-200' : 'text-slate-900'}`}>Prevent Fake Accounts</h3>
-                <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We prevent fake or anonymous tutor accounts.</p>
+                <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We prevent fake or anonymous tutor accounts.</p>
               </div>
               <div className={`become-tutor-badge-box ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex justify-center mb-2 text-emerald-600 dark:text-emerald-400"><Lock className="w-6 h-6" /></div>
                 <h3 className={`font-bold text-xs mb-1 ${darkMode ? 'text-slate-200' : 'text-slate-900'}`}>Secure Communication</h3>
-                <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We ensure secure communication between students.</p>
+                <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We ensure secure communication between students.</p>
               </div>
               <div className={`become-tutor-badge-box ${darkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex justify-center mb-2 text-emerald-600 dark:text-emerald-400"><Award className="w-6 h-6" /></div>
                 <h3 className={`font-bold text-xs mb-1 ${darkMode ? 'text-slate-200' : 'text-slate-900'}`}>Quality & Trust</h3>
-                <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We maintain the quality and credibility of the platform.</p>
+                <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>We maintain the quality and credibility of the platform.</p>
               </div>
             </div>
 
@@ -268,7 +268,7 @@ export default function BecomeATutor({ darkMode, toggleDarkMode }) {
               <a href="#" className={`p-2 rounded-full border hover:text-emerald-600 shadow-xs transition ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-600'}`}><Globe className="w-4 h-4" /></a>
               <a href="#" className={`p-2 rounded-full border hover:text-emerald-600 shadow-xs transition ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-600'}`}><Share2 className="w-4 h-4" /></a>
             </div>
-            <p className={`text-[11px] ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>© 2026 EduAUST. All rights reserved.</p>
+            <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>© 2026 EduAUST. All rights reserved.</p>
           </div>
         </div>
       </footer>

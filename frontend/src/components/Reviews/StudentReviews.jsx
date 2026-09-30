@@ -79,7 +79,7 @@ export default function StudentReviews({ darkMode, cardClass, onChanged }) {
 
       {awaiting.length > 0 && !editing && (
         <div>
-          <h4 className={`text-[11px] font-extrabold uppercase tracking-wider mb-3 ${muted}`}>
+          <h4 className={`text-xs font-extrabold uppercase tracking-wider mb-3 ${muted}`}>
             Waiting on your rating
           </h4>
 
@@ -94,14 +94,14 @@ export default function StudentReviews({ darkMode, cardClass, onChanged }) {
 
                   <div className="min-w-0">
                     <p className={`text-xs font-bold truncate ${heading}`}>{tutor.name}</p>
-                    <p className={`text-[10px] ${muted}`}>{tutor.department ?? 'AUST'}</p>
+                    <p className={`text-[11px] ${muted}`}>{tutor.department ?? 'AUST'}</p>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setEditing({ tutor, existing: null })}
-                  className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold transition"
+                  className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
                 >
                   Rate
                 </button>
@@ -113,7 +113,7 @@ export default function StudentReviews({ darkMode, cardClass, onChanged }) {
 
       {written.length > 0 && !editing && (
         <div>
-          <h4 className={`text-[11px] font-extrabold uppercase tracking-wider mb-3 ${muted}`}>
+          <h4 className={`text-xs font-extrabold uppercase tracking-wider mb-3 ${muted}`}>
             Your reviews
           </h4>
 
@@ -137,14 +137,14 @@ export default function StudentReviews({ darkMode, cardClass, onChanged }) {
                     <button
                       type="button"
                       onClick={() => setEditing({ tutor: review.tutor, existing: review })}
-                      className="text-[11px] font-bold text-emerald-500 hover:text-emerald-400 transition"
+                      className="text-xs font-bold text-emerald-500 hover:text-emerald-400 transition"
                     >
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => remove(review.id)}
-                      className="text-[11px] font-bold text-rose-500 hover:text-rose-400 transition"
+                      className="text-xs font-bold text-rose-500 hover:text-rose-400 transition"
                     >
                       Remove
                     </button>
@@ -152,7 +152,7 @@ export default function StudentReviews({ darkMode, cardClass, onChanged }) {
                 </div>
 
                 {review.comment && (
-                  <p className={`text-[11px] mt-2 ${muted}`}>{review.comment}</p>
+                  <p className={`text-xs mt-2 ${muted}`}>{review.comment}</p>
                 )}
               </div>
             ))}

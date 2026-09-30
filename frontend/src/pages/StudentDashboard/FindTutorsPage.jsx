@@ -350,7 +350,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                     <span>{item.name}</span>
                   </div>
                   {item.badge && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-black ${
                       isActive ? 'bg-white text-emerald-600' : 'bg-emerald-600 text-white'
                     }`}>
                       {item.badge}
@@ -367,7 +367,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             <UserAvatar user={currentUser} size={40} />
             <div>
               <h4 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h4>
-              <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
+              <p className={`text-[11px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
                 {['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
               </p>
             </div>
@@ -420,7 +420,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
               <UserAvatar user={currentUser} size={36} />
               <div className="hidden sm:block">
                 <h5 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h5>
-                <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
+                <p className={`text-[11px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
                   {['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
                 </p>
               </div>
@@ -451,7 +451,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
               </div>
               <button 
                 onClick={handleResetFilters}
-                className="text-[10px] text-emerald-500 hover:underline flex items-center gap-1 font-semibold"
+                className="text-[11px] text-emerald-500 hover:underline flex items-center gap-1 font-semibold"
               >
                 <RotateCcw size={12} /> Reset
               </button>
@@ -589,12 +589,12 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                       <div className="space-y-1 flex-grow">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className={`text-sm font-black ${textPrimary}`}>{tutor.name}</h4>
-                          <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 shrink-0">
+                          <span className="text-[11px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 shrink-0">
                             {tutor.experience_years}+ yrs
                           </span>
                         </div>
-                        <p className="text-[11px] text-emerald-600 font-bold">{tutor.headline}</p>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-400 flex-wrap">
+                        <p className="text-xs text-emerald-600 font-bold">{tutor.headline}</p>
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
                           <span className="flex items-center gap-1"><MapPin size={12} /> {tutor.department ?? 'AUST'}</span>
                           {/* What students made of them — the cards carried a
                               star icon with nothing behind it until now. */}
@@ -609,22 +609,22 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
 
                     <div className={`grid grid-cols-3 p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800/50 border-slate-700/60' : 'bg-slate-50 border-slate-200/80'}`}>
                       <div>
-                        <p className="text-[10px] text-slate-400 font-medium">Experience</p>
+                        <p className="text-[11px] text-slate-400 font-medium">Experience</p>
                         <p className={`text-xs font-bold ${textPrimary}`}>{tutor.experience_years}+ Years</p>
                       </div>
                       <div className="border-x border-slate-200 dark:border-slate-700">
-                        <p className="text-[10px] text-slate-400 font-medium">Students</p>
+                        <p className="text-[11px] text-slate-400 font-medium">Students</p>
                         <p className={`text-xs font-bold ${textPrimary}`}>{tutor.student_count}+</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-400 font-medium">Rate</p>
+                        <p className="text-[11px] text-slate-400 font-medium">Rate</p>
                         <p className="text-xs font-bold text-emerald-500">৳{tutor.hourly_rate}/hr</p>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5">
                       {tutor.subjects.map((subject) => (
-                        <span key={subject.id} className={`text-[10px] px-2.5 py-1 rounded-lg font-medium ${
+                        <span key={subject.id} className={`text-[11px] px-2.5 py-1 rounded-lg font-medium ${
                           darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
                         }`}>
                           {subject.name}

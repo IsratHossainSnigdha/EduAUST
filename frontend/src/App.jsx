@@ -26,6 +26,7 @@ import TuitionRequests from './pages/TutorDashboard/TuitionRequests';
 import MyStudentsPage from './pages/TutorDashboard/MyStudentsPage';
 
 import TutorRoute from './components/TutorRoute';
+import DocumentTitle from './components/DocumentTitle';
 
 import TutorAccountPage from './pages/TutorAccount/TutorAccountPage';
 
@@ -101,6 +102,9 @@ export default function App() {
       }
     >
       <BrowserRouter>
+        {/* Names the browser tab for whichever route is showing. */}
+        <DocumentTitle />
+
         <Routes>
 
           {/* ==================== Landing ==================== */}

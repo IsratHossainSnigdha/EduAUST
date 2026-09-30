@@ -138,7 +138,7 @@ export default function ArrangementPanel({
                 setRating(null);
                 setConfirming(null);
               }}
-              className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition ${
+              className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition ${
                 tab === t.key
                   ? 'bg-emerald-600 text-white'
                   : darkMode
@@ -193,7 +193,7 @@ export default function ArrangementPanel({
 
                     <div className="min-w-0">
                       <h4 className={`text-xs font-black truncate ${heading}`}>{row.name}</h4>
-                      <p className={`text-[10px] font-semibold ${muted}`}>
+                      <p className={`text-[11px] font-semibold ${muted}`}>
                         {[row.department, row.semester].filter(Boolean).join(' · ')}
                       </p>
 
@@ -257,7 +257,7 @@ export default function ArrangementPanel({
                 {/* When it started, and when it finished. */}
                 {(started || ended) && (
                   <div
-                    className={`flex items-center gap-1.5 mt-2 text-[10px] font-semibold ${muted}`}
+                    className={`flex items-center gap-1.5 mt-2 text-[11px] font-semibold ${muted}`}
                   >
                     <Clock size={10} className="shrink-0" />
                     <span>
@@ -273,7 +273,7 @@ export default function ArrangementPanel({
                     {row.subjects.map((subject) => (
                       <span
                         key={subject}
-                        className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
                           darkMode
                             ? 'bg-slate-900 text-slate-300'
                             : 'bg-white text-slate-600 border border-slate-200'
@@ -288,7 +288,7 @@ export default function ArrangementPanel({
                 {/* Say why the button is dead rather than leaving them to guess. */}
                 {!isPast && row.can_end === false && row.end_blocked_reason && (
                   <p
-                    className={`mt-2.5 text-[10px] font-semibold rounded-lg px-2.5 py-2 ${
+                    className={`mt-2.5 text-[11px] font-semibold rounded-lg px-2.5 py-2 ${
                       darkMode
                         ? 'bg-amber-500/10 text-amber-300'
                         : 'bg-amber-500/10 text-amber-700'
@@ -301,7 +301,7 @@ export default function ArrangementPanel({
                 {/* Ending an arrangement is not a one-tap accident. */}
                 {confirming === id && (
                   <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                    <p className={`text-[11px] ${muted}`}>
+                    <p className={`text-xs ${muted}`}>
                       {labels.confirmCopy(row.name?.split(' ')[0] ?? 'them')}
                     </p>
 
@@ -312,7 +312,7 @@ export default function ArrangementPanel({
                           setConfirming(null);
                           onRemove?.(row);
                         }}
-                        className="bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition"
+                        className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
                       >
                         {labels.confirmButton}
                       </button>
@@ -320,7 +320,7 @@ export default function ArrangementPanel({
                       <button
                         type="button"
                         onClick={() => setConfirming(null)}
-                        className={`text-[11px] font-bold px-3 py-1.5 rounded-lg border transition ${
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
                           darkMode
                             ? 'border-slate-700 text-slate-300'
                             : 'border-slate-200 text-slate-600'

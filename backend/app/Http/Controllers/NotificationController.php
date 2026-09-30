@@ -216,6 +216,9 @@ class NotificationController extends Controller
             'category' => $notification->category,
             'title' => $notification->title,
             'body' => $notification->body,
+            // Where opening it goes. Null on anything raised before
+            // notifications carried a destination.
+            'link' => $notification->link,
             'unread' => $notification->isUnread(),
             'read_at' => $notification->read_at?->toIso8601String(),
             'created_at' => $notification->created_at?->toIso8601String(),

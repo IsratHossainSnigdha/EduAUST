@@ -27,7 +27,7 @@ export default function MessageBubble({
 
       <div className="flex items-center gap-1 mt-1">
         <span
-          className={`text-[10px] font-semibold ${
+          className={`text-[11px] font-semibold ${
             darkMode
               ? 'text-slate-300'
               : 'text-slate-500'

@@ -130,7 +130,7 @@ export default function SavedTutorsPage({ darkMode }) {
                     {t.name}
                   </h3>
 
-                  <p className={`text-[11px] font-semibold ${muted} truncate`}>
+                  <p className={`text-xs font-semibold ${muted} truncate`}>
                     {t.headline || [t.department, t.experience_years ? `${t.experience_years} yr` : null]
                       .filter(Boolean)
                       .join(' • ')}
@@ -143,7 +143,7 @@ export default function SavedTutorsPage({ darkMode }) {
                   {t.subjects.slice(0, 3).map((s) => (
                     <span
                       key={s}
-                      className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                         darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
                       }`}
                     >

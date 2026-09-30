@@ -199,7 +199,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
                     <span>{item.name}</span>
                   </div>
                   {item.badge && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-black ${
                       isActive ? 'bg-white text-emerald-600' : 'bg-emerald-600 text-white'
                     }`}>
                       {item.badge}
@@ -216,7 +216,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
             <UserAvatar user={me} size={40} />
             <div>
               <h4 className={`text-xs ${textPrimary}`}>{me?.name ?? 'Student'}</h4>
-              <p className={`text-[10px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 {['Student', me?.department, me?.semester].filter(Boolean).join(' · ')}
               </p>
             </div>
@@ -269,7 +269,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
               }}
               className={`w-full pl-11 pr-12 py-2.5 rounded-2xl border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${inputBg}`}
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">⌘ /</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">⌘ /</span>
           </div>
 
           <div className="flex items-center gap-4 self-end md:self-auto">
@@ -292,7 +292,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
               <UserAvatar user={me} size={36} />
               <div className="hidden sm:block">
                 <h5 className={`text-xs ${textPrimary}`}>{me?.name ?? 'Student'}</h5>
-                <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-medium' : 'text-slate-500 font-medium'}`}>
+                <p className={`text-[11px] ${darkMode ? 'text-slate-400 font-medium' : 'text-slate-500 font-medium'}`}>
                   {[me?.department, me?.semester && `Semester ${me.semester}`].filter(Boolean).join(' • ')}
                 </p>
               </div>
@@ -356,12 +356,12 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
                     <Icon size={18} />
                   </div>
                   {card.badge && (
-                    <span className="bg-emerald-600 text-white text-[9px] px-2 py-0.5 rounded-full font-black">{card.badge}</span>
+                    <span className="bg-emerald-600 text-white text-[11px] px-2 py-0.5 rounded-full font-black">{card.badge}</span>
                   )}
                 </div>
                 <div className="mt-4 space-y-1">
                   <h3 className={`text-sm font-extrabold tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>{card.title}</h3>
-                  <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{card.desc}</p>
+                  <p className={`text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{card.desc}</p>
                 </div>
                 <div className="absolute bottom-5 right-5 text-slate-400 group-hover:text-emerald-500 transition-colors">
                   <ArrowRight size={14} />
@@ -381,7 +381,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
                 <button
                   type="button"
                   onClick={() => navigate('/my-requests')}
-                  className="text-[11px] font-bold text-emerald-500 dark:text-emerald-400 hover:underline"
+                  className="text-xs font-bold text-emerald-500 dark:text-emerald-400 hover:underline"
                 >
                   View All
                 </button>
@@ -401,7 +401,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
                   <div className={`py-8 text-center ${textMuted}`}>
                     <BookOpen size={24} className="mx-auto mb-2 text-emerald-500/60" />
                     <p className="text-xs font-bold">No requests yet</p>
-                    <p className="text-[11px] mt-1">Find a tutor and send your first request.</p>
+                    <p className="text-xs mt-1">Find a tutor and send your first request.</p>
                   </div>
                 )}
 
@@ -420,13 +420,13 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
                           {req.subject ?? 'General tutoring'}
                         </h4>
 
-                        <p className={`text-[10px] truncate ${textMuted}`}>
+                        <p className={`text-[11px] truncate ${textMuted}`}>
                           {req.tutor?.name ?? 'Tutor'}
                         </p>
                       </div>
                     </div>
 
-                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded border capitalize ${REQUEST_STATUS_STYLES[req.status] ?? REQUEST_STATUS_STYLES.pending}`}>
+                    <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded border capitalize ${REQUEST_STATUS_STYLES[req.status] ?? REQUEST_STATUS_STYLES.pending}`}>
                       {req.status === 'pending' ? 'Waiting' : req.status}
                     </span>
                   </div>
@@ -459,7 +459,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
                 </h3>
 
                 {stats?.reviews_pending > 0 && (
-                  <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[9px] px-2 py-0.5 rounded-full font-black">
+                  <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[11px] px-2 py-0.5 rounded-full font-black">
                     {stats.reviews_pending} to rate
                   </span>
                 )}

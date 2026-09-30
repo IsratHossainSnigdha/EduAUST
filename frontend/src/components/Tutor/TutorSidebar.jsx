@@ -58,6 +58,15 @@ export default function TutorSidebar({
   const menuItems = buildDashboardMenu({ role: currentRole, badges: counts });
 
   /*
+   * Only an account that actually tutors has a tutor dashboard to reach.
+   * Offering the switch to everyone meant a student pressed a prominent
+   * button and was quietly put back where they started.
+   */
+  const canTutor = currentUser?.isTutor === true
+    || currentUser?.isTutor === 1
+    || currentUser?.isTutor === '1';
+
+  /*
    * Check whether a menu item is locked.
    */
   const isItemLocked = (item) => {
@@ -169,7 +178,7 @@ export default function TutorSidebar({
                 {/* Badge */}
                 {item.badge && (
                   <span
-                    className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
+                    className={`text-[11px] px-1.5 py-0.5 rounded-full font-black ${
                       isActive
                         ? 'bg-white text-emerald-600'
                         : locked
@@ -204,7 +213,7 @@ export default function TutorSidebar({
             </h4>
 
             <p
-              className={`text-[10px] ${
+              className={`text-[11px] ${
                 darkMode
                   ? 'text-slate-400'
                   : 'text-slate-500'
@@ -225,6 +234,14 @@ export default function TutorSidebar({
         <button
           type="button"
           onClick={() => {
+            // Anyone who does not tutor yet is sent to sign up as one rather
+            // than bounced off the tutor route guard.
+            if (currentRole !== 'tutor' && !canTutor) {
+              navigate('/become-a-tutor');
+
+              return;
+            }
+
             const nextRole =
               currentRole === 'tutor'
                 ? 'student'
@@ -246,7 +263,9 @@ export default function TutorSidebar({
         >
           {currentRole === 'tutor'
             ? 'Switch to Student Dashboard'
-            : 'Switch to Tutor Dashboard'}
+            : canTutor
+              ? 'Switch to Tutor Dashboard'
+              : 'Become a Tutor'}
         </button>
 
         {/* =================================================

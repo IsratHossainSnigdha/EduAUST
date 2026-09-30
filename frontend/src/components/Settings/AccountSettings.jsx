@@ -159,7 +159,7 @@ export default function AccountSettings({ darkMode }) {
               <ShieldCheck size={14} className="text-emerald-500" />
               Google account
             </h3>
-            <p className={`text-[11px] mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {googleLinked
                 ? 'Linked — you can sign in with Google.'
                 : 'Not linked. Link your AUST Google account to sign in with one click.'}
@@ -167,7 +167,7 @@ export default function AccountSettings({ darkMode }) {
           </div>
 
           {googleLinked && (
-            <span className="shrink-0 text-[10px] font-extrabold px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 flex items-center gap-1">
+            <span className="shrink-0 text-[11px] font-extrabold px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 flex items-center gap-1">
               <Check size={11} /> Connected
             </span>
           )}
@@ -205,7 +205,7 @@ export default function AccountSettings({ darkMode }) {
               <KeyRound size={14} className="text-emerald-500" />
               {hasPassword ? 'Change password' : 'Set a password'}
             </h3>
-            <p className={`text-[11px] mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {hasPassword
                 ? 'Update the password you sign in with.'
                 : 'You joined with Google. Set a password to also sign in with your email.'}
@@ -213,7 +213,7 @@ export default function AccountSettings({ darkMode }) {
           </div>
 
           {hasPassword && (
-            <span className="shrink-0 text-[10px] font-extrabold px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 flex items-center gap-1">
+            <span className="shrink-0 text-[11px] font-extrabold px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 flex items-center gap-1">
               <Check size={11} /> Enabled
             </span>
           )}
@@ -255,7 +255,7 @@ export default function AccountSettings({ darkMode }) {
             {fieldErrors.password && (
               <p className="mt-1.5 text-xs text-red-500 font-medium">{fieldErrors.password}</p>
             )}
-            <p className={`mt-1.5 text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <p className={`mt-1.5 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               At least 8 characters with upper and lower case, a number and a symbol.
             </p>
           </div>

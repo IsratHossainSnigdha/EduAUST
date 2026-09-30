@@ -430,7 +430,7 @@ export default function MessagesPage({
 
                   {item.badge && (
                     <span
-                      className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
+                      className={`text-[11px] px-1.5 py-0.5 rounded-full font-black ${
                         isActive
                           ? 'bg-white text-emerald-600'
                           : 'bg-emerald-600 text-white'
@@ -468,7 +468,7 @@ export default function MessagesPage({
               </h4>
 
               <p
-                className={`text-[10px] ${
+                className={`text-[11px] ${
                   darkMode
                     ? 'text-slate-400 font-semibold'
                     : 'text-slate-500 font-semibold'
@@ -536,7 +536,7 @@ export default function MessagesPage({
                 darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-200'
               }`}
             >
-              <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[11px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 Currently teaching
               </p>
               <p className={`text-xl font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -549,7 +549,7 @@ export default function MessagesPage({
                 darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-200'
               }`}
             >
-              <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[11px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 Students taught
               </p>
               <p className={`text-xl font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>

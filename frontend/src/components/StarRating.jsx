@@ -25,7 +25,7 @@ export default function StarRating({
     if (!showEmpty) return null;
 
     return (
-      <span className={`text-[10px] font-semibold ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+      <span className={`text-[11px] font-semibold ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
         No ratings yet
       </span>
     );
@@ -65,7 +65,7 @@ export default function StarRating({
       </span>
 
       {!interactive && (
-        <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+        <span className={`text-[11px] font-bold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
           {Number(value).toFixed(1)}
           {typeof count === 'number' && (
             <span className={`font-medium ml-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>

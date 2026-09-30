@@ -121,7 +121,7 @@ export default function ConversationItem({
           </h4>
 
           <span
-            className={`text-[10px] shrink-0 font-medium ${
+            className={`text-[11px] shrink-0 font-medium ${
               darkMode ? 'text-slate-300' : 'text-slate-500'
             }`}
           >
@@ -131,7 +131,7 @@ export default function ConversationItem({
 
         <div className="flex items-center justify-between gap-2">
           <p
-            className={`text-[11px] truncate ${
+            className={`text-xs truncate ${
               hasUnread
                 ? darkMode
                   ? 'font-bold text-slate-100'
@@ -157,7 +157,7 @@ export default function ConversationItem({
           {/* A small text tag mirrors the dot for anyone who reads labels
               faster than colours. */}
           <span
-            className={`shrink-0 text-[8px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-full ${status.tint}`}
+            className={`shrink-0 text-[11px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-full ${status.tint}`}
           >
             {status.label}
           </span>
@@ -166,7 +166,7 @@ export default function ConversationItem({
 
       {/* Unread badge, or a lock for a contact not yet reachable */}
       {hasUnread ? (
-        <span className="min-w-4 h-4 rounded-full bg-emerald-600 text-white text-[9px] font-black flex items-center justify-center shrink-0 px-1.5">
+        <span className="min-w-4 h-4 rounded-full bg-emerald-600 text-white text-[11px] font-black flex items-center justify-center shrink-0 px-1.5">
           {conversation.unread_count}
         </span>
       ) : conversation.locked ? (

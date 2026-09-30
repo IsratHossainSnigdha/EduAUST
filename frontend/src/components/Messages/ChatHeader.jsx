@@ -46,7 +46,7 @@ export default function ChatHeader({
             {participant?.name ?? 'Unknown'}
           </h4>
 
-          <p className={`text-[10px] ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+          <p className={`text-[11px] ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>
             {currentRole === 'tutor' && activeChat.request_status === 'accepted'
               ? `Currently teaching · ${participant?.department ?? 'AUST'}`
               : participant?.department ?? 'AUST'}
@@ -58,7 +58,7 @@ export default function ChatHeader({
         <button
           type="button"
           onClick={() => onRemoveStudent(activeChat)}
-          className={`flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-xl border transition ${
+          className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition ${
             darkMode
               ? 'border-rose-500/60 text-rose-400 hover:bg-rose-500 hover:text-white'
               : 'border-rose-300 text-rose-500 hover:bg-rose-500 hover:text-white'

@@ -195,7 +195,7 @@ export default function ProfileSettings({ darkMode }) {
           readOnly
           className={`w-full px-4 py-3 rounded-xl border opacity-70 cursor-not-allowed ${inputClass}`}
         />
-        <p className={`mt-1.5 text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+        <p className={`mt-1.5 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
           Your institutional address identifies your account and cannot be changed.
         </p>
       </div>

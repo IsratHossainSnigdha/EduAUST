@@ -53,7 +53,7 @@ export default function NotificationSettings({
             <h3 className={`text-xs font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               Desktop notifications
             </h3>
-            <p className={`text-[11px] mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {!supported
                 ? 'Your browser does not support desktop notifications.'
                 : permission === 'granted'
@@ -75,7 +75,7 @@ export default function NotificationSettings({
           )}
 
           {permission === 'granted' && (
-            <span className="shrink-0 text-[10px] font-extrabold px-2 py-1 rounded bg-emerald-500/10 text-emerald-500">
+            <span className="shrink-0 text-[11px] font-extrabold px-2 py-1 rounded bg-emerald-500/10 text-emerald-500">
               Enabled
             </span>
           )}
@@ -95,7 +95,7 @@ export default function NotificationSettings({
           </h3>
 
           <p
-            className={`text-[11px] mt-1 ${
+            className={`text-xs mt-1 ${
               darkMode
                 ? 'text-slate-400'
                 : 'text-slate-500'
@@ -127,7 +127,7 @@ export default function NotificationSettings({
           </h3>
 
           <p
-            className={`text-[11px] mt-1 ${
+            className={`text-xs mt-1 ${
               darkMode
                 ? 'text-slate-400'
                 : 'text-slate-500'
@@ -157,7 +157,7 @@ export default function NotificationSettings({
           </h3>
 
           <p
-            className={`text-[11px] mt-1 ${
+            className={`text-xs mt-1 ${
               darkMode
                 ? 'text-slate-400'
                 : 'text-slate-500'

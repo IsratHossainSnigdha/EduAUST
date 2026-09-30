@@ -85,6 +85,7 @@ class Notification extends Model
         'category',
         'title',
         'body',
+        'link',
         'read_at',
     ];
 

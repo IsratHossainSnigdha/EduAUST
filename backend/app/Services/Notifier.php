@@ -31,7 +31,8 @@ class Notifier
             'New tuition request',
             $subject
                 ? "{$student} asked for help with {$subject}."
-                : "{$student} sent you a tuition request."
+                : "{$student} sent you a tuition request.",
+            '/tutor-requests',
         );
     }
 
@@ -54,7 +55,10 @@ class Notifier
             $accepted
                 // Acceptance is also what unlocks messaging, so say so.
                 ? "{$tutor} accepted your request{$about}. You can message them now."
-                : "{$tutor} declined your request{$about}."
+                : "{$tutor} declined your request{$about}.",
+            // Acceptance opens the conversation, so take them to it; a
+            // decline has nothing to open but the list it came from.
+            $accepted ? '/messages' : '/my-requests',
         );
     }
 
@@ -82,7 +86,8 @@ class Notifier
                 Notification::AUDIENCE_STUDENT,
                 Notification::CATEGORY_REQUEST,
                 'Tutoring ended',
-                "{$tutor} has ended your tutoring{$about}. You can send a new request if you would like to continue."
+                "{$tutor} has ended your tutoring{$about}. You can send a new request if you would like to continue.",
+                '/my-tutors',
             );
 
             return;
@@ -95,7 +100,8 @@ class Notifier
             Notification::AUDIENCE_TUTOR,
             Notification::CATEGORY_REQUEST,
             'Tutoring ended',
-            "{$student} has ended their tutoring with you{$about}."
+            "{$student} has ended their tutoring with you{$about}.",
+            '/my-students',
         );
     }
 
@@ -110,21 +116,32 @@ class Notifier
             Notification::AUDIENCE_BOTH,
             Notification::CATEGORY_MESSAGE,
             "New message from {$sender->name}",
-            Str::limit($body, 120)
+            Str::limit($body, 120),
+            '/messages',
         );
     }
 
     /**
      * Record one notification.
      */
-    private function to(string $userId, string $audience, string $category, string $title, string $body): void
-    {
+    /**
+     * @param  string|null  $link  Where opening this notification should go.
+     */
+    private function to(
+        string $userId,
+        string $audience,
+        string $category,
+        string $title,
+        string $body,
+        ?string $link = null,
+    ): void {
         Notification::create([
             'user_id' => $userId,
             'audience' => $audience,
             'category' => $category,
             'title' => $title,
             'body' => $body,
+            'link' => $link,
         ]);
     }
 }

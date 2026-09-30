@@ -79,13 +79,13 @@ export default function ConversationList({
       <div className="p-3.5 border-b border-slate-100 dark:border-slate-800 space-y-2.5 shrink-0">
         <div className="flex items-center justify-between">
           <h3
-            className={`text-[11px] font-black uppercase tracking-wider ${
+            className={`text-xs font-black uppercase tracking-wider ${
               darkMode ? 'text-slate-300' : 'text-slate-500'
             }`}
           >
             Conversations
           </h3>
-          <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+          <span className={`text-[11px] font-bold ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
             {counts.all}
           </span>
         </div>
@@ -118,7 +118,7 @@ export default function ConversationList({
                 key={f.key}
                 type="button"
                 onClick={() => setFilter(f.key)}
-                className={`shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full transition ${
+                className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full transition ${
                   active
                     ? 'bg-emerald-600 text-white'
                     : darkMode

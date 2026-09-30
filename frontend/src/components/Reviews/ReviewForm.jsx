@@ -65,19 +65,19 @@ export default function ReviewForm({ darkMode, tutor, existing, direction = 'stu
           <p className={`text-xs font-black truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
             {tutor.name}
           </p>
-          <p className={`text-[10px] font-semibold ${muted}`}>{tutor.department ?? 'AUST'}</p>
+          <p className={`text-[11px] font-semibold ${muted}`}>{tutor.department ?? 'AUST'}</p>
         </div>
       </div>
 
       <div>
-        <label className={`block text-[10px] font-extrabold uppercase tracking-wider mb-2 ${muted}`}>
+        <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-2 ${muted}`}>
           Your rating
         </label>
         <StarRating value={rating} onChange={setRating} size={22} darkMode={darkMode} />
       </div>
 
       <div>
-        <label className={`block text-[10px] font-extrabold uppercase tracking-wider mb-2 ${muted}`}>
+        <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-2 ${muted}`}>
           Comment <span className="font-medium normal-case tracking-normal">(optional)</span>
         </label>
         <textarea
@@ -90,7 +90,7 @@ export default function ReviewForm({ darkMode, tutor, existing, direction = 'stu
         />
       </div>
 
-      {error && <p className="text-[11px] text-rose-500 font-semibold">{error}</p>}
+      {error && <p className="text-xs text-rose-500 font-semibold">{error}</p>}
 
       <div className="flex items-center gap-2">
         <button

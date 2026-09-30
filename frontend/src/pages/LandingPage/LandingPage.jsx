@@ -81,22 +81,22 @@ export default function LandingPage({
           <div>
             <h3 className="text-4xl font-extrabold text-emerald-600">7,000+</h3>
             <p className={`text-xs font-bold uppercase tracking-wider mt-1 ${subTextClass}`}>Students</p>
-            <span className="text-[10px] opacity-70 block">Active Campus</span>
+            <span className="text-[11px] opacity-70 block">Active Campus</span>
           </div>
           <div>
             <h3 className="text-4xl font-extrabold text-emerald-600">8</h3>
             <p className={`text-xs font-bold uppercase tracking-wider mt-1 ${subTextClass}`}>Departments</p>
-            <span className="text-[10px] opacity-70 block">Full coverage</span>
+            <span className="text-[11px] opacity-70 block">Full coverage</span>
           </div>
           <div>
             <h3 className="text-4xl font-extrabold text-emerald-600">300+</h3>
             <p className={`text-xs font-bold uppercase tracking-wider mt-1 ${subTextClass}`}>Courses</p>
-            <span className="text-[10px] opacity-70 block">And counting</span>
+            <span className="text-[11px] opacity-70 block">And counting</span>
           </div>
           <div>
             <h3 className="text-4xl font-extrabold text-emerald-600">100%</h3>
             <p className={`text-xs font-bold uppercase tracking-wider mt-1 ${subTextClass}`}>Verified Tutors</p>
-            <span className="text-[10px] opacity-70 block">Verified Tutors</span>
+            <span className="text-[11px] opacity-70 block">Verified Tutors</span>
           </div>
         </div>
       </section>

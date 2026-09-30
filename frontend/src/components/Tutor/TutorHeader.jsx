@@ -83,7 +83,7 @@ export default function TutorHeader({
             className={`w-full pl-11 pr-12 py-2.5 rounded-2xl border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${inputBg}`}
           />
 
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
             ⌘ /
           </span>
         </div>
@@ -156,7 +156,7 @@ export default function TutorHeader({
             <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
           </svg>
 
-          <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+          <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-[11px] font-black px-1.5 py-0.5 rounded-full">
             2
           </span>
         </button>
@@ -201,7 +201,7 @@ export default function TutorHeader({
               </h5>
 
               <p
-                className={`text-[10px] ${
+                className={`text-[11px] ${
                   darkMode
                     ? 'text-slate-400 font-medium'
                     : 'text-slate-500 font-medium'
@@ -232,7 +232,7 @@ export default function TutorHeader({
                 <p className={`text-xs font-black truncate ${textPrimary}`}>
                   {currentUser?.name || '—'}
                 </p>
-                <p className="text-[10px] text-slate-400 truncate">
+                <p className="text-[11px] text-slate-400 truncate">
                   {currentUser?.email || ''}
                 </p>
               </div>

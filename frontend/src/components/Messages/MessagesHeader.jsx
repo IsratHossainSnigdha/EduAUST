@@ -84,7 +84,7 @@ export default function MessagesHeader({
             </h5>
 
             <p
-              className={`text-[10px] ${
+              className={`text-[11px] ${
                 darkMode
                   ? 'text-slate-400 font-medium'
                   : 'text-slate-500 font-medium'

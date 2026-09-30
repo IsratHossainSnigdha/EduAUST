@@ -106,18 +106,18 @@ export default function ProfileModal({ darkMode, userId, onClose, onReviewed }) 
                   </p>
                 )}
                 {profile.tutor.bio && (
-                  <p className={`text-[11px] leading-relaxed ${muted}`}>{profile.tutor.bio}</p>
+                  <p className={`text-xs leading-relaxed ${muted}`}>{profile.tutor.bio}</p>
                 )}
 
                 <div className={`grid grid-cols-2 gap-3 text-center rounded-xl border p-3 ${
                   darkMode ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-slate-50'
                 }`}>
                   <div>
-                    <p className={`text-[10px] font-semibold ${muted}`}>Experience</p>
+                    <p className={`text-[11px] font-semibold ${muted}`}>Experience</p>
                     <p className={`text-xs font-black ${heading}`}>{profile.tutor.experience_years ?? 0}+ yrs</p>
                   </div>
                   <div>
-                    <p className={`text-[10px] font-semibold ${muted}`}>Rate</p>
+                    <p className={`text-[11px] font-semibold ${muted}`}>Rate</p>
                     <p className="text-xs font-black text-emerald-500">
                       {profile.tutor.hourly_rate ? `৳${profile.tutor.hourly_rate}/hr` : '—'}
                     </p>
@@ -129,7 +129,7 @@ export default function ProfileModal({ darkMode, userId, onClose, onReviewed }) 
                     {profile.tutor.subjects.map((s) => (
                       <span
                         key={s}
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                           darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
                         }`}
                       >

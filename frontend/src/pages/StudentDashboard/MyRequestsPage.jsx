@@ -154,20 +154,20 @@ export default function MyRequestsPage({ darkMode }) {
                       {r.tutor?.name ?? 'Tutor'}
                     </h3>
 
-                    <p className={`text-[11px] font-semibold ${muted} flex items-center gap-1.5 mt-0.5`}>
+                    <p className={`text-xs font-semibold ${muted} flex items-center gap-1.5 mt-0.5`}>
                       <BookOpen size={11} />
                       {r.subject ?? 'General tutoring'}
                       {r.tutor?.department ? ` • ${r.tutor.department}` : ''}
                     </p>
 
                     {r.message && (
-                      <p className={`text-[11px] mt-2 ${muted}`}>{r.message}</p>
+                      <p className={`text-xs mt-2 ${muted}`}>{r.message}</p>
                     )}
                   </div>
                 </div>
 
                 <span
-                  className={`shrink-0 text-[9px] font-extrabold px-2 py-1 rounded border capitalize ${
+                  className={`shrink-0 text-[11px] font-extrabold px-2 py-1 rounded border capitalize ${
                     STATUS_STYLES[r.status] ?? STATUS_STYLES.pending
                   }`}
                 >
