@@ -28,6 +28,8 @@ import SessionsPage from './pages/Sessions/SessionsPage';
 
 import TutorRoute from './components/TutorRoute';
 import DocumentTitle from './components/DocumentTitle';
+import ForgotPasswordPage from './pages/PasswordReset/ForgotPasswordPage';
+import ResetPasswordPage from './pages/PasswordReset/ResetPasswordPage';
 
 import TutorAccountPage from './pages/TutorAccount/TutorAccountPage';
 
@@ -134,6 +136,26 @@ export default function App() {
             path="/signup"
             element={
               <SignUpPage
+                {...sharedProps}
+              />
+            }
+          />
+
+          {/* Password reset. The reset email has always linked to
+              /password-reset/{token}; neither page existed. */}
+          <Route
+            path="/forgot-password"
+            element={
+              <ForgotPasswordPage
+                {...sharedProps}
+              />
+            }
+          />
+
+          <Route
+            path="/password-reset/:token"
+            element={
+              <ResetPasswordPage
                 {...sharedProps}
               />
             }

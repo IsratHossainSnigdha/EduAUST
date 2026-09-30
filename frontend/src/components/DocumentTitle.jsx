@@ -17,6 +17,7 @@ const TITLES = {
   '/login': 'Sign in',
   '/signup': 'Create an account',
   '/complete-profile': 'Complete your profile',
+  '/forgot-password': 'Reset your password',
 
   '/dashboard': 'Student dashboard',
   '/find-tutors': 'Find tutors',
@@ -44,6 +45,9 @@ export function titleFor(pathname) {
   const page = TITLES[pathname];
 
   if (page) return `${page} · ${SUFFIX}`;
+
+  // The reset link carries its token in the path.
+  if (pathname.startsWith('/password-reset/')) return `Choose a new password · ${SUFFIX}`;
 
   // An unmatched path is the not-found page.
   return `Page not found · ${SUFFIX}`;

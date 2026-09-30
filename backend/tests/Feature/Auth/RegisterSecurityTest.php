@@ -154,4 +154,19 @@ class RegisterSecurityTest extends TestCase
 
         $response->assertUnprocessable()->assertJsonValidationErrors('email');
     }
+
+    public function test_a_new_account_stays_signed_in(): void
+    {
+        $token = $this->pendingDraft();
+
+        // Without a refresh token the new account was signed out again when
+        // the one-hour access token expired.
+        $this->postJson('/api/v1/auth/register/security', [
+            'registration_token' => $token,
+            'password' => 'Str0ng!Pass',
+            'password_confirmation' => 'Str0ng!Pass',
+        ])
+            ->assertCreated()
+            ->assertJsonStructure(['refresh_token']);
+    }
 }

@@ -68,7 +68,9 @@ export default function GoogleSignInButton({
       return;
     }
 
-    const { ok, body } = await apiPost('/auth/google', { id_token: credential });
+    // Stay signed in, as a password sign-in now does by default. Without a
+    // refresh token the session ended when the one-hour access token did.
+    const { ok, body } = await apiPost('/auth/google', { id_token: credential, remember: true });
 
     setLoading(false);
 
