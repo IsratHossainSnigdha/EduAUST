@@ -66,9 +66,14 @@ jobs:
 
       - name: Prepare SSH key
         run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
           printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > deploy_key
           chmod 600 deploy_key
+
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Copy release to VPS
         run: |
