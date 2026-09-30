@@ -3,12 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MessageSquare,
-  Bell,
   LogOut,
   ChevronDown,
   Search,
-  Sun,
-  Moon,
   Filter,
   BookOpen,
   MapPin,
@@ -26,6 +23,7 @@ import StarRating from '../../components/StarRating';
 import './FindTutorsPage.css';
 import UserAvatar from '../../components/UserAvatar';
 import { buildDashboardMenu } from '../../lib/dashboardMenu';
+import HeaderActions from '../../components/HeaderActions';
 import { useBadgeCounts } from '../../lib/useBadgeCounts';
 
 // Filter panel defaults; '' means "no filter applied".
@@ -405,34 +403,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Browse verified AUST tutors and book your session today.</p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button
-              onClick={toggleDarkMode}
-              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}
-            >
-              {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
-            </button>
-            <button
-              onClick={() => navigate('/notifications')}
-              aria-label={badges.notifications.student > 0 ? `Notifications, ${badges.notifications.student} unread` : 'Notifications'}
-              className={`p-2.5 rounded-xl border relative cursor-pointer transition ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white hover:bg-slate-800' : 'border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-100'}`}
-            >
-              <Bell size={16} />
-              {badges.notifications.student > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
-              )}
-            </button>
-            <div className={`flex items-center gap-3 pl-3 border-l ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
-              <UserAvatar user={currentUser} size={36} />
-              <div className="hidden sm:block">
-                <h5 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h5>
-                <p className={`text-[11px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
-                  {['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
-                </p>
-              </div>
-            </div>
-          </div>
+          <HeaderActions darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
         </header>
 
         <div className={`find-tutors-card flex flex-col md:flex-row items-center justify-between gap-4 ${cardBg}`}>

@@ -6,8 +6,6 @@ import {
   MessageSquare,
   Bell,
   LogOut,
-  Sun,
-  Moon,
   CheckCheck,
   Calendar,
   BookOpen,
@@ -17,6 +15,7 @@ import {
 import { apiGet, apiPatch, clearAuth, isAuthenticated, isUnauthenticated } from '../lib/auth';
 import { useBadgeCounts } from '../lib/useBadgeCounts';
 import { buildDashboardMenu } from '../lib/dashboardMenu';
+import HeaderActions from '../components/HeaderActions';
 import { setRole, useRole } from '../lib/useRole';
 import './NotificationsPage.css'; // <-- External stylesheet imported here
 
@@ -278,26 +277,12 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Stay updated with your latest tutoring sessions, messages, and alerts.</p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button
-              onClick={toggleDarkMode}
-              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}
-            >
-              {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
-            </button>
-            <div className={`flex items-center gap-3 pl-3 border-l ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
-              <UserAvatar user={currentUser} size={36} />
-              <div className="hidden sm:block">
-                <span className={`block text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</span>
-                <p className={`text-[11px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
-                  {currentRole === 'tutor'
-                    ? 'Tutor Dashboard'
-                    : ['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* No bell here: it would only lead back to this page. */}
+          <HeaderActions
+            darkMode={darkMode}
+            toggleDarkMode={toggleDarkMode}
+            showNotifications={false}
+          />
         </header>
 
         {/* Toolbar & Action Buttons */}

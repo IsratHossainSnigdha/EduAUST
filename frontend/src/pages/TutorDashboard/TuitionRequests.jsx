@@ -205,7 +205,6 @@ export default function TuitionRequests({
         <TutorHeader
           darkMode={darkMode}
           toggleDarkMode={toggleDarkMode}
-          unreadCount={3}
           showSearch={false}
         />
 
