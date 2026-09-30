@@ -1,5 +1,6 @@
 import {
   Bell,
+  CalendarDays,
   GraduationCap,
   HelpCircle,
   LayoutDashboard,
@@ -78,6 +79,18 @@ export function buildDashboardMenu({ role, badges = {} } = {}) {
           path: '/my-tutors',
           requiresProfile: false,
         },
+
+    /*
+     * Times both sides agreed to meet. The badge counts only the ones
+     * waiting on this person, not every proposal in flight.
+     */
+    {
+      name: 'Sessions',
+      icon: CalendarDays,
+      badge: badges.sessions || undefined,
+      path: '/sessions',
+      requiresProfile: true,
+    },
 
     {
       name: 'Messages',

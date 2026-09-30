@@ -24,6 +24,7 @@ import MyTutorsPage from './pages/StudentDashboard/MyTutorsPage';
 import TutorDashboard from './pages/TutorDashboard/TutorDashboard';
 import TuitionRequests from './pages/TutorDashboard/TuitionRequests';
 import MyStudentsPage from './pages/TutorDashboard/MyStudentsPage';
+import SessionsPage from './pages/Sessions/SessionsPage';
 
 import TutorRoute from './components/TutorRoute';
 import DocumentTitle from './components/DocumentTitle';
@@ -251,6 +252,19 @@ export default function App() {
             path="/tutor/create-profile"
             element={
               <TutorAccountPage
+                {...sharedProps}
+              />
+            }
+          />
+
+          {/* ==================== Sessions ==================== */}
+
+          {/* A session belongs to the pair rather than to one role, so
+              both sides reach the same page. */}
+          <Route
+            path="/sessions"
+            element={
+              <SessionsPage
                 {...sharedProps}
               />
             }

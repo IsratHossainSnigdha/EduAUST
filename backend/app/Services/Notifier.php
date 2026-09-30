@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Notification;
 use App\Models\TuitionRequest;
+use App\Models\TutoringSession;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -119,6 +120,86 @@ class Notifier
             Str::limit($body, 120),
             '/messages',
         );
+    }
+
+    /**
+     * Tell the other side that a time has been suggested.
+     */
+    public function sessionProposed(TutoringSession $session, string $proposedBy): void
+    {
+        $other = $session->counterpartFor($proposedBy);
+
+        if (! $other) {
+            return;
+        }
+
+        $who = ($proposedBy === $session->tutor_id ? $session->tutor : $session->student)?->name
+            ?? 'Someone';
+
+        $this->to(
+            $other->id,
+            Notification::AUDIENCE_BOTH,
+            Notification::CATEGORY_SESSION,
+            'New session proposed',
+            "{$who} suggested a session on {$this->when($session)}. Confirm it if that works for you.",
+            '/sessions',
+        );
+    }
+
+    /**
+     * Tell whoever proposed it that the other side agreed.
+     */
+    public function sessionConfirmed(TutoringSession $session, string $confirmedBy): void
+    {
+        $other = $session->counterpartFor($confirmedBy);
+
+        if (! $other) {
+            return;
+        }
+
+        $who = ($confirmedBy === $session->tutor_id ? $session->tutor : $session->student)?->name
+            ?? 'They';
+
+        $this->to(
+            $other->id,
+            Notification::AUDIENCE_BOTH,
+            Notification::CATEGORY_SESSION,
+            'Session confirmed',
+            "{$who} confirmed your session on {$this->when($session)}.",
+            '/sessions',
+        );
+    }
+
+    /**
+     * Tell the other side that a session is off.
+     */
+    public function sessionCancelled(TutoringSession $session, string $cancelledBy): void
+    {
+        $other = $session->counterpartFor($cancelledBy);
+
+        if (! $other) {
+            return;
+        }
+
+        $who = ($cancelledBy === $session->tutor_id ? $session->tutor : $session->student)?->name
+            ?? 'Someone';
+
+        $this->to(
+            $other->id,
+            Notification::AUDIENCE_BOTH,
+            Notification::CATEGORY_SESSION,
+            'Session cancelled',
+            "{$who} cancelled the session on {$this->when($session)}.",
+            '/sessions',
+        );
+    }
+
+    /**
+     * A session's time, written the way a person would say it.
+     */
+    private function when(TutoringSession $session): string
+    {
+        return $session->scheduled_at->format('D j M \a\t g:ia');
     }
 
     /**

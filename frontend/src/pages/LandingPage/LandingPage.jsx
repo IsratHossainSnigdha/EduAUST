@@ -112,7 +112,7 @@ export default function LandingPage({
           <div className={`p-8 landing-card ${cardClass}`}>
             <div className="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 w-12 h-12 rounded-xl flex items-center justify-center font-bold mb-6">1</div>
             <h3 className="text-xl font-bold mb-3">Search for a tutor</h3>
-            <p className={subTextClass}>Search by course or subject, view tutor profiles, and filter by department and availability.</p>
+            <p className={subTextClass}>Search by course or subject, view tutor profiles, and filter by department, language and experience.</p>
           </div>
           <div className={`p-8 landing-card ${cardClass}`}>
             <div className="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 w-12 h-12 rounded-xl flex items-center justify-center font-bold mb-6">2</div>
@@ -209,7 +209,7 @@ export default function LandingPage({
           </div>
           <div className="space-y-4">
             {[
-              { q: "How do I find a tutor for my course?", a: "Search by course or subject, view tutor profiles, and filter by department and availability." },
+              { q: "How do I find a tutor for my course?", a: "Search by course or subject, view tutor profiles, and filter by department, language and experience." },
               { q: "How do I become a tutor on EduAUST?", a: "Click on 'Become a Tutor', register with your institutional credentials, and submit your verified course achievements." },
               { q: "Is EduAUST only for CSE students?", a: "No, EduAUST provides full peer tutoring coverage across all departments." },
               { q: "How are tutors verified?", a: "Every tutor is a real, verified AUST student vetted through official grade submissions." },

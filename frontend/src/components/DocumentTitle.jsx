@@ -30,6 +30,7 @@ const TITLES = {
   '/become-a-tutor': 'Become a tutor',
   '/tutor/create-profile': 'Create your tutor profile',
 
+  '/sessions': 'Sessions',
   '/messages': 'Messages',
   '/notifications': 'Notifications',
   '/settings': 'Settings',

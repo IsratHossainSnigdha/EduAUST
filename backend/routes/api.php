@@ -18,6 +18,7 @@ use App\Http\Controllers\StudentDashboardController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TuitionRequestController;
 use App\Http\Controllers\TutorController;
+use App\Http\Controllers\TutoringSessionController;
 use App\Http\Controllers\UserProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -152,6 +153,33 @@ Route::prefix('v1')->group(function () {
         Route::patch('/{tuitionRequest}', [TuitionRequestController::class, 'update'])
             ->name('api.v1.tuition-requests.update');
     });
+    /*
+    |--------------------------------------------------------------------------
+    | Tutoring sessions
+    |--------------------------------------------------------------------------
+    |
+    | A session belongs to the pair rather than to one role, so either side
+    | proposes and whichever did not propose it answers. Nothing here sits
+    | behind the tutor middleware.
+    |
+    */
+
+    Route::middleware('auth.jwt')->prefix('sessions')->group(function () {
+
+        Route::get('/', [TutoringSessionController::class, 'index'])
+            ->name('api.v1.sessions.index');
+
+        Route::post('/', [TutoringSessionController::class, 'store'])
+            ->middleware('throttle:30,1')
+            ->name('api.v1.sessions.store');
+
+        Route::patch('/{tutoringSession}/confirm', [TutoringSessionController::class, 'confirm'])
+            ->name('api.v1.sessions.confirm');
+
+        Route::delete('/{tutoringSession}', [TutoringSessionController::class, 'cancel'])
+            ->name('api.v1.sessions.cancel');
+    });
+
     /*
     |--------------------------------------------------------------------------
     | Reviews

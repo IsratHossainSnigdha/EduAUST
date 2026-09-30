@@ -12,7 +12,7 @@ import { apiGet, isAuthenticated } from './auth';
  *
  * Like useCurrentUser, however many components ask at once share one request.
  */
-const EMPTY = { requests: 0, messages: 0, notifications: { student: 0, tutor: 0 } };
+const EMPTY = { requests: 0, messages: 0, sessions: 0, notifications: { student: 0, tutor: 0 } };
 
 let cache = null;
 let inFlight = null;
@@ -42,10 +42,11 @@ export async function fetchBadgeCounts({ includeRequests = false, force = false 
 
   inFlight = (async () => {
     try {
-      const [requests, messages, notifications] = await Promise.all([
+      const [requests, messages, notifications, sessions] = await Promise.all([
         includeRequests ? apiGet('/tuition-requests?status=pending') : Promise.resolve({ ok: false }),
         apiGet('/conversations/unread-count'),
         apiGet('/notifications/unread-count'),
+        apiGet('/sessions'),
       ]);
 
       const next = {
@@ -54,6 +55,9 @@ export async function fetchBadgeCounts({ includeRequests = false, force = false 
         messages: messages.ok
           ? (messages.body?.unread_total ?? messages.body?.unread_count ?? 0)
           : (cache?.messages ?? 0),
+        // Only the proposals actually waiting on this person, not every
+        // session in flight; a badge for your own suggestion is noise.
+        sessions: sessions.ok ? (sessions.body?.awaiting_you ?? 0) : (cache?.sessions ?? 0),
         notifications: notifications.ok
           ? {
               student: notifications.body?.by_audience?.student ?? 0,

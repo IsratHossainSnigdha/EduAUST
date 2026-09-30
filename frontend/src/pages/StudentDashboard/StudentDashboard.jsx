@@ -452,6 +452,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
               onMessage={() => navigate('/messages')}
               onRemove={handleEndTutoring}
               onRated={refreshDashboard}
+              onScheduled={() => navigate('/sessions')}
             />
           </div>
 

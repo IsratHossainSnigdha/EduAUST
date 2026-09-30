@@ -260,6 +260,7 @@ export default function TutorDashboard({
           onMessage={() => navigate('/messages')}
           onRemove={handleStopTeaching}
           onRated={() => setRefreshKey((key) => key + 1)}
+          onScheduled={() => navigate('/sessions')}
         />
 
         {/* What students made of the teaching — the dashboard reported every

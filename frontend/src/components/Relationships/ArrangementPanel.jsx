@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { BookOpen, Clock, MessageSquare, Star, UserMinus } from 'lucide-react';
+import { BookOpen, CalendarPlus, Clock, MessageSquare, Star, UserMinus } from 'lucide-react';
+import ProposeSessionForm from '../Sessions/ProposeSessionForm';
 import UserAvatar from '../UserAvatar';
 import StarRating from '../StarRating';
 import ReviewForm from '../Reviews/ReviewForm';
@@ -85,10 +86,14 @@ export default function ArrangementPanel({
   onRemove,
   onOpenProfile,
   onRated,
+  onScheduled,
 }) {
   const [tab, setTab] = useState('current');
   const [rating, setRating] = useState(null);
   const [confirming, setConfirming] = useState(null);
+
+  // Which row is currently suggesting a time, if any.
+  const [scheduling, setScheduling] = useState(null);
 
   const cardBg = darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-100';
   const rowBg = darkMode ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50 border-slate-200';
@@ -137,6 +142,7 @@ export default function ArrangementPanel({
                 setTab(t.key);
                 setRating(null);
                 setConfirming(null);
+                setScheduling(null);
               }}
               className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition ${
                 tab === t.key
@@ -209,6 +215,24 @@ export default function ArrangementPanel({
                   </button>
 
                   <div className="flex items-center gap-1.5 shrink-0">
+                    {/* A finished arrangement has nothing left to schedule. */}
+                    {!isPast && row.request_id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScheduling(scheduling === id ? null : id);
+                          setRating(null);
+                          setConfirming(null);
+                        }}
+                        title="Propose a session"
+                        className={`p-2 rounded-lg border transition ${
+                          scheduling === id ? 'border-emerald-500 text-emerald-600' : iconBtn
+                        }`}
+                      >
+                        <CalendarPlus size={13} />
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => onMessage?.(row)}
@@ -329,6 +353,21 @@ export default function ArrangementPanel({
                         Cancel
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {scheduling === id && (
+                  <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <ProposeSessionForm
+                      darkMode={darkMode}
+                      requestId={row.request_id}
+                      withName={row.name?.split(' ')[0]}
+                      onCancel={() => setScheduling(null)}
+                      onProposed={() => {
+                        setScheduling(null);
+                        onScheduled?.();
+                      }}
+                    />
                   </div>
                 )}
 

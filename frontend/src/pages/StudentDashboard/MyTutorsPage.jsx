@@ -197,6 +197,7 @@ export default function MyTutorsPage({ darkMode, toggleDarkMode }) {
           onMessage={() => navigate('/messages')}
           onRemove={handleEnd}
           onRated={load}
+          onScheduled={() => navigate('/sessions')}
         />
       </main>
 
