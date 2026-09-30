@@ -42,11 +42,10 @@ export async function fetchBadgeCounts({ includeRequests = false, force = false 
 
   inFlight = (async () => {
     try {
-      const [requests, messages, notifications, sessions] = await Promise.all([
+      const [requests, messages, notifications] = await Promise.all([
         includeRequests ? apiGet('/tuition-requests?status=pending') : Promise.resolve({ ok: false }),
         apiGet('/conversations/unread-count'),
         apiGet('/notifications/unread-count'),
-        apiGet('/sessions'),
       ]);
 
       const next = {
@@ -56,8 +55,12 @@ export async function fetchBadgeCounts({ includeRequests = false, force = false 
           ? (messages.body?.unread_total ?? messages.body?.unread_count ?? 0)
           : (cache?.messages ?? 0),
         // Only the proposals actually waiting on this person, not every
-        // session in flight; a badge for your own suggestion is noise.
-        sessions: sessions.ok ? (sessions.body?.awaiting_you ?? 0) : (cache?.sessions ?? 0),
+        // session in flight; a badge for your own suggestion is noise. It
+        // rides along with the unread counts rather than costing its own
+        // round trip on every page.
+        sessions: notifications.ok
+          ? (notifications.body?.sessions_awaiting_you ?? 0)
+          : (cache?.sessions ?? 0),
         notifications: notifications.ok
           ? {
               student: notifications.body?.by_audience?.student ?? 0,

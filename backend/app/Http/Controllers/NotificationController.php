@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\NotificationIndexRequest;
 use App\Models\Notification;
+use App\Models\TutoringSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -69,6 +70,18 @@ class NotificationController extends Controller
                 Notification::AUDIENCE_STUDENT => $this->unreadCountFor($user->id, Notification::AUDIENCE_STUDENT),
                 Notification::AUDIENCE_TUTOR => $this->unreadCountFor($user->id, Notification::AUDIENCE_TUTOR),
             ],
+            /*
+             * Session proposals waiting on this person, carried here rather
+             * than on their own endpoint: the sidebar asks for these counts on
+             * every page, and `artisan serve` answers one request at a time,
+             * so a separate call would cost a round trip per page load.
+             */
+            'sessions_awaiting_you' => TutoringSession::query()
+                ->forUser($user->id)
+                ->upcoming()
+                ->where('status', TutoringSession::STATUS_PROPOSED)
+                ->where('proposed_by', '!=', $user->id)
+                ->count(),
         ]);
     }
 

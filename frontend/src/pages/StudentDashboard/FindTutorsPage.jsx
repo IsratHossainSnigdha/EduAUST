@@ -401,20 +401,27 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
         
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${textPrimary}`}>Find Expert Tutors</h2>
+            <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${textPrimary}`}>Find Expert Tutors</h1>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Browse verified AUST tutors and book your session today.</p>
           </div>
 
           <div className="flex items-center gap-4">
-            <button onClick={toggleDarkMode} className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}>
+            <button
+              onClick={toggleDarkMode}
+              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}
+            >
               {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
             </button>
             <button
               onClick={() => navigate('/notifications')}
+              aria-label={badges.notifications.student > 0 ? `Notifications, ${badges.notifications.student} unread` : 'Notifications'}
               className={`p-2.5 rounded-xl border relative cursor-pointer transition ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white hover:bg-slate-800' : 'border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-100'}`}
             >
               <Bell size={16} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+              {badges.notifications.student > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+              )}
             </button>
             <div className={`flex items-center gap-3 pl-3 border-l ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
               <UserAvatar user={currentUser} size={36} />
@@ -458,8 +465,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Subject</label>
-              <select
+              <label htmlFor="filter-subject" className={`text-xs font-bold ${textPrimary}`}>Subject</label>
+              <select id="filter-subject"
                 value={draft.subject_id}
                 onChange={(e) => setDraftField('subject_id', e.target.value)}
                 className={selectClass}
@@ -472,8 +479,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Department</label>
-              <select
+              <label htmlFor="filter-department" className={`text-xs font-bold ${textPrimary}`}>Department</label>
+              <select id="filter-department"
                 value={draft.department_id}
                 onChange={(e) => setDraftField('department_id', e.target.value)}
                 className={selectClass}
@@ -486,8 +493,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Language</label>
-              <select
+              <label htmlFor="filter-language" className={`text-xs font-bold ${textPrimary}`}>Language</label>
+              <select id="filter-language"
                 value={draft.language}
                 onChange={(e) => setDraftField('language', e.target.value)}
                 className={selectClass}
@@ -500,8 +507,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Minimum Experience</label>
-              <select
+              <label htmlFor="filter-minimum-experience" className={`text-xs font-bold ${textPrimary}`}>Minimum Experience</label>
+              <select id="filter-minimum-experience"
                 value={draft.min_experience}
                 onChange={(e) => setDraftField('min_experience', e.target.value)}
                 className={selectClass}
@@ -515,8 +522,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Minimum Students Taught</label>
-              <select
+              <label htmlFor="filter-minimum-students-taught" className={`text-xs font-bold ${textPrimary}`}>Minimum Students Taught</label>
+              <select id="filter-minimum-students-taught"
                 value={draft.min_students}
                 onChange={(e) => setDraftField('min_students', e.target.value)}
                 className={selectClass}
@@ -529,8 +536,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Sort By</label>
-              <select
+              <label htmlFor="filter-sort-by" className={`text-xs font-bold ${textPrimary}`}>Sort By</label>
+              <select id="filter-sort-by"
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
                 className={selectClass}
@@ -705,6 +712,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                 <button
                   onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                   disabled={meta.current_page <= 1}
+                  aria-label="Previous page"
                   className={`p-2 rounded-xl border transition disabled:opacity-40 disabled:cursor-not-allowed ${
                     darkMode ? 'border-slate-700 hover:bg-slate-800 text-slate-200' : 'border-slate-300 hover:bg-slate-100 text-slate-700'
                   }`}
@@ -719,6 +727,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                 <button
                   onClick={() => setCurrentPage((page) => Math.min(meta.last_page, page + 1))}
                   disabled={meta.current_page >= meta.last_page}
+                  aria-label="Next page"
                   className={`p-2 rounded-xl border transition disabled:opacity-40 disabled:cursor-not-allowed ${
                     darkMode ? 'border-slate-700 hover:bg-slate-800 text-slate-200' : 'border-slate-300 hover:bg-slate-100 text-slate-700'
                   }`}

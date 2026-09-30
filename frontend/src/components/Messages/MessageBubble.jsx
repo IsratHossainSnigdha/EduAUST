@@ -36,9 +36,13 @@ export default function MessageBubble({
           {message.time}
         </span>
 
+        {/* The only thing that says whether it landed, so it needs a name
+            for anyone not looking at the colour. */}
         {message.sent_by_me && (
           <CheckCheck
             size={12}
+            role="img"
+            aria-label={message.read ? 'Read' : 'Sent'}
             className={
               message.read
                 ? 'text-emerald-500'
