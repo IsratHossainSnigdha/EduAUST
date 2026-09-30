@@ -1,4 +1,5 @@
 import { useCurrentUser } from '../lib/useCurrentUser';
+import UserAvatar from '../components/UserAvatar';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 import { apiGet, apiPatch, clearAuth, isAuthenticated, isUnauthenticated } from '../lib/auth';
 import { useBadgeCounts } from '../lib/useBadgeCounts';
+import { setRole, useRole } from '../lib/useRole';
 import './NotificationsPage.css'; // <-- External stylesheet imported here
 
 // How each backend category is rendered in the list.
@@ -45,9 +47,9 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const { user: currentUser } = useCurrentUser();
   const [activeMenu, setActiveMenu] = useState('Notifications');
-  const [currentRole, setCurrentRole] = useState(() => {
-    return localStorage.getItem('eduAUST_role') || 'student';
-  });
+  // The audience shown here follows the dashboard the account is on, which
+  // useRole owns; this page used to keep its own copy of that key.
+  const { role: currentRole, setRole: setCurrentRole } = useRole();
   const [activeTab, setActiveTab] = useState('All');
 
   // The sidebar badges were fixed numbers typed into this file; they now read
@@ -116,10 +118,6 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
     const { ok } = await apiPatch(`/notifications/${item.id}/read`);
     if (ok) loadNotifications();
   };
-
-  useEffect(() => {
-    localStorage.setItem('eduAUST_role', currentRole);
-  }, [currentRole]);
 
   const bgClass = darkMode ? 'bg-[#12161f] text-slate-100' : 'bg-[#f1f3f6] text-slate-900';
   const sidebarBg = darkMode ? 'bg-[#1a202c] border-slate-700/60' : 'bg-white border-slate-200 shadow-sm';
@@ -196,30 +194,24 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
         {/* User Profile & Logout */}
         <div className={`pt-6 border-t ${darkMode ? 'border-slate-700/60' : 'border-slate-200'} space-y-4`}>
           <div className="flex items-center gap-3">
-            <img
-              src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'}
-              alt="User"
-              className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/30"
-            />
+            <UserAvatar user={currentUser} size={40} />
             <div>
               <h4 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h4>
               <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
-                {currentRole === 'student' ? 'Student • CSE 3.1' : 'Tutor'}
+                {currentRole === 'tutor'
+                  ? 'Tutor'
+                  : ['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
               </p>
             </div>
           </div>
           
           <button
             onClick={() => {
-              if (currentRole === 'student') {
-                setCurrentRole('tutor');
-                localStorage.setItem('eduAUST_role', 'tutor');
-                navigate('/tutor-dashboard');
-              } else {
-                setCurrentRole('student');
-                localStorage.setItem('eduAUST_role', 'student');
-                navigate('/dashboard');
-              }
+              // setRole refuses a tutor role on an account that does not
+              // tutor, so follow where it landed rather than where we asked.
+              const applied = setRole(currentRole === 'student' ? 'tutor' : 'student');
+
+              navigate(applied === 'tutor' ? '/tutor-dashboard' : '/dashboard');
             }}
             className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
           >
@@ -260,11 +252,13 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
               <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
             </button>
             <div className={`flex items-center gap-3 pl-3 border-l ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
-              <img src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'} alt="Profile" className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" />
+              <UserAvatar user={currentUser} size={36} />
               <div className="hidden sm:block">
                 <h5 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h5>
                 <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
-                  {currentRole === 'student' ? 'Student • CSE 3.1' : 'Tutor Dashboard'}
+                  {currentRole === 'tutor'
+                    ? 'Tutor Dashboard'
+                    : ['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
                 </p>
               </div>
             </div>

@@ -15,6 +15,7 @@ import {
 
 import TutorSidebar from '../../components/Tutor/TutorSidebar';
 import TutorAccountForm from '../../components/Tutor/TutorAccountForm';
+import { setRole, TUTOR } from '../../lib/useRole';
 import './TutorAccountPage.css'; // <-- External stylesheet imported here
 
 export default function TutorAccountPage({
@@ -95,14 +96,10 @@ export default function TutorAccountPage({
    */
   const handleTutorCreated = () => {
     /*
-     * Update role immediately.
+     * Update role immediately. The form has already refreshed the cached
+     * account, so setRole sees isTutor and allows the switch.
      */
-    setCurrentRole('tutor');
-
-    localStorage.setItem(
-      'eduAUST_role',
-      'tutor'
-    );
+    setCurrentRole?.(setRole(TUTOR));
 
     /*
      * Go to dashboard.

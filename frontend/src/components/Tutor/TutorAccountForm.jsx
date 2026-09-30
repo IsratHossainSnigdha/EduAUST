@@ -9,6 +9,9 @@ import {
   firstError,
 } from '../../lib/auth';
 
+import { fetchCurrentUser } from '../../lib/useCurrentUser';
+import { setRole, TUTOR } from '../../lib/useRole';
+
 export default function TutorAccountForm({
   darkMode,
   onSuccess,
@@ -199,21 +202,14 @@ export default function TutorAccountForm({
      * This makes sure localStorage contains
      * isTutor = true before navigation.
      */
-    const {
-      ok: meOk,
-      body: meBody,
-    } = await apiGet('/auth/me');
+    // Refreshing through the shared cache matters twice over: it was writing
+    // 'eduAUST_user' while auth.js reads 'eduaust_user', so the cache was
+    // never actually updated, and setRole refuses a tutor role until the
+    // stored account says isTutor.
+    const me = await fetchCurrentUser({ force: true });
 
-    if (meOk && meBody?.user) {
-      localStorage.setItem(
-        'eduAUST_user',
-        JSON.stringify(meBody.user)
-      );
-
-      localStorage.setItem(
-        'eduAUST_role',
-        'tutor'
-      );
+    if (me?.isTutor) {
+      setRole(TUTOR);
     }
 
     setSubmitting(false);

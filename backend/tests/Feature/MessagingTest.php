@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\Notification;
 use App\Models\TuitionRequest;
 use App\Models\TutorProfile;
 use App\Models\User;
@@ -126,6 +127,9 @@ class MessagingTest extends TestCase
     {
         $me = $this->actingAsUser();
         $other = User::factory()->create();
+        // Sending needs a live arrangement behind the thread, which is what
+        // every real conversation has.
+        $this->introduce($me, $other);
         $thread = $this->threadBetween($me, $other);
 
         $this->postJson("/api/v1/conversations/{$thread->id}/messages", [
@@ -395,5 +399,219 @@ class MessagingTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.body', 'Covering my 4pm?')
             ->assertJsonPath('data.0.sent_by_me', false);
+    }
+
+    /*
+     * Ordering in the chat list. The people a tutor has agreed to work with
+     * belong at the top; the ones still waiting on an answer come next, so
+     * they are not buried under everyone else.
+     */
+
+    public function test_a_students_chat_list_puts_accepted_tutors_first(): void
+    {
+        $student = User::factory()->create();
+
+        $accepted = User::factory()->create(['isTutor' => true, 'name' => 'Zoe Accepted']);
+        TutorProfile::factory()->for($accepted)->create();
+        TuitionRequest::factory()->accepted()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $accepted->id,
+        ]);
+
+        $pending = User::factory()->create(['isTutor' => true, 'name' => 'Amy Pending']);
+        TutorProfile::factory()->for($pending)->create();
+        TuitionRequest::factory()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $pending->id,
+        ]);
+
+        // Never asked, and alphabetically first, so only the ordering rule
+        // can put it last.
+        $stranger = User::factory()->create(['isTutor' => true, 'name' => 'Aaa Stranger']);
+        TutorProfile::factory()->for($stranger)->create();
+
+        $this->actingAsUser($student);
+
+        $names = collect($this->getJson('/api/v1/conversations/contacts?role=student')
+            ->assertOk()
+            ->json('data'))
+            ->pluck('name')
+            ->all();
+
+        $this->assertSame(['Zoe Accepted', 'Amy Pending', 'Aaa Stranger'], $names);
+    }
+
+    public function test_a_tutors_chat_list_puts_accepted_students_before_the_ones_waiting(): void
+    {
+        $tutor = User::factory()->create(['isTutor' => true]);
+        TutorProfile::factory()->for($tutor)->create();
+
+        $accepted = User::factory()->create(['name' => 'Zoe Accepted']);
+        TuitionRequest::factory()->accepted()->create([
+            'student_id' => $accepted->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $waiting = User::factory()->create(['name' => 'Amy Waiting']);
+        TuitionRequest::factory()->create([
+            'student_id' => $waiting->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $this->actingAsUser($tutor);
+
+        $contacts = $this->getJson('/api/v1/conversations/contacts?role=tutor')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame(['Zoe Accepted', 'Amy Waiting'], collect($contacts)->pluck('name')->all());
+        $this->assertSame('accepted', $contacts[0]['request_status']);
+        $this->assertSame('pending', $contacts[1]['request_status']);
+        // Acceptance is what unlocks the thread.
+        $this->assertFalse($contacts[0]['locked']);
+        $this->assertTrue($contacts[1]['locked']);
+    }
+
+    public function test_a_tutors_chat_list_is_not_a_directory_of_everyone(): void
+    {
+        $tutor = User::factory()->create(['isTutor' => true]);
+        TutorProfile::factory()->for($tutor)->create();
+
+        // Another tutor, and a student who never approached them.
+        $other = User::factory()->create(['isTutor' => true]);
+        TutorProfile::factory()->for($other)->create();
+        User::factory()->create();
+
+        $this->actingAsUser($tutor);
+
+        $this->getJson('/api/v1/conversations/contacts?role=tutor')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_the_request_status_is_reported_for_each_contact(): void
+    {
+        $student = User::factory()->create();
+
+        $tutor = User::factory()->create(['isTutor' => true]);
+        TutorProfile::factory()->for($tutor)->create();
+
+        $this->actingAsUser($student);
+
+        $this->getJson('/api/v1/conversations/contacts?role=student')
+            ->assertOk()
+            ->assertJsonPath('data.0.request_status', null)
+            ->assertJsonPath('data.0.locked', true);
+
+        TuitionRequest::factory()->accepted()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $this->getJson('/api/v1/conversations/contacts?role=student')
+            ->assertOk()
+            ->assertJsonPath('data.0.request_status', 'accepted')
+            ->assertJsonPath('data.0.locked', false);
+    }
+
+    /*
+     * The arrangement is what keeps a conversation open. When a tutor ends it
+     * the record stays readable, but neither side can add to it.
+     */
+
+    public function test_ending_the_arrangement_closes_the_conversation(): void
+    {
+        $tutor = User::factory()->create(['isTutor' => true]);
+        TutorProfile::factory()->for($tutor)->create();
+        $student = User::factory()->create();
+
+        $accepted = TuitionRequest::factory()->accepted()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $thread = $this->threadBetween($student, $tutor);
+
+        $this->actingAsUser($student);
+        $this->postJson("/api/v1/conversations/{$thread->id}/messages", ['body' => 'Still on for Tuesday?'])
+            ->assertCreated();
+
+        // The tutor ends it.
+        $this->actingAsUser($tutor);
+        $this->deleteJson('/api/v1/tuition-requests/'.$accepted->id)->assertOk();
+
+        // Neither side can send any more.
+        $this->actingAsUser($student);
+        $this->postJson("/api/v1/conversations/{$thread->id}/messages", ['body' => 'Hello?'])
+            ->assertForbidden();
+
+        $this->actingAsUser($tutor);
+        $this->postJson("/api/v1/conversations/{$thread->id}/messages", ['body' => 'Hello?'])
+            ->assertForbidden();
+    }
+
+    public function test_an_ended_arrangement_still_shows_its_history(): void
+    {
+        $tutor = User::factory()->create(['isTutor' => true]);
+        TutorProfile::factory()->for($tutor)->create();
+        $student = User::factory()->create();
+
+        $accepted = TuitionRequest::factory()->accepted()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $thread = $this->threadBetween($student, $tutor);
+
+        $this->actingAsUser($student);
+        $this->postJson("/api/v1/conversations/{$thread->id}/messages", ['body' => 'Thanks for everything.'])
+            ->assertCreated();
+
+        $this->actingAsUser($tutor);
+        $this->deleteJson('/api/v1/tuition-requests/'.$accepted->id)->assertOk();
+
+        // Closed for new messages, but what was said is not destroyed.
+        $this->getJson("/api/v1/conversations/{$thread->id}/messages")
+            ->assertOk()
+            ->assertJsonFragment(['body' => 'Thanks for everything.']);
+    }
+
+    public function test_ending_the_arrangement_tells_the_student(): void
+    {
+        $tutor = User::factory()->create(['isTutor' => true, 'name' => 'Grace Hopper']);
+        TutorProfile::factory()->for($tutor)->create();
+        $student = User::factory()->create();
+
+        $accepted = TuitionRequest::factory()->accepted()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $this->actingAsUser($tutor);
+        $this->deleteJson('/api/v1/tuition-requests/'.$accepted->id)->assertOk();
+
+        $note = Notification::where('user_id', $student->id)->latest()->firstOrFail();
+
+        $this->assertSame('Tutoring ended', $note->title);
+        $this->assertStringContainsString('Grace Hopper', $note->body);
+    }
+
+    public function test_an_ended_contact_reports_its_status(): void
+    {
+        $tutor = User::factory()->create(['isTutor' => true]);
+        TutorProfile::factory()->for($tutor)->create();
+        $student = User::factory()->create();
+
+        $accepted = TuitionRequest::factory()->accepted()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $this->actingAsUser($tutor);
+        $this->deleteJson('/api/v1/tuition-requests/'.$accepted->id)->assertOk();
+
+        $this->getJson('/api/v1/conversations/contacts?role=tutor')
+            ->assertOk()
+            ->assertJsonPath('data.0.request_status', 'ended');
     }
 }

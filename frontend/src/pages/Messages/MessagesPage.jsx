@@ -15,9 +15,11 @@ import {
   LogOut,
   HelpCircle,
   Search,
+  BookOpen,
 } from 'lucide-react';
 
 import {
+  apiDelete,
   apiGet,
   apiPost,
   clearAuth,
@@ -25,10 +27,14 @@ import {
   isUnauthenticated,
 } from '../../lib/auth';
 
+import { useRole, setRole, STUDENT, TUTOR } from '../../lib/useRole';
 import ConversationList from '../../components/Messages/ConversationList';
 import ChatHeader from '../../components/Messages/ChatHeader';
 import MessageBubble from '../../components/Messages/MessageBubble';
 import MessageComposer from '../../components/Messages/MessageComposer';
+import RequestPanel from '../../components/Messages/RequestPanel';
+import ProfileModal from '../../components/Messages/ProfileModal';
+import UserAvatar from '../../components/UserAvatar';
 import MessagesHeader from '../../components/Messages/MessagesHeader';
 import './MessagesPage.css';
 
@@ -38,6 +44,8 @@ export default function MessagesPage({
 }) {
   const navigate = useNavigate();
   const { user: currentUser } = useCurrentUser();
+  // Whose chat list this is: a tutor sees the students who approached them.
+  const { role: currentRole } = useRole();
 
   const [activeMenu, setActiveMenu] =
     useState('Messages');
@@ -49,6 +57,15 @@ export default function MessagesPage({
     useState('');
 
   const messagesEndRef = useRef(null);
+
+  // The locked contact whose request form is open, if any.
+  const [requesting, setRequesting] = useState(null);
+
+  // A tutor's teaching counts, for the summary strip above the chat list.
+  const [teachStats, setTeachStats] = useState(null);
+
+  // Whose profile is open, if any — set by tapping an avatar.
+  const [profileUserId, setProfileUserId] = useState(null);
 
   const [selectedChat, setSelectedChat] =
     useState(null);
@@ -84,8 +101,11 @@ export default function MessagesPage({
     useCallback(async () => {
       // Every tutor appears here, not just the ones already talking: locked
       // entries show who is available and what is still needed to reach them.
+      // The role decides whose list this is — a tutor sees the students who
+      // approached them, a student the tutors they can reach — and the server
+      // returns it already ordered: working with, then waiting, then the rest.
       const { ok, body } =
-        await apiGet('/conversations/contacts');
+        await apiGet(`/conversations/contacts?role=${currentRole === 'tutor' ? 'tutor' : 'student'}`);
 
       if (!ok) {
         setLoadingList(false);
@@ -109,6 +129,11 @@ export default function MessagesPage({
         conversation_id: contact.conversation_id,
         user_id: contact.user_id,
         locked: contact.locked,
+        // null, 'pending', 'accepted' or 'declined' — what the row offers
+        // depends on it: ask, wait, or open the thread.
+        request_status: contact.request_status ?? null,
+        request_id: contact.request_id ?? null,
+        is_tutor: contact.is_tutor,
         participant: {
           id: contact.user_id,
           name: contact.name,
@@ -126,11 +151,31 @@ export default function MessagesPage({
         contacts.reduce((total, c) => total + (c.unread_count ?? 0), 0)
       );
       setLoadingList(false);
-    }, [endExpiredSession]);
+    }, [endExpiredSession, currentRole]);
 
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
+
+  // The teaching counts are a tutor-only concern; refetched after the contact
+  // list changes so removing a student updates the strip.
+  useEffect(() => {
+    if (currentRole !== 'tutor') {
+      setTeachStats(null);
+
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    apiGet('/tutor/dashboard').then(({ ok, body }) => {
+      if (!cancelled && ok) setTeachStats(body?.stats ?? null);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentRole, conversations]);
 
   useEffect(() => {
     if (
@@ -196,16 +241,17 @@ export default function MessagesPage({
   const handleSelectChat = async (contact) => {
     setError('');
 
-    // A tutor who has not accepted a request cannot be messaged yet; say so
-    // rather than opening an empty thread that could never be sent to.
+    // A tutor who has not accepted cannot be messaged yet, but the student is
+    // right here wanting to talk to them — so the panel offers the request
+    // rather than only explaining why the thread is shut.
     if (contact.locked) {
       setSelectedChat(null);
-      setError(
-        `You can message ${contact.participant?.name ?? 'this tutor'} once they accept your tuition request.`
-      );
+      setRequesting(contact);
 
       return;
     }
+
+    setRequesting(null);
 
     if (contact.conversation_id) {
       setSelectedChat(contact.conversation_id);
@@ -287,6 +333,23 @@ export default function MessagesPage({
         conversation.id === selectedChat
     ) ?? null;
 
+  // A tutor ending an arrangement with a student they currently teach. The
+  // student stays in the list (the thread and its history remain) but stops
+  // being someone the tutor is teaching.
+  const handleRemoveStudent = async (contact) => {
+    if (!contact?.request_id) return;
+
+    const { ok, body } = await apiDelete(`/tuition-requests/${contact.request_id}`);
+
+    if (!ok) {
+      setError(firstError(body, 'Could not remove that student.'));
+
+      return;
+    }
+
+    loadConversations();
+  };
+
   const bgClass = darkMode
     ? 'bg-[#12161f] text-slate-100'
     : 'bg-[#f1f3f6] text-slate-900';
@@ -322,19 +385,29 @@ export default function MessagesPage({
             </span>
           </div>
 
-          {/* Navigation */}
+          {/* Navigation
+              Role-aware, so a tutor's Dashboard link goes to their own
+              dashboard rather than the student one — it used to be hardcoded
+              to /dashboard, which bounced a tutor to the student side. A tutor
+              also gets Tuition Requests where a student gets Find Tutors. */}
           <nav className="space-y-1.5">
             {[
               {
                 name: 'Dashboard',
                 icon: LayoutDashboard,
-                path: '/dashboard',
+                path: currentRole === 'tutor' ? '/tutor-dashboard' : '/dashboard',
               },
-              {
-                name: 'Find Tutors',
-                icon: Search,
-                path: '/find-tutors',
-              },
+              currentRole === 'tutor'
+                ? {
+                    name: 'Tuition Requests',
+                    icon: BookOpen,
+                    path: '/tutor-requests',
+                  }
+                : {
+                    name: 'Find Tutors',
+                    icon: Search,
+                    path: '/find-tutors',
+                  },
               {
                 name: 'Messages',
                 icon: MessageSquare,
@@ -351,12 +424,12 @@ export default function MessagesPage({
               {
                 name: 'Settings',
                 icon: Settings,
-                path: '#',
+                path: '/settings',
               },
               {
                 name: 'Help & Support',
                 icon: HelpCircle,
-                path: '#',
+                path: '/support',
               },
             ].map((item) => {
               const Icon = item.icon;
@@ -425,11 +498,7 @@ export default function MessagesPage({
           } space-y-4`}
         >
           <div className="flex items-center gap-3">
-            <img
-              src={currentUser?.profile_picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'}
-              alt="User"
-              className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/30"
-            />
+            <UserAvatar user={currentUser} size={40} />
 
             <div>
               <h4
@@ -449,21 +518,39 @@ export default function MessagesPage({
                     : 'text-slate-500 font-semibold'
                 }`}
               >
-                {[currentUser?.isTutor ? 'Tutor' : 'Student', currentUser?.semester]
-                  .filter(Boolean)
-                  .join(' • ')}
+                {/* The active dashboard, not just what the account can be:
+                    a tutor working in tutor mode reads "Tutor" here. */}
+                {currentRole === 'tutor'
+                  ? 'Tutor'
+                  : ['Student', currentUser?.department, currentUser?.semester]
+                      .filter(Boolean)
+                      .join(' · ')}
               </p>
             </div>
           </div>
 
           <button
-            onClick={() =>
-              // Only an account that tutors has a tutor dashboard to reach.
-              navigate(currentUser?.isTutor ? '/tutor-dashboard' : '/become-a-tutor')
-            }
+            onClick={() => {
+              // From tutor mode the switch goes back to the student side;
+              // from student mode it goes to the tutor dashboard, or to sign
+              // up as a tutor when the account does not tutor yet.
+              if (currentRole === 'tutor') {
+                setRole(STUDENT);
+                navigate('/dashboard');
+              } else if (currentUser?.isTutor) {
+                setRole(TUTOR);
+                navigate('/tutor-dashboard');
+              } else {
+                navigate('/become-a-tutor');
+              }
+            }}
             className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
           >
-            {currentUser?.isTutor ? 'Switch to Tutor Dashboard' : 'Become a Tutor'}
+            {currentRole === 'tutor'
+              ? 'Switch to Student Dashboard'
+              : currentUser?.isTutor
+                ? 'Switch to Tutor Dashboard'
+                : 'Become a Tutor'}
           </button>
 
           <button
@@ -481,7 +568,40 @@ export default function MessagesPage({
         <MessagesHeader
           darkMode={darkMode}
           toggleDarkMode={toggleDarkMode}
+          currentRole={currentRole}
         />
+
+        {/* A tutor's teaching at a glance: who they are teaching now, and how
+            many they have taught in total. */}
+        {currentRole === 'tutor' && teachStats && (
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex-1 rounded-2xl border px-4 py-3 ${
+                darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-200'
+              }`}
+            >
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Currently teaching
+              </p>
+              <p className={`text-xl font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                {teachStats.currently_teaching ?? 0}
+              </p>
+            </div>
+
+            <div
+              className={`flex-1 rounded-2xl border px-4 py-3 ${
+                darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-200'
+              }`}
+            >
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Students taught
+              </p>
+              <p className={`text-xl font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                {teachStats.students_taught ?? 0}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Messaging layout */}
         <div
@@ -495,6 +615,8 @@ export default function MessagesPage({
             setSearchQuery={setSearchQuery}
             onSelectChat={handleSelectChat}
             loading={loadingList}
+            currentRole={currentRole}
+            onOpenProfile={setProfileUserId}
           />
 
           {/* Chat pane */}
@@ -502,6 +624,9 @@ export default function MessagesPage({
             <ChatHeader
               activeChat={activeChatDetails}
               darkMode={darkMode}
+              currentRole={currentRole}
+              onRemoveStudent={handleRemoveStudent}
+              onOpenProfile={setProfileUserId}
             />
 
             {/* Error */}
@@ -511,42 +636,66 @@ export default function MessagesPage({
               </div>
             )}
 
-            {/* Messages */}
-            <div className="chat-messages-container space-y-3">
-              {loadingThread ? (
-                <div className="text-center text-xs text-slate-400 py-8">
-                  Loading messages…
-                </div>
-              ) : currentMessages.length ===
-                0 ? (
-                <div className="text-center text-xs text-slate-400 py-8">
-                  No messages yet. Say hello to start
-                  the conversation.
-                </div>
-              ) : (
-                currentMessages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    darkMode={darkMode}
-                  />
-                ))
-              )}
+            {/* A locked tutor: ask them here rather than sending the student
+                off to the listing to find the same person again. */}
+            {requesting ? (
+              <RequestPanel
+                darkMode={darkMode}
+                contact={requesting}
+                onSent={() => {
+                  setRequesting((c) => (c ? { ...c, request_status: 'pending' } : c));
+                  loadConversations();
+                }}
+              />
+            ) : (
+              <>
+                {/* Messages */}
+                <div className="chat-messages-container space-y-3">
+                  {loadingThread ? (
+                    <div className="text-center text-xs text-slate-400 py-8">
+                      Loading messages…
+                    </div>
+                  ) : currentMessages.length ===
+                    0 ? (
+                    <div className="text-center text-xs text-slate-400 py-8">
+                      No messages yet. Say hello to start
+                      the conversation.
+                    </div>
+                  ) : (
+                    currentMessages.map((message) => (
+                      <MessageBubble
+                        key={message.id}
+                        message={message}
+                        darkMode={darkMode}
+                      />
+                    ))
+                  )}
 
-              <div ref={messagesEndRef} />
-            </div>
+                  <div ref={messagesEndRef} />
+                </div>
 
-            {/* Composer */}
-            <MessageComposer
-              darkMode={darkMode}
-              messageInput={messageInput}
-              setMessageInput={setMessageInput}
-              onSubmit={handleSendMessage}
-              sending={sending}
-            />
+                {/* Composer */}
+                <MessageComposer
+                  darkMode={darkMode}
+                  messageInput={messageInput}
+                  setMessageInput={setMessageInput}
+                  onSubmit={handleSendMessage}
+                  sending={sending}
+                />
+              </>
+            )}
           </div>
         </div>
       </main>
+
+      {/* Tapping an avatar opens the other person's profile, and — where the
+          two have worked together — the rating form, either direction. */}
+      <ProfileModal
+        darkMode={darkMode}
+        userId={profileUserId}
+        onClose={() => setProfileUserId(null)}
+        onReviewed={loadConversations}
+      />
     </div>
   );
 }

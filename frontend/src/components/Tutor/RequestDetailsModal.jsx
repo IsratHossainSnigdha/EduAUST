@@ -1,13 +1,35 @@
 import React from 'react';
-import { X, Check, Mail, BookOpen } from 'lucide-react';
+import { X, Check, Mail, BookOpen, Ban } from 'lucide-react';
 
 export default function RequestDetailsModal({
   request,
   darkMode,
   onClose,
   onAccept,
+  onDecline,
 }) {
   if (!request) return null;
+
+  /*
+   * The API sends "accepted"; this modal used to compare against "Accepted"
+   * and so never matched, which is why an answered request still offered to
+   * accept it again. One lowercase reading, used everywhere below.
+   */
+  const status = (request.status ?? '').toLowerCase();
+  const answered = status !== '' && status !== 'pending';
+
+  const statusLabel = status
+    ? status[0].toUpperCase() + status.slice(1)
+    : 'Unknown';
+
+  const statusColour =
+    status === 'accepted'
+      ? 'text-emerald-500'
+      : status === 'pending'
+        ? 'text-amber-500'
+        : status === 'declined'
+          ? 'text-rose-500'
+          : 'text-slate-400';
 
   return (
     <div
@@ -36,7 +58,9 @@ export default function RequestDetailsModal({
                   : 'text-slate-500'
               }`}
             >
-              Review the student's request before responding.
+              {answered
+                ? 'You have already answered this request.'
+                : "Review the student's request before responding."}
             </p>
           </div>
 
@@ -110,15 +134,18 @@ export default function RequestDetailsModal({
               {request.subject}
             </h4>
 
-            <span
-              className={`inline-block mt-2 text-[9px] px-2 py-1 rounded ${
-                darkMode
-                  ? 'bg-slate-700 text-slate-300'
-                  : 'bg-slate-200 text-slate-700'
-              }`}
-            >
-              {request.level}
-            </span>
+            {/* An empty level rendered as a stray grey chip. */}
+            {request.level && (
+              <span
+                className={`inline-block mt-2 text-[9px] px-2 py-1 rounded ${
+                  darkMode
+                    ? 'bg-slate-700 text-slate-300'
+                    : 'bg-slate-200 text-slate-700'
+                }`}
+              >
+                {request.level}
+              </span>
+            )}
           </div>
 
           {/* Description */}
@@ -179,16 +206,8 @@ export default function RequestDetailsModal({
                 Status
               </p>
 
-              <p
-                className={`text-xs font-bold mt-1 ${
-                  request.status === 'Accepted'
-                    ? 'text-emerald-500'
-                    : request.status === 'New'
-                    ? 'text-amber-500'
-                    : 'text-slate-400'
-                }`}
-              >
-                {request.status}
+              <p className={`text-xs font-bold mt-1 ${statusColour}`}>
+                {statusLabel}
               </p>
             </div>
           </div>
@@ -207,17 +226,35 @@ export default function RequestDetailsModal({
             Close
           </button>
 
-          {request.status !== 'Accepted' && (
-            <button
-              onClick={() => {
-                onAccept(request.id);
-                onClose();
-              }}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2"
-            >
-              <Check size={14} />
-              Accept Request
-            </button>
+          {/* Only a request still awaiting an answer can be answered. */}
+          {!answered && (
+            <>
+              <button
+                onClick={() => {
+                  onDecline?.(request.id);
+                  onClose();
+                }}
+                className={`px-4 py-2 rounded-xl border text-xs font-bold flex items-center gap-2 transition ${
+                  darkMode
+                    ? 'border-rose-500/60 text-rose-400 hover:bg-rose-500 hover:text-white'
+                    : 'border-rose-200 text-rose-500 hover:bg-rose-500 hover:text-white'
+                }`}
+              >
+                <Ban size={14} />
+                Decline
+              </button>
+
+              <button
+                onClick={() => {
+                  onAccept(request.id);
+                  onClose();
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2"
+              >
+                <Check size={14} />
+                Accept Request
+              </button>
+            </>
           )}
         </div>
       </div>

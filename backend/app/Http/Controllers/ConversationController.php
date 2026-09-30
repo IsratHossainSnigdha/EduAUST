@@ -136,6 +136,19 @@ class ConversationController extends Controller
         $user = $request->user();
         $thread = $this->participatingConversation($request, $conversation);
 
+        // Messaging lasts as long as the arrangement does. Once a tutor ends
+        // it, the thread stays readable — the record of what was said is not
+        // destroyed — but neither side can add to it. Without this, "remove
+        // student" left the two still talking, which is what made the
+        // relationship feel like it meant nothing.
+        $other = $thread->counterpartFor($user->id);
+
+        if ($other && ! TuitionRequest::acceptedBetween($user->id, $other->id)) {
+            return response()->json([
+                'message' => 'This tutoring arrangement has ended, so the conversation is closed.',
+            ], 403);
+        }
+
         // The message and the thread's activity timestamp must move together,
         // otherwise a failure between them leaves the list mis-ordered.
         $message = DB::transaction(function () use ($thread, $user, $request) {
@@ -284,6 +297,11 @@ class ConversationController extends Controller
     {
         $user = $request->user();
 
+        // Which side of the platform is asking. A tutor's chat list is the
+        // students who approached them; a student's is the tutors they can
+        // reach. The same account has both, so it says which one it wants.
+        $asTutor = $request->string('role')->value() === 'tutor';
+
         // Threads already open, keyed by the other participant.
         $threads = Conversation::query()
             ->where('user_one_id', $user->id)
@@ -295,36 +313,67 @@ class ConversationController extends Controller
             ->get()
             ->keyBy(fn (Conversation $c) => $c->counterpartFor($user->id)?->id);
 
-        // Whom this user is already entitled to talk to.
-        $unlocked = TuitionRequest::query()
-            ->where('status', TuitionRequest::STATUS_ACCEPTED)
-            ->where(fn ($q) => $q->where('student_id', $user->id)->orWhere('tutor_id', $user->id))
-            ->get()
-            ->flatMap(fn (TuitionRequest $r) => [$r->student_id, $r->tutor_id])
-            ->unique()
-            ->flip();
-
-        $tutors = User::query()
-            ->where('isTutor', true)
-            ->where('id', '!=', $user->id)
-            ->whereNotNull('email_verified_at')
-            ->with(['department', 'tutorProfile'])
-            ->orderBy('name')
+        // Where this account stands with each person: an accepted request is
+        // what unlocks the thread, and a pending one is what the list puts
+        // next, so the people waiting on an answer are not buried.
+        $requests = TuitionRequest::query()
+            ->where($asTutor ? 'tutor_id' : 'student_id', $user->id)
+            ->latest()
             ->get();
+
+        $standing = [];
+        $acceptedRequestId = [];
+
+        foreach ($requests as $r) {
+            $otherId = $asTutor ? $r->student_id : $r->tutor_id;
+
+            // The id of the accepted request, so a tutor can end it from the
+            // chat without another lookup.
+            if ($r->status === TuitionRequest::STATUS_ACCEPTED) {
+                $acceptedRequestId[$otherId] ??= $r->id;
+            }
+
+            // Accepted outranks anything else recorded for the same person.
+            if (($standing[$otherId] ?? null) === TuitionRequest::STATUS_ACCEPTED) {
+                continue;
+            }
+
+            $standing[$otherId] = $r->status;
+        }
+
+        if ($asTutor) {
+            // Only the students who have actually approached this tutor: a
+            // tutor's chat list is not a directory of everyone on the site.
+            $people = User::query()
+                ->whereIn('id', array_keys($standing))
+                ->where('id', '!=', $user->id)
+                ->with(['department', 'tutorProfile'])
+                ->orderBy('name')
+                ->get();
+        } else {
+            $people = User::query()
+                ->where('isTutor', true)
+                ->where('id', '!=', $user->id)
+                ->whereNotNull('email_verified_at')
+                ->with(['department', 'tutorProfile'])
+                ->orderBy('name')
+                ->get();
+        }
 
         // Anyone already mid-conversation belongs in the list even if they do
         // not tutor, so existing threads never disappear from view.
         $others = $threads->keys()
-            ->filter(fn ($id) => $id && ! $tutors->contains('id', $id));
+            ->filter(fn ($id) => $id && ! $people->contains('id', $id));
 
         $extra = $others->isEmpty()
             ? collect()
             : User::query()->whereIn('id', $others)->with('department')->get();
 
-        $contacts = $tutors->concat($extra)
-            ->map(function (User $other) use ($threads, $unlocked, $user) {
+        $contacts = $people->concat($extra)
+            ->map(function (User $other) use ($threads, $standing, $acceptedRequestId, $user) {
                 $thread = $threads->get($other->id);
-                $locked = ! $unlocked->has($other->id) && $thread === null;
+                $relationship = $standing[$other->id] ?? null;
+                $accepted = $relationship === TuitionRequest::STATUS_ACCEPTED;
 
                 return [
                     'user_id' => $other->id,
@@ -333,7 +382,10 @@ class ConversationController extends Controller
                     'department' => $other->department?->code,
                     'headline' => $other->tutorProfile?->headline,
                     'is_tutor' => (bool) $other->isTutor,
-                    'locked' => $locked,
+                    // Null means no request has passed between them at all.
+                    'request_status' => $relationship,
+                    'request_id' => $acceptedRequestId[$other->id] ?? null,
+                    'locked' => ! $accepted && $thread === null,
                     'conversation_id' => $thread?->id,
                     'unread_count' => (int) ($thread->unread_count ?? 0),
                     'last_message' => $thread?->latestMessage ? [
@@ -344,8 +396,22 @@ class ConversationController extends Controller
                     'last_message_at' => $thread?->last_message_at?->toIso8601String(),
                 ];
             })
-            // Live conversations first, then unlocked contacts, then the rest.
-            ->sortBy(fn (array $c) => [$c['locked'] ? 1 : 0, $c['last_message_at'] ? 0 : 1, $c['name']])
+            /*
+             * Accepted first, then the requests still waiting, then everyone
+             * else — so the people you are actually working with sit at the
+             * top and the ones awaiting an answer are the next thing you see.
+             * Within each group, live conversations before quiet ones.
+             */
+            ->sortBy(fn (array $c) => [
+                match ($c['request_status']) {
+                    TuitionRequest::STATUS_ACCEPTED => 0,
+                    TuitionRequest::STATUS_PENDING => 1,
+                    TuitionRequest::STATUS_DECLINED => 2,
+                    default => 3,
+                },
+                $c['last_message_at'] ? 0 : 1,
+                $c['name'],
+            ])
             ->values();
 
         return response()->json(['data' => $contacts->all()]);

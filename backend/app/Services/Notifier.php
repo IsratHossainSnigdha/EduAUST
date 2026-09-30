@@ -59,6 +59,47 @@ class Notifier
     }
 
     /**
+     * Tell a student their tutor has closed the arrangement.
+     *
+     * A relationship ending is not a silent state change: the student loses
+     * the conversation with it, so they are told rather than left to discover
+     * a chat that no longer works.
+     */
+    /**
+     * Either side may end an arrangement, so the notice goes to whichever of
+     * them did not, worded for them.
+     */
+    public function tuitionEnded(TuitionRequest $request, string $endedBy): void
+    {
+        $subject = $request->subject?->name;
+        $about = $subject ? " for {$subject}" : '';
+
+        if ($endedBy === $request->tutor_id) {
+            $tutor = $request->tutor?->name ?? 'Your tutor';
+
+            $this->to(
+                $request->student_id,
+                Notification::AUDIENCE_STUDENT,
+                Notification::CATEGORY_REQUEST,
+                'Tutoring ended',
+                "{$tutor} has ended your tutoring{$about}. You can send a new request if you would like to continue."
+            );
+
+            return;
+        }
+
+        $student = $request->student?->name ?? 'Your student';
+
+        $this->to(
+            $request->tutor_id,
+            Notification::AUDIENCE_TUTOR,
+            Notification::CATEGORY_REQUEST,
+            'Tutoring ended',
+            "{$student} has ended their tutoring with you{$about}."
+        );
+    }
+
+    /**
      * Tell someone they have a new message.
      */
     public function messageReceived(User $recipient, User $sender, string $body): void

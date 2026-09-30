@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiPost, saveAuth, firstError } from '../lib/auth';
+import { setRole, STUDENT, TUTOR } from '../lib/useRole';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 // Google picks the button's language when this script loads, from the
@@ -9,6 +10,16 @@ const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 // which is why a Bangla-configured Chrome kept rendering a Bangla button on an
 // otherwise English page.
 const GSI_SRC = 'https://accounts.google.com/gsi/client?hl=en';
+
+/*
+ * How long to keep watching for Google's button before giving up on it.
+ *
+ * renderButton() returns before the button exists and never reports failure,
+ * so the only honest way to know whether the option is really on screen is to
+ * look for it. Assuming success left an empty gap whenever the script was
+ * blocked or offline.
+ */
+const RENDER_GIVE_UP_MS = 15000;
 
 /**
  * Sign in or register with an AUST institutional Google account.
@@ -29,7 +40,15 @@ export default function GoogleSignInButton({
   const containerRef = useRef(null);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [googleRendered, setGoogleRendered] = useState(false);
+
+  /*
+   * 'waiting'      — Google's script or button has not arrived yet.
+   * 'ready'        — Google's own button is on screen, so ours steps aside.
+   * 'unconfigured' — no client ID was built into the app at all.
+   */
+  const [status, setStatus] = useState(CLIENT_ID ? 'waiting' : 'unconfigured');
+
+  const googleRendered = status === 'ready';
 
   // The GIS callback is registered once, so it must not close over stale
   // state; keeping it in a ref lets the latest version always run.
@@ -64,14 +83,71 @@ export default function GoogleSignInButton({
     }
 
     saveAuth(body);
+
     // A first-time Google user still owes us the details Google cannot supply.
-    navigate(body.profile_complete ? '/dashboard' : '/complete-profile');
+    if (!body.profile_complete) {
+      navigate('/complete-profile');
+
+      return;
+    }
+
+    // A returning tutor lands on their own dashboard, the same as a password
+    // login; a student, or a first-time account, on the student side.
+    if (body.user?.isTutor) {
+      setRole(TUTOR);
+      navigate('/tutor-dashboard');
+    } else {
+      setRole(STUDENT);
+      navigate('/dashboard');
+    }
   };
 
   useEffect(() => {
     if (!CLIENT_ID) return undefined;
 
     let cancelled = false;
+
+    let pollTimer = null;
+
+    /*
+     * Whether Google has actually put a button on the page.
+     *
+     * Google builds a real element with role="button"; the iframe beside it is
+     * an internal detail whose size varies with the sign-in mode in use, so
+     * measuring the iframe reported a perfectly good button as missing and
+     * left ours sitting underneath it.
+     */
+    const buttonIsVisible = () => {
+      const rendered = containerRef.current?.querySelector('[role="button"]');
+
+      if (!rendered) return false;
+
+      const { width, height } = rendered.getBoundingClientRect();
+
+      return width > 0 && height > 0;
+    };
+
+    const watchForButton = () => {
+      const startedAt = Date.now();
+
+      const tick = () => {
+        if (cancelled) return;
+
+        if (buttonIsVisible()) {
+          setStatus('ready');
+
+          return;
+        }
+
+        // Keep looking for a while: a slow network should be allowed to catch
+        // up rather than being written off on the first check.
+        if (Date.now() - startedAt < RENDER_GIVE_UP_MS) {
+          pollTimer = setTimeout(tick, 250);
+        }
+      };
+
+      tick();
+    };
 
     const render = () => {
       if (cancelled || !window.google?.accounts?.id || !containerRef.current) return;
@@ -98,10 +174,12 @@ export default function GoogleSignInButton({
           locale: 'en',
         });
 
-        setGoogleRendered(true);
+        // Rendering is asynchronous and silent about failure, so confirm it
+        // rather than assuming this call succeeded.
+        watchForButton();
       } catch {
         // Leave the stand-in button in place if Google refuses the client ID.
-        setGoogleRendered(false);
+        setStatus('waiting');
       }
     };
 
@@ -114,6 +192,7 @@ export default function GoogleSignInButton({
 
       return () => {
         cancelled = true;
+        clearTimeout(pollTimer);
         existing.removeEventListener('load', render);
       };
     }
@@ -127,6 +206,7 @@ export default function GoogleSignInButton({
 
     return () => {
       cancelled = true;
+      clearTimeout(pollTimer);
       script.removeEventListener('load', render);
     };
   }, [darkMode]);
@@ -144,10 +224,21 @@ export default function GoogleSignInButton({
         <button
           type="button"
           onClick={() => {
+            if (status === 'unconfigured') {
+              onError?.(
+                'Google sign-in is not set up yet. Add VITE_GOOGLE_CLIENT_ID to frontend/.env and GOOGLE_CLIENT_ID to backend/.env, then restart the dev server.'
+              );
+
+              return;
+            }
+
+            /*
+             * Google's own button never arrived. Its script being blocked and
+             * the origin being unregistered look the same from here, so say
+             * what to check rather than guessing which one it was.
+             */
             onError?.(
-              CLIENT_ID
-                ? 'Google sign-in is still loading. Please try again in a moment.'
-                : 'Google sign-in is not set up yet. Add VITE_GOOGLE_CLIENT_ID to frontend/.env and GOOGLE_CLIENT_ID to backend/.env, then restart the dev server.'
+              `Google sign-in is unavailable on this page. Check that ${window.location.origin} is listed under Authorized JavaScript origins for this OAuth client, and that accounts.google.com is reachable. Email and password sign-in still works.`
             );
           }}
           className={`w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl border font-bold transition ${standInClasses}`}

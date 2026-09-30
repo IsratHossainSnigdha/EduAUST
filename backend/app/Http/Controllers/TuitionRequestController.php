@@ -163,15 +163,74 @@ class TuitionRequestController extends Controller
      */
     private function syncStudentCount(string $tutorId): void
     {
-        $students = TuitionRequest::query()
-            ->where('tutor_id', $tutorId)
-            ->where('status', TuitionRequest::STATUS_ACCEPTED)
-            ->distinct()
-            ->count('student_id');
-
+        // The public card shows how many students a tutor has taught, which
+        // does not fall when an arrangement ends, so this counts everyone
+        // ever taken on rather than only those currently being taught.
         TutorProfile::query()
             ->where('user_id', $tutorId)
-            ->update(['student_count' => $students]);
+            ->update(['student_count' => TuitionRequest::studentsTaught($tutorId)]);
+    }
+
+    /**
+     * Close an active tutoring arrangement.
+     *
+     * The tutor stops teaching this student — messaging closes with it — but
+     * the student still counts as taught, so this is a distinct state from a
+     * request that was declined outright.
+     */
+    public function end(Request $request, TuitionRequest $tuitionRequest): JsonResponse
+    {
+        $me = $request->user()->id;
+
+        // Either party may walk away: a student who has stopped working with a
+        // tutor was previously stuck waiting for the tutor to end it.
+        $isTutor = $tuitionRequest->tutor_id === $me;
+        $isStudent = $tuitionRequest->student_id === $me;
+
+        if (! $isTutor && ! $isStudent) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        if ($tuitionRequest->status !== TuitionRequest::STATUS_ACCEPTED) {
+            throw ValidationException::withMessages([
+                'status' => [$isTutor
+                    ? 'Only a student you are currently teaching can be removed.'
+                    : 'Only a tutor who is currently teaching you can be removed.'],
+            ]);
+        }
+
+        /*
+         * A tutor may stop at any point; a student commits to a full month
+         * first. The model owns that rule so the dashboards can explain it
+         * before the button is pressed rather than only after.
+         */
+        $endable = $tuitionRequest->endableBy($me);
+
+        if (! $endable['allowed']) {
+            throw ValidationException::withMessages([
+                'status' => [$endable['reason']],
+            ]);
+        }
+
+        $tuitionRequest->update([
+            'status' => TuitionRequest::STATUS_ENDED,
+            'ended_at' => now(),
+        ]);
+
+        $this->syncStudentCount($tuitionRequest->tutor_id);
+
+        // The other side loses the conversation with it, so tell them.
+        $this->notifier->tuitionEnded(
+            $tuitionRequest->load(['tutor', 'student', 'subject']),
+            $me
+        );
+
+        return response()->json([
+            'message' => $isTutor
+                ? 'You are no longer teaching this student.'
+                : 'This tutor is no longer teaching you.',
+            'data' => $this->present($tuitionRequest->load(['student.department', 'subject'])),
+        ]);
     }
 
     /**
