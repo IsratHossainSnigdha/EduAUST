@@ -196,9 +196,9 @@ export default function TutorHeader({
             <UserAvatar user={currentUser} size={36} className="ring-2 ring-emerald-500/20" />
 
             <div className="hidden sm:block min-w-0 text-left">
-              <h5 className={`text-xs truncate max-w-[180px] ${textPrimary}`}>
+              <span className={`block text-xs truncate max-w-[180px] ${textPrimary}`}>
                 {currentUser?.name || 'Loading…'}
-              </h5>
+              </span>
 
               <p
                 className={`text-[11px] ${

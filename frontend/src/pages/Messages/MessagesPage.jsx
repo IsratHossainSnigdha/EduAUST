@@ -457,7 +457,7 @@ export default function MessagesPage({
             <UserAvatar user={currentUser} size={40} />
 
             <div>
-              <h4
+              <p
                 className={`text-xs ${
                   darkMode
                     ? 'text-white font-extrabold'
@@ -465,7 +465,7 @@ export default function MessagesPage({
                 }`}
               >
                 {currentUser?.name || 'Loading…'}
-              </h4>
+              </p>
 
               <p
                 className={`text-[11px] ${

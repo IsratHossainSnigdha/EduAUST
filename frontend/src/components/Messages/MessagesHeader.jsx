@@ -26,13 +26,13 @@ export default function MessagesHeader({
   return (
     <header className="flex items-center justify-between shrink-0">
       <div>
-        <h2
+        <h1
           className={`text-xl sm:text-2xl font-black tracking-tight ${
             darkMode ? 'text-white' : 'text-slate-900'
           }`}
         >
           Messages
-        </h2>
+        </h1>
 
         <p
           className={`text-xs ${

@@ -157,10 +157,10 @@ export default function ProfileSettings({ darkMode }) {
         <UserAvatar user={{ ...user, profile_picture: form.profile_picture }} size={64} />
 
         <div className="flex-1 min-w-0">
-          <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+          <label htmlFor="profile-profile-picture-url" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
             Profile picture URL
           </label>
-          <input
+          <input id="profile-profile-picture-url"
             type="url"
             value={form.profile_picture}
             onChange={(e) => setForm({ ...form, profile_picture: e.target.value })}
@@ -171,10 +171,10 @@ export default function ProfileSettings({ darkMode }) {
       </div>
 
       <div>
-        <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-          Full name
-        </label>
-        <input
+        <label htmlFor="profile-full-name" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+            Full name
+          </label>
+        <input id="profile-full-name"
           type="text"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -186,10 +186,10 @@ export default function ProfileSettings({ darkMode }) {
       </div>
 
       <div>
-        <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-          AUST email
-        </label>
-        <input
+        <label htmlFor="profile-aust-email" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+            AUST email
+          </label>
+        <input id="profile-aust-email"
           type="email"
           value={user?.email ?? ''}
           readOnly
@@ -202,10 +202,10 @@ export default function ProfileSettings({ darkMode }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+          <label htmlFor="profile-department" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
             Department
           </label>
-          <select
+          <select id="profile-department"
             value={form.department_id}
             onChange={(e) => setForm({ ...form, department_id: e.target.value })}
             className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${inputClass}`}
@@ -218,10 +218,10 @@ export default function ProfileSettings({ darkMode }) {
         </div>
 
         <div>
-          <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+          <label htmlFor="profile-semester" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
             Semester
           </label>
-          <select
+          <select id="profile-semester"
             value={form.semester}
             onChange={(e) => setForm({ ...form, semester: e.target.value })}
             className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${inputClass}`}
@@ -235,10 +235,10 @@ export default function ProfileSettings({ darkMode }) {
       </div>
 
       <div>
-        <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-          Phone number
-        </label>
-        <input
+        <label htmlFor="profile-phone-number" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+            Phone number
+          </label>
+        <input id="profile-phone-number"
           type="tel"
           value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/[^0-9+]/g, '') })}
@@ -257,10 +257,10 @@ export default function ProfileSettings({ darkMode }) {
           </h4>
 
           <div>
-            <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-              Headline
-            </label>
-            <input
+            <label htmlFor="profile-headline" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+            Headline
+          </label>
+            <input id="profile-headline"
               type="text"
               value={tutorForm.headline}
               onChange={(e) => setTutorForm({ ...tutorForm, headline: e.target.value })}
@@ -270,10 +270,10 @@ export default function ProfileSettings({ darkMode }) {
           </div>
 
           <div>
-            <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-              About your tutoring
-            </label>
-            <textarea
+            <label htmlFor="profile-about-your-tutoring" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+            About your tutoring
+          </label>
+            <textarea id="profile-about-your-tutoring"
               rows={3}
               value={tutorForm.bio}
               onChange={(e) => setTutorForm({ ...tutorForm, bio: e.target.value })}
@@ -283,10 +283,10 @@ export default function ProfileSettings({ darkMode }) {
 
           <div className="grid grid-cols-2 gap-4 items-end">
             <div>
-              <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-                Hourly rate (৳)
-              </label>
-              <input
+              <label htmlFor="profile-hourly-rate" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+            Hourly rate (৳)
+          </label>
+              <input id="profile-hourly-rate"
                 type="number"
                 min="0"
                 value={tutorForm.hourly_rate}

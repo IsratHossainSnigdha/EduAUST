@@ -208,9 +208,9 @@ export default function TutorSidebar({
           <UserAvatar user={currentUser} size={40} />
 
           <div className="min-w-0">
-            <h4 className={`text-xs truncate ${textPrimary}`}>
+            <p className={`text-xs truncate ${textPrimary}`}>
               {currentUser?.name || 'Loading…'}
-            </h4>
+            </p>
 
             <p
               className={`text-[11px] ${

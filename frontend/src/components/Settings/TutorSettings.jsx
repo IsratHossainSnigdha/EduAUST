@@ -13,17 +13,17 @@ export default function TutorSettings({
   return (
     <div className="space-y-5">
       <div>
-        <label
+        <label htmlFor="tutor-teaching-subjects"
           className={`block text-xs font-bold mb-2 ${
             darkMode
               ? 'text-slate-200'
               : 'text-slate-700'
           }`}
         >
-          Teaching Subjects
-        </label>
+            Teaching Subjects
+          </label>
 
-        <input
+        <input id="tutor-teaching-subjects"
           value={subjects}
           onChange={(e) =>
             setSubjects(e.target.value)
@@ -38,17 +38,17 @@ export default function TutorSettings({
       </div>
 
       <div>
-        <label
+        <label htmlFor="tutor-availability"
           className={`block text-xs font-bold mb-2 ${
             darkMode
               ? 'text-slate-200'
               : 'text-slate-700'
           }`}
         >
-          Availability
-        </label>
+            Availability
+          </label>
 
-        <select
+        <select id="tutor-availability"
           value={availability}
           onChange={(e) =>
             setAvailability(e.target.value)

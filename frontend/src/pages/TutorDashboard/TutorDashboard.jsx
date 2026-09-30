@@ -270,9 +270,9 @@ export default function TutorDashboard({
             darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-100'
           }`}
         >
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
+          <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
             Reviews &amp; Ratings
-          </h3>
+          </h2>
 
           <TutorReviews
             darkMode={darkMode}

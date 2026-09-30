@@ -222,10 +222,10 @@ export default function AccountSettings({ darkMode }) {
         <form onSubmit={handlePasswordSubmit} className="space-y-4">
           {hasPassword && (
             <div>
-              <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-                Current password
-              </label>
-              <input
+              <label htmlFor="account-current-password" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+            Current password
+          </label>
+              <input id="account-current-password"
                 type="password"
                 value={form.current_password}
                 onChange={(e) => setForm({ ...form, current_password: e.target.value })}
@@ -240,10 +240,10 @@ export default function AccountSettings({ darkMode }) {
           )}
 
           <div>
-            <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-              New password
-            </label>
-            <input
+            <label htmlFor="account-new-password" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+            New password
+          </label>
+            <input id="account-new-password"
               type="password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -261,10 +261,10 @@ export default function AccountSettings({ darkMode }) {
           </div>
 
           <div>
-            <label className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
-              Confirm new password
-            </label>
-            <input
+            <label htmlFor="account-confirm-new-password" className={`block text-xs font-extrabold mb-2 uppercase tracking-wider ${labelClass}`}>
+            Confirm new password
+          </label>
+            <input id="account-confirm-new-password"
               type="password"
               value={form.password_confirmation}
               onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })}

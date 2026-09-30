@@ -218,7 +218,7 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
           <div className="flex items-center gap-3">
             <UserAvatar user={currentUser} size={40} />
             <div>
-              <h4 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h4>
+              <p className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</p>
               <p className={`text-[11px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
                 {currentRole === 'tutor'
                   ? 'Tutor'
@@ -274,22 +274,22 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
         {/* Top Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${textPrimary}`}>Notifications</h2>
+            <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${textPrimary}`}>Notifications</h1>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Stay updated with your latest tutoring sessions, messages, and alerts.</p>
           </div>
 
           <div className="flex items-center gap-4">
-            <button onClick={toggleDarkMode} className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}>
+            <button
+              onClick={toggleDarkMode}
+              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}
+            >
               {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
-            </button>
-            <button className={`p-2.5 rounded-xl border relative ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}>
-              <Bell size={16} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
             </button>
             <div className={`flex items-center gap-3 pl-3 border-l ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
               <UserAvatar user={currentUser} size={36} />
               <div className="hidden sm:block">
-                <h5 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h5>
+                <span className={`block text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</span>
                 <p className={`text-[11px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
                   {currentRole === 'tutor'
                     ? 'Tutor Dashboard'
@@ -352,7 +352,7 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
           {loading ? (
             <div className={`p-12 text-center rounded-2xl border ${cardBg}`}>
               <Bell size={40} className="mx-auto text-slate-400 mb-3 opacity-50 animate-pulse" />
-              <h4 className={`text-sm font-bold ${textPrimary}`}>Loading notifications…</h4>
+              <p className={`text-sm font-bold ${textPrimary}`}>Loading notifications…</p>
             </div>
           ) : totalShown > 0 ? (
             groups.map((group) => (

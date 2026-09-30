@@ -215,7 +215,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
           <div className="flex items-center gap-3">
             <UserAvatar user={me} size={40} />
             <div>
-              <h4 className={`text-xs ${textPrimary}`}>{me?.name ?? 'Student'}</h4>
+              <p className={`text-xs ${textPrimary}`}>{me?.name ?? 'Student'}</p>
               <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 {['Student', me?.department, me?.semester].filter(Boolean).join(' · ')}
               </p>
@@ -273,13 +273,18 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
           </div>
 
           <div className="flex items-center gap-4 self-end md:self-auto">
-            <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1f2937] text-slate-700 dark:text-white transition-all">
+            <button
+              onClick={toggleDarkMode}
+              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1f2937] text-slate-700 dark:text-white transition-all"
+            >
               {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
             </button>
             
             
             <button 
-              onClick={() => navigate('/notifications')} 
+              onClick={() => navigate('/notifications')}
+              aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
               className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1f2937] text-slate-700 dark:text-white relative cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               <Bell size={16} />
@@ -291,7 +296,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
             <div className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800">
               <UserAvatar user={me} size={36} />
               <div className="hidden sm:block">
-                <h5 className={`text-xs ${textPrimary}`}>{me?.name ?? 'Student'}</h5>
+                <span className={`block text-xs ${textPrimary}`}>{me?.name ?? 'Student'}</span>
                 <p className={`text-[11px] ${darkMode ? 'text-slate-400 font-medium' : 'text-slate-500 font-medium'}`}>
                   {[me?.department, me?.semester && `Semester ${me.semester}`].filter(Boolean).join(' • ')}
                 </p>
@@ -375,9 +380,9 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
           <div className="space-y-6">
             <div className={`p-5 rounded-2xl border ${cardBg} space-y-4`}>
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
+                <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
                   Recent Tutor Requests
-                </h3>
+                </h2>
                 <button
                   type="button"
                   onClick={() => navigate('/my-requests')}
@@ -454,9 +459,9 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
           <div className="xl:col-span-3">
             <div className={`p-5 rounded-2xl border ${cardBg} space-y-4`}>
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
+                <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
                   Reviews &amp; Ratings
-                </h3>
+                </h2>
 
                 {stats?.reviews_pending > 0 && (
                   <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[11px] px-2 py-0.5 rounded-full font-black">

@@ -13,17 +13,17 @@ export default function StudentSettings({
   return (
     <div className="space-y-5">
       <div>
-        <label
+        <label htmlFor="student-subjects-of-interest"
           className={`block text-xs font-bold mb-2 ${
             darkMode
               ? 'text-slate-200'
               : 'text-slate-700'
           }`}
         >
-          Subjects of Interest
-        </label>
+            Subjects of Interest
+          </label>
 
-        <input
+        <input id="student-subjects-of-interest"
           value={subjects}
           onChange={(e) =>
             setSubjects(e.target.value)
@@ -38,17 +38,17 @@ export default function StudentSettings({
       </div>
 
       <div>
-        <label
+        <label htmlFor="student-preferred-learning-mode"
           className={`block text-xs font-bold mb-2 ${
             darkMode
               ? 'text-slate-200'
               : 'text-slate-700'
           }`}
         >
-          Preferred Learning Mode
-        </label>
+            Preferred Learning Mode
+          </label>
 
-        <select
+        <select id="student-preferred-learning-mode"
           value={learningMode}
           onChange={(e) =>
             setLearningMode(e.target.value)

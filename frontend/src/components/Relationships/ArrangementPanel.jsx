@@ -123,9 +123,9 @@ export default function ArrangementPanel({
   return (
     <div className={`p-5 rounded-2xl border space-y-4 ${cardBg}`} id={anchorId}>
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
+        <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
           {title}
-        </h3>
+        </h2>
 
         {/* Who is here now, and who used to be. */}
         <div className="flex items-center gap-1.5">
@@ -192,7 +192,7 @@ export default function ArrangementPanel({
                     <UserAvatar user={{ name: row.name, profile_picture: row.avatar }} size={38} />
 
                     <div className="min-w-0">
-                      <h4 className={`text-xs font-black truncate ${heading}`}>{row.name}</h4>
+                      <h3 className={`text-xs font-black truncate ${heading}`}>{row.name}</h3>
                       <p className={`text-[11px] font-semibold ${muted}`}>
                         {[row.department, row.semester].filter(Boolean).join(' · ')}
                       </p>

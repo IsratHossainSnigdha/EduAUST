@@ -142,6 +142,9 @@ export default function SettingsPage({
 
               <button
                 type="button"
+                role="switch"
+                aria-checked={darkMode}
+                aria-label="Dark mode"
                 onClick={toggleDarkMode}
                 className={`w-11 h-6 rounded-full p-1 transition ${
                   darkMode ? 'bg-emerald-600' : 'bg-slate-300'

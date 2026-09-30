@@ -5,10 +5,14 @@ function Toggle({
   enabled,
   setEnabled,
   darkMode,
+  label,
 }) {
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
       onClick={() => setEnabled(!enabled)}
       className={`w-10 h-5 rounded-full p-0.5 transition ${
         enabled
@@ -109,6 +113,7 @@ export default function NotificationSettings({
           enabled={messages}
           setEnabled={setMessages}
           darkMode={darkMode}
+          label="Message notifications"
         />
       </div>
 
@@ -141,6 +146,7 @@ export default function NotificationSettings({
           enabled={requests}
           setEnabled={setRequests}
           darkMode={darkMode}
+          label="Tuition request notifications"
         />
       </div>
 
@@ -171,6 +177,7 @@ export default function NotificationSettings({
           enabled={system}
           setEnabled={setSystem}
           darkMode={darkMode}
+          label="System notifications"
         />
       </div>
     </div>
