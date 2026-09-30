@@ -35,6 +35,14 @@ class TuitionRequest extends Model
     public const STATUS_ENDED = 'ended';
 
     /**
+     * A request the student took back before the tutor answered it.
+     *
+     * Distinct from declined, which is the tutor's decision, and from ended,
+     * which means teaching actually happened.
+     */
+    public const STATUS_WITHDRAWN = 'withdrawn';
+
+    /**
      * The states a tutor may move a request into.
      */
     public const RESPONSES = [

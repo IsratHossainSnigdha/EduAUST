@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, MessageSquare } from 'lucide-react';
-import { apiGet, clearAuth, isAuthenticated, isUnauthenticated } from '../../lib/auth';
+import { ArrowLeft, BookOpen, MessageSquare, X } from 'lucide-react';
+import { apiDelete, apiGet, clearAuth, isAuthenticated, isUnauthenticated } from '../../lib/auth';
 import UserAvatar from '../../components/UserAvatar';
 
 /*
@@ -14,6 +14,8 @@ const STATUS_STYLES = {
   pending: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20',
   accepted: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
   declined: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/20',
+  withdrawn: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/20',
+  ended: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/20',
 };
 
 const TABS = ['All', 'Pending', 'Accepted', 'Declined'];
@@ -26,13 +28,11 @@ export default function MyRequestsPage({ darkMode }) {
   const [error, setError] = useState('');
   const [tab, setTab] = useState('All');
 
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      navigate('/login', { replace: true });
+  // Which request is asking "are you sure?" before being taken back.
+  const [confirming, setConfirming] = useState(null);
+  const [withdrawing, setWithdrawing] = useState(null);
 
-      return undefined;
-    }
-
+  const loadRequests = useCallback(() => {
     let cancelled = false;
 
     apiGet('/student/requests').then(({ ok, body }) => {
@@ -53,6 +53,7 @@ export default function MyRequestsPage({ darkMode }) {
       }
 
       setRequests(body?.data ?? []);
+      setError('');
       setLoading(false);
     });
 
@@ -60,6 +61,40 @@ export default function MyRequestsPage({ darkMode }) {
       cancelled = true;
     };
   }, [navigate]);
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      navigate('/login', { replace: true });
+
+      return undefined;
+    }
+
+    return loadRequests();
+  }, [loadRequests, navigate]);
+
+  /*
+   * Take back a request the tutor has not answered yet. One sent by mistake,
+   * or to a tutor no longer needed, previously sat in someone's inbox with no
+   * way for the student to retract it.
+   */
+  const withdraw = async (request) => {
+    setWithdrawing(request.id);
+
+    const { ok, body } = await apiDelete(`/tuition-requests/${request.id}`);
+
+    setWithdrawing(null);
+    setConfirming(null);
+
+    if (!ok) {
+      setError(
+        body?.errors?.status?.[0] || body?.message || 'Could not withdraw that request.'
+      );
+
+      return;
+    }
+
+    loadRequests();
+  };
 
   const shown = useMemo(
     () => (tab === 'All' ? requests : requests.filter((r) => r.status === tab.toLowerCase())),
@@ -184,6 +219,54 @@ export default function MyRequestsPage({ darkMode }) {
                 >
                   <MessageSquare size={13} /> Message {r.tutor?.name?.split(' ')[0] ?? 'them'}
                 </button>
+              )}
+
+              {/* Only an unanswered request is still the student's to take back. */}
+              {r.status === 'pending' && confirming !== r.id && (
+                <button
+                  type="button"
+                  onClick={() => setConfirming(r.id)}
+                  className={`mt-4 flex items-center gap-1.5 text-xs font-bold transition ${
+                    darkMode
+                      ? 'text-slate-400 hover:text-rose-400'
+                      : 'text-slate-500 hover:text-rose-500'
+                  }`}
+                >
+                  <X size={13} /> Withdraw request
+                </button>
+              )}
+
+              {/* Taking a request back is not a one-tap accident. */}
+              {r.status === 'pending' && confirming === r.id && (
+                <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <p className={`text-xs ${muted}`}>
+                    Withdraw your request to {r.tutor?.name?.split(' ')[0] ?? 'this tutor'}? It
+                    leaves their inbox, and you can send a new one later.
+                  </p>
+
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <button
+                      type="button"
+                      disabled={withdrawing === r.id}
+                      onClick={() => withdraw(r)}
+                      className="bg-rose-500 hover:bg-rose-600 disabled:opacity-60 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+                    >
+                      {withdrawing === r.id ? 'Withdrawing…' : 'Yes, withdraw'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setConfirming(null)}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
+                        darkMode
+                          ? 'border-slate-700 text-slate-300'
+                          : 'border-slate-200 text-slate-600'
+                      }`}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           ))}

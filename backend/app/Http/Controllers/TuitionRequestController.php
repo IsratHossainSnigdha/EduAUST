@@ -191,6 +191,22 @@ class TuitionRequestController extends Controller
             return response()->json(['message' => 'Not found.'], 404);
         }
 
+        /*
+         * A student may take back a request the tutor has not answered yet.
+         * They had no way to do that: a request sent by mistake, or to a
+         * tutor they no longer need, sat in someone's inbox indefinitely.
+         */
+        if ($tuitionRequest->status === TuitionRequest::STATUS_PENDING && $isStudent) {
+            $tuitionRequest->update(['status' => TuitionRequest::STATUS_WITHDRAWN]);
+
+            // Nothing had begun, so there is nothing to tell the tutor about;
+            // it simply leaves their inbox.
+            return response()->json([
+                'message' => 'Your request has been withdrawn.',
+                'data' => $this->present($tuitionRequest->load(['student.department', 'subject'])),
+            ]);
+        }
+
         if ($tuitionRequest->status !== TuitionRequest::STATUS_ACCEPTED) {
             throw ValidationException::withMessages([
                 'status' => [$isTutor
