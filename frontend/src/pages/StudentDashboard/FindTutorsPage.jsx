@@ -2,11 +2,8 @@ import { useCurrentUser } from '../../lib/useCurrentUser';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
   MessageSquare,
   Bell,
-  Settings,
-  HelpCircle,
   LogOut,
   ChevronDown,
   Search,
@@ -22,12 +19,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Lock,
-  Heart
+  Heart,
 } from 'lucide-react';
 import { apiDelete, apiGet, apiPost, clearAuth } from '../../lib/auth';
 import StarRating from '../../components/StarRating';
 import './FindTutorsPage.css';
 import UserAvatar from '../../components/UserAvatar';
+import { buildDashboardMenu } from '../../lib/dashboardMenu';
+import { useBadgeCounts } from '../../lib/useBadgeCounts';
 
 // Filter panel defaults; '' means "no filter applied".
 const EMPTY_FILTERS = {
@@ -52,6 +51,11 @@ const SEARCH_DEBOUNCE_MS = 300;
 export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const { user: currentUser } = useCurrentUser();
+
+  // Shared with every other page that shows these counts, so one request
+  // serves them all rather than each page asking again.
+  const { counts: badges } = useBadgeCounts();
+
   const [activeMenu, setActiveMenu] = useState('Find Tutors');
   // The dashboard search box hands its query over in the URL, so arriving
   // from there lands on the results rather than an unfiltered list.
@@ -286,14 +290,16 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
   const textPrimary = darkMode ? 'text-white font-extrabold' : 'text-slate-900 font-extrabold';
   const textSecondary = darkMode ? 'text-slate-300 font-medium' : 'text-slate-700 font-medium';
 
-  const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
-    { name: 'Messages', icon: MessageSquare, badge: undefined, path: '/messages' },
-    { name: 'Notifications', icon: Bell, badge: undefined, path: '/notifications' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
-    { name: 'Help & Support', icon: HelpCircle, path: '/support' },
-  ];
+  /*
+   * Browsing tutors is a student action, so this side of the menu is the one
+   * that belongs here whatever role is stored. The counts come from the hook
+   * every other page shares, which used to leave this sidebar the only one
+   * showing Messages and Notifications without their unread numbers.
+   */
+  const menuItems = buildDashboardMenu({
+    role: 'student',
+    badges: { messages: badges.messages, notifications: badges.notifications.student },
+  });
 
   const handleResetFilters = () => {
     setSearchQuery('');

@@ -1,20 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
   Search,
   Heart,
   GitPullRequest,
   MessageSquare,
   Bell,
-  Settings,
-  HelpCircle,
   LogOut,
   ChevronDown,
   Plus,
   ArrowRight,
   BookOpen,
-  GraduationCap,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -26,6 +22,7 @@ import ProfileModal from '../../components/Messages/ProfileModal';
 import './StudentDashboard.css';
 import { setRole, STUDENT, TUTOR } from '../../lib/useRole';
 import UserAvatar from '../../components/UserAvatar';
+import { buildDashboardMenu } from '../../lib/dashboardMenu';
 
 // Status pill colours for the student's own requests.
 const REQUEST_STATUS_STYLES = {
@@ -136,16 +133,10 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   const textSecondary = darkMode ? 'text-slate-200 font-medium' : 'text-slate-600 font-medium';
   const textMuted = darkMode ? 'text-slate-350 font-medium' : 'text-slate-500 font-medium';
 
-  const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
-    // The tutors already teaching them, which the dashboard only counted.
-    { name: 'My Tutors', icon: GraduationCap, badge: stats?.my_tutors || undefined, path: '/my-tutors' },
-    { name: 'Messages', icon: MessageSquare, badge: unreadMessages || undefined, path: '/messages' },
-    { name: 'Notifications', icon: Bell, badge: unreadCount || undefined, path: '/notifications' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
-    { name: 'Help & Support', icon: HelpCircle, path: '/support' },
-  ];
+  const menuItems = buildDashboardMenu({
+    role: 'student',
+    badges: { messages: unreadMessages, notifications: unreadCount },
+  });
 
   /*
    * Leave a tutoring arrangement. The conversation closes for both sides, and
@@ -178,7 +169,6 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   useEffect(() => {
     setRole(STUDENT);
   }, []);
-
 
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}>

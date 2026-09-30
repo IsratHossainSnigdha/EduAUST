@@ -6,16 +6,10 @@ import React, {
   useCallback,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { buildDashboardMenu } from '../../lib/dashboardMenu';
 
 import {
-  LayoutDashboard,
-  MessageSquare,
-  Bell,
-  Settings,
   LogOut,
-  HelpCircle,
-  Search,
-  BookOpen,
 } from 'lucide-react';
 
 import {
@@ -386,52 +380,14 @@ export default function MessagesPage({
           </div>
 
           {/* Navigation
-              Role-aware, so a tutor's Dashboard link goes to their own
-              dashboard rather than the student one — it used to be hardcoded
-              to /dashboard, which bounced a tutor to the student side. A tutor
-              also gets Tuition Requests where a student gets Find Tutors. */}
+              The entries come from the one shared list, so this page cannot
+              drift from the others the way it did when every page kept its
+              own copy. */}
           <nav className="space-y-1.5">
-            {[
-              {
-                name: 'Dashboard',
-                icon: LayoutDashboard,
-                path: currentRole === 'tutor' ? '/tutor-dashboard' : '/dashboard',
-              },
-              currentRole === 'tutor'
-                ? {
-                    name: 'Tuition Requests',
-                    icon: BookOpen,
-                    path: '/tutor-requests',
-                  }
-                : {
-                    name: 'Find Tutors',
-                    icon: Search,
-                    path: '/find-tutors',
-                  },
-              {
-                name: 'Messages',
-                icon: MessageSquare,
-                badge:
-                  unreadTotal || undefined,
-                path: '/messages',
-              },
-              {
-                name: 'Notifications',
-                icon: Bell,
-                badge: unreadTotal || undefined,
-                path: '/notifications',
-              },
-              {
-                name: 'Settings',
-                icon: Settings,
-                path: '/settings',
-              },
-              {
-                name: 'Help & Support',
-                icon: HelpCircle,
-                path: '/support',
-              },
-            ].map((item) => {
+            {buildDashboardMenu({
+              role: currentRole,
+              badges: { messages: unreadTotal, notifications: unreadTotal },
+            }).map((item) => {
               const Icon = item.icon;
 
               const isActive =

@@ -3,23 +3,20 @@ import UserAvatar from '../components/UserAvatar';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
   MessageSquare,
   Bell,
-  Settings,
-  HelpCircle,
   LogOut,
-  Search,
   Sun,
   Moon,
   CheckCheck,
   Calendar,
   BookOpen,
   UserCheck,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
 import { apiGet, apiPatch, clearAuth, isAuthenticated, isUnauthenticated } from '../lib/auth';
 import { useBadgeCounts } from '../lib/useBadgeCounts';
+import { buildDashboardMenu } from '../lib/dashboardMenu';
 import { setRole, useRole } from '../lib/useRole';
 import './NotificationsPage.css'; // <-- External stylesheet imported here
 
@@ -125,20 +122,10 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   const textPrimary = darkMode ? 'text-white font-extrabold' : 'text-slate-900 font-extrabold';
   const textSecondary = darkMode ? 'text-slate-300 font-medium' : 'text-slate-700 font-medium';
 
-  const menuItems = [
-    {
-      name: 'Dashboard',
-      icon: LayoutDashboard,
-      path: currentRole === 'tutor' ? '/tutor-dashboard' : '/dashboard'
-    },
-    ...(currentRole === 'student'
-      ? [{ name: 'Find Tutors', icon: Search, path: '/find-tutors' }]
-      : [{ name: 'Tuition Requests', icon: BookOpen, badge: badges.requests || undefined, path: '/tutor-requests' }]),
-    { name: 'Messages', icon: MessageSquare, badge: badges.messages || undefined, path: '/messages' },
-    { name: 'Notifications', icon: Bell, badge: unreadCount || undefined, path: '/notifications' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
-    { name: 'Help & Support', icon: HelpCircle, path: '/support' },
-  ];
+  const menuItems = buildDashboardMenu({
+    role: currentRole,
+    badges: { ...badges, notifications: unreadCount },
+  });
 
   const totalShown = groups.reduce((sum, group) => sum + group.notifications.length, 0);
 

@@ -1,22 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  MessageSquare,
-  Bell,
-  Settings,
-  HelpCircle,
-  LogOut,
-  UserPlus,
-  Search,
-  Users,
-  GraduationCap,
-} from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import UserAvatar from '../UserAvatar';
 import { useCurrentUser } from '../../lib/useCurrentUser';
 import { clearAuth } from '../../lib/auth';
 import { useBadgeCounts } from '../../lib/useBadgeCounts';
 import { setRole } from '../../lib/useRole';
+import { buildDashboardMenu } from '../../lib/dashboardMenu';
 
 export default function TutorSidebar({
   darkMode,
@@ -65,79 +55,7 @@ export default function TutorSidebar({
   // active role: a student sees their dashboard and Find Tutors, a tutor sees
   // theirs and Tuition Requests. It used to be hardcoded to the tutor side,
   // which sent a student on Settings or Support to the tutor dashboard.
-  const isTutorView = currentRole === 'tutor';
-
-  const menuItems = [
-    {
-      name: 'Dashboard',
-      icon: LayoutDashboard,
-      path: isTutorView ? '/tutor-dashboard' : '/dashboard',
-      requiresProfile: false,
-    },
-
-    isTutorView
-      ? {
-          name: 'Tuition Requests',
-          icon: UserPlus,
-          badge: counts.requests || undefined,
-          path: '/tutor-requests',
-          requiresProfile: true,
-        }
-      : {
-          name: 'Find Tutors',
-          icon: Search,
-          path: '/find-tutors',
-          requiresProfile: false,
-        },
-
-    /*
-     * The people on the other end of an active arrangement. Each side manages
-     * the same relationship, so each side gets an entry for it.
-     */
-    isTutorView
-      ? {
-          name: 'My Students',
-          icon: Users,
-          path: '/my-students',
-          requiresProfile: true,
-        }
-      : {
-          name: 'My Tutors',
-          icon: GraduationCap,
-          path: '/my-tutors',
-          requiresProfile: false,
-        },
-
-    {
-      name: 'Messages',
-      icon: MessageSquare,
-      badge: counts.messages || undefined,
-      path: '/messages',
-      requiresProfile: true,
-    },
-
-    {
-      name: 'Notifications',
-      icon: Bell,
-      badge: counts.notifications || undefined,
-      path: '/notifications',
-      requiresProfile: true,
-    },
-
-    {
-      name: 'Settings',
-      icon: Settings,
-      path: '/settings',
-      requiresProfile: true,
-    },
-
-    {
-      name: 'Help & Support',
-      icon: HelpCircle,
-      path: '/support',
-      requiresProfile: true,
-    },
-  ];
+  const menuItems = buildDashboardMenu({ role: currentRole, badges: counts });
 
   /*
    * Check whether a menu item is locked.
