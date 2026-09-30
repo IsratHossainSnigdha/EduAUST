@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BookOpen, Calendar, Check, Clock, MapPin, X } from 'lucide-react';
 import UserAvatar from '../UserAvatar';
+import { formatDuration, formatWhen } from '../../lib/dates';
 
 /*
  * Sessions a person has coming up, or has already had.
@@ -15,38 +16,6 @@ const STATUS_STYLES = {
   completed: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/20',
   cancelled: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/20',
 };
-
-/**
- * The day and time, written the way somebody would say it.
- */
-export function formatWhen(iso) {
-  if (!iso) return null;
-
-  const date = new Date(iso);
-
-  if (Number.isNaN(date.getTime())) return null;
-
-  return date.toLocaleString(undefined, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-/**
- * How long it runs for, in hours once that reads better than minutes.
- */
-export function formatDuration(minutes) {
-  if (!minutes) return null;
-  if (minutes < 60) return `${minutes} min`;
-
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-
-  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
-}
 
 export default function SessionList({
   darkMode,

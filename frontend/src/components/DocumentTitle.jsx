@@ -41,7 +41,7 @@ const TITLES = {
 /**
  * The tab name for a path, falling back to the product name alone.
  */
-export function titleFor(pathname) {
+function titleFor(pathname) {
   const page = TITLES[pathname];
 
   if (page) return `${page} · ${SUFFIX}`;

@@ -43,8 +43,6 @@ export default function SessionsPage({ darkMode, toggleDarkMode }) {
   const load = useCallback(() => {
     let cancelled = false;
 
-    setLoading(true);
-
     apiGet(`/sessions?filter=${tab}`).then(({ ok, body }) => {
       if (cancelled) return;
 
@@ -171,7 +169,12 @@ export default function SessionsPage({ darkMode, toggleDarkMode }) {
                 <button
                   key={t.key}
                   type="button"
-                  onClick={() => setTab(t.key)}
+                  onClick={() => {
+                    // A different list is coming, so show the placeholder;
+                    // a refresh after confirming or cancelling does not.
+                    if (t.key !== tab) setLoading(true);
+                    setTab(t.key);
+                  }}
                   className={`text-xs font-bold px-3 py-1.5 rounded-full transition ${
                     tab === t.key
                       ? 'bg-emerald-600 text-white'
