@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Review;
-use App\Models\TuitionRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -90,21 +89,25 @@ class ReviewController extends Controller
     }
 
     /**
-     * Withdraw a review. Scoped to the author, so another student's review is
-     * reported as missing rather than forbidden.
+     * Withdraw a review. Scoped to its author, so anyone else's review is
+     * reported as missing rather than forbidden, including one written about
+     * the person asking.
      */
     public function destroy(Request $request, string $review): JsonResponse
     {
         $model = Review::query()
-            ->where('student_id', $request->user()->id)
+            ->writtenBy($request->user()->id)
             ->findOrFail($review);
 
-        $tutorId = $model->tutor_id;
+        // Whoever was rated is whose summary changes.
+        $subject = $model->direction === Review::TUTOR_TO_STUDENT ? $model->student_id : $model->tutor_id;
+        $direction = $model->direction;
+
         $model->delete();
 
         return response()->json([
             'message' => 'Your review has been removed.',
-            'summary' => Review::summaryFor($tutorId),
+            'summary' => Review::summaryFor($subject, $direction),
         ]);
     }
 
@@ -116,23 +119,23 @@ class ReviewController extends Controller
     {
         $student = $request->user();
 
+        // Only what this student wrote about their tutors. Reviews tutors
+        // wrote about the student share its student_id, and used to be
+        // counted here as the student's own, which also dropped each of
+        // those tutors from the list still waiting to be rated.
         $written = Review::query()
             ->where('student_id', $student->id)
+            ->where('direction', Review::STUDENT_TO_TUTOR)
             ->with('tutor.department')
             ->latest()
             ->get();
 
-        $reviewed = $written->pluck('tutor_id');
-
-        // Tutors who accepted this student but have not been rated yet.
-        $pending = TuitionRequest::query()
-            ->where('student_id', $student->id)
-            ->where('status', TuitionRequest::STATUS_ACCEPTED)
-            ->whereNotIn('tutor_id', $reviewed)
-            ->with('tutor.department')
-            ->get()
-            ->unique('tutor_id')
-            ->filter(fn (TuitionRequest $r) => $r->tutor !== null);
+        // Everyone who taught them and has not been rated yet, including
+        // tutors whose teaching has since ended; they can still be reviewed.
+        $pending = User::query()
+            ->whereIn('id', Review::tutorsAwaitingReviewFrom($student->id))
+            ->with('department')
+            ->get();
 
         return response()->json([
             'data' => $written->map(fn (Review $r) => [
@@ -142,7 +145,7 @@ class ReviewController extends Controller
                 'tutor' => $this->presentUser($r->tutor),
                 'created_at' => $r->created_at?->toIso8601String(),
             ])->all(),
-            'awaiting_review' => $pending->map(fn (TuitionRequest $r) => $this->presentUser($r->tutor))
+            'awaiting_review' => $pending->map(fn (User $tutor) => $this->presentUser($tutor))
                 ->values()
                 ->all(),
         ]);

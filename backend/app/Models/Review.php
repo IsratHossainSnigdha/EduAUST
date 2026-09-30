@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 
 /**
  * A rating between a student and a tutor who worked together.
@@ -67,6 +68,47 @@ class Review extends Model
     public function scopeForStudent(Builder $query, string $studentId): void
     {
         $query->where('student_id', $studentId)->where('direction', self::TUTOR_TO_STUDENT);
+    }
+
+    /**
+     * Limit to reviews this account wrote, whichever way they ran.
+     *
+     * A review's author is its student when the student rated the tutor, and
+     * its tutor when the tutor rated the student. Checking student_id alone
+     * let a student delete what a tutor wrote about them, and stopped a tutor
+     * deleting their own.
+     *
+     * @param  Builder<$this>  $query
+     */
+    public function scopeWrittenBy(Builder $query, string $userId): void
+    {
+        $query->where(function (Builder $q) use ($userId) {
+            $q->where(fn (Builder $a) => $a->where('direction', self::STUDENT_TO_TUTOR)->where('student_id', $userId))
+                ->orWhere(fn (Builder $a) => $a->where('direction', self::TUTOR_TO_STUDENT)->where('tutor_id', $userId));
+        });
+    }
+
+    /**
+     * The tutors who taught this student, now or before, and have not been
+     * rated by them yet.
+     *
+     * @return Collection<int, string>
+     */
+    public static function tutorsAwaitingReviewFrom(string $studentId): Collection
+    {
+        $reviewed = self::query()
+            ->where('student_id', $studentId)
+            ->where('direction', self::STUDENT_TO_TUTOR)
+            ->pluck('tutor_id');
+
+        return TuitionRequest::query()
+            ->where('student_id', $studentId)
+            ->whereIn('status', TuitionRequest::TAUGHT_STATUSES)
+            ->whereNotIn('tutor_id', $reviewed)
+            ->where('tutor_id', '!=', $studentId)
+            ->distinct()
+            ->pluck('tutor_id')
+            ->values();
     }
 
     /**

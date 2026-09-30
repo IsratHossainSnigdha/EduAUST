@@ -70,10 +70,15 @@ class StudentDashboardController extends Controller
                 'my_tutors' => $tutors,
                 'saved_tutors' => SavedTutor::where('student_id', $user->id)->count(),
                 'unread_messages' => $this->unreadMessages($user->id),
-                'reviews_written' => Review::where('student_id', $user->id)->count(),
-                // Tutors who taught them and have not been rated yet, which is
-                // what the dashboard nudges them about.
-                'reviews_pending' => max(0, $tutors - Review::where('student_id', $user->id)->count()),
+                // What they wrote about their tutors, not what tutors wrote
+                // about them.
+                'reviews_written' => Review::where('student_id', $user->id)
+                    ->where('direction', Review::STUDENT_TO_TUTOR)
+                    ->count(),
+                // Tutors who taught them and have not been rated yet, counted
+                // as tutors. Subtracting all-time reviews from current tutors
+                // mixed two different sets.
+                'reviews_pending' => Review::tutorsAwaitingReviewFrom($user->id)->count(),
             ],
             'recent_requests' => $recent->map(fn (TuitionRequest $r) => $this->presentRequest($r))->all(),
             'tutors' => $this->tutors($user->id, TuitionRequest::STATUS_ACCEPTED),
