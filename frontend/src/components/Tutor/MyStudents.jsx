@@ -18,6 +18,7 @@ export default function MyStudents({
   onRemove,
   onOpenProfile,
   onRated,
+  onScheduled,
 }) {
   return (
     <ArrangementPanel
@@ -48,6 +49,7 @@ export default function MyStudents({
       onRemove={onRemove}
       onOpenProfile={onOpenProfile}
       onRated={onRated}
+      onScheduled={onScheduled}
     />
   );
 }

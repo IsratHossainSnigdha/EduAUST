@@ -94,7 +94,12 @@ class ConversationController extends Controller
     }
 
     /**
-     * Fetch a thread's messages, oldest first, and mark it as read.
+     * Fetch a thread's messages and mark it as read.
+     *
+     * Page 1 is the newest messages and each later page goes further back,
+     * but every page is returned oldest first, the order a chat is read in.
+     * Paging from the oldest end meant a thread longer than one page opened
+     * on its first fifty messages, and nothing after them ever appeared.
      */
     public function messages(Request $request, string $conversation): JsonResponse
     {
@@ -110,20 +115,25 @@ class ConversationController extends Controller
         $messages = Message::query()
             ->where('conversation_id', $thread->id)
             ->with('sender:id,name')
-            ->orderBy('created_at')
-            ->orderBy('id')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate(self::MESSAGES_PER_PAGE);
 
         $thread->load(['userOne.department', 'userTwo.department']);
 
         return response()->json([
             'conversation' => $this->presentConversation($thread, $user->id, withUnread: false),
-            'data' => collect($messages->items())->map(fn (Message $message) => $this->presentMessage($message, $user->id)),
+            'data' => collect($messages->items())
+                ->reverse()
+                ->values()
+                ->map(fn (Message $message) => $this->presentMessage($message, $user->id)),
             'meta' => [
                 'current_page' => $messages->currentPage(),
                 'last_page' => $messages->lastPage(),
                 'per_page' => $messages->perPage(),
                 'total' => $messages->total(),
+                // Whether a further page of older messages exists.
+                'has_earlier' => $messages->hasMorePages(),
             ],
         ]);
     }

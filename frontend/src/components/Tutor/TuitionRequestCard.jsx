@@ -48,7 +48,7 @@ export default function TuitionRequestCard({
           </h4>
 
           <p
-            className={`text-[10px] ${
+            className={`text-[11px] ${
               darkMode
                 ? 'text-slate-400'
                 : 'text-slate-500'
@@ -79,7 +79,7 @@ export default function TuitionRequestCard({
           </h5>
 
           <span
-            className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+            className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${
               darkMode
                 ? 'bg-slate-700 text-slate-300'
                 : 'bg-slate-200 text-slate-700'
@@ -90,7 +90,7 @@ export default function TuitionRequestCard({
         </div>
 
         <p
-          className={`text-[11px] ${
+          className={`text-xs ${
             darkMode
               ? 'text-slate-300'
               : 'text-slate-600'
@@ -104,7 +104,7 @@ export default function TuitionRequestCard({
       <div className="flex items-center justify-between md:justify-end gap-4 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200 dark:border-slate-700">
         <div className="text-left md:text-right">
           <span
-            className={`text-[10px] block mb-1 ${
+            className={`text-[11px] block mb-1 ${
               darkMode
                 ? 'text-slate-400'
                 : 'text-slate-400'
@@ -114,7 +114,7 @@ export default function TuitionRequestCard({
           </span>
 
           <span
-            className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded ${
+            className={`text-[11px] font-extrabold uppercase px-2 py-0.5 rounded ${
               STATUS_BADGE[status] || STATUS_BADGE.pending
             }`}
           >

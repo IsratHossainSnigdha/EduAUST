@@ -205,13 +205,12 @@ export default function TuitionRequests({
         <TutorHeader
           darkMode={darkMode}
           toggleDarkMode={toggleDarkMode}
-          unreadCount={3}
           showSearch={false}
         />
 
         {/* Page Title */}
         <div className="space-y-1">
-          <h2
+          <h1
             className={`text-2xl sm:text-3xl font-black tracking-tight ${
               darkMode
                 ? 'text-white'
@@ -219,7 +218,7 @@ export default function TuitionRequests({
             }`}
           >
             Tuition Requests
-          </h2>
+          </h1>
 
           <p
             className={`text-xs sm:text-sm ${

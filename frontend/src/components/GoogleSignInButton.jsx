@@ -21,6 +21,35 @@ const GSI_SRC = 'https://accounts.google.com/gsi/client?hl=en';
  */
 const RENDER_GIVE_UP_MS = 15000;
 
+/*
+ * Google allows one initialize() per page. Calling it again logs
+ * "google.accounts.id.initialize() is called multiple times" and keeps only
+ * the last configuration. Every page showing this button used to call it on
+ * mount, and again whenever the theme changed, so going from login to signup
+ * and back called it three times. It now runs once per page load, and each
+ * button only renders itself.
+ *
+ * The credential callback is fixed by that single call, so it hands the
+ * credential to whichever button is mounted at the time.
+ */
+let initializedClientId = null;
+let activeCredentialHandler = null;
+
+function ensureInitialized() {
+  if (initializedClientId === CLIENT_ID) return;
+
+  window.google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: (response) => activeCredentialHandler?.(response),
+    // Students often have a personal Google account signed in as well, so
+    // always let them choose rather than assuming the last one.
+    auto_select: false,
+  });
+
+  // Only once it has actually succeeded, so a failed attempt is retried.
+  initializedClientId = CLIENT_ID;
+}
+
 /**
  * Sign in or register with an AUST institutional Google account.
  *
@@ -68,7 +97,9 @@ export default function GoogleSignInButton({
       return;
     }
 
-    const { ok, body } = await apiPost('/auth/google', { id_token: credential });
+    // Stay signed in, as a password sign-in now does by default. Without a
+    // refresh token the session ended when the one-hour access token did.
+    const { ok, body } = await apiPost('/auth/google', { id_token: credential, remember: true });
 
     setLoading(false);
 
@@ -101,6 +132,18 @@ export default function GoogleSignInButton({
       navigate('/dashboard');
     }
   };
+
+  // This button is the one a Google credential belongs to while it is on
+  // screen. Cleared on unmount only if nothing newer has claimed it since.
+  useEffect(() => {
+    const handler = (response) => handleCredential.current?.(response);
+
+    activeCredentialHandler = handler;
+
+    return () => {
+      if (activeCredentialHandler === handler) activeCredentialHandler = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!CLIENT_ID) return undefined;
@@ -153,13 +196,7 @@ export default function GoogleSignInButton({
       if (cancelled || !window.google?.accounts?.id || !containerRef.current) return;
 
       try {
-        window.google.accounts.id.initialize({
-          client_id: CLIENT_ID,
-          callback: (response) => handleCredential.current?.(response),
-          // Students often have a personal Google account signed in as well,
-          // so always let them choose rather than assuming the last one.
-          auto_select: false,
-        });
+        ensureInitialized();
 
         containerRef.current.innerHTML = '';
         window.google.accounts.id.renderButton(containerRef.current, {

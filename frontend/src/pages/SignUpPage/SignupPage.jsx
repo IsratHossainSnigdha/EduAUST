@@ -322,7 +322,7 @@ export default function SignUpPage({
         {signUpStep === 2 && (
           <div className="pt-4">
             <div className="text-center mb-8">
-              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 1 of 3</span>
+              <span className="text-xs font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 1 of 3</span>
               <h3 className={`text-3xl font-black mt-4 tracking-tight ${textColor}`}>Account Information</h3>
               <p className={`text-xs mt-2 ${subTextClass}`}>Please use your authentic campus academic details</p>
             </div>
@@ -411,7 +411,7 @@ export default function SignUpPage({
 
         {signUpStep === 3 && (
           <div className="text-center pt-4">
-            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 2 of 3</span>
+            <span className="text-xs font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 2 of 3</span>
             <div className="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mt-6 mb-4">
               <Mail size={32} />
             </div>
@@ -439,7 +439,7 @@ export default function SignUpPage({
         {signUpStep === 4 && (
           <div className="pt-4">
             <div className="text-center mb-8">
-              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 3 of 3</span>
+              <span className="text-xs font-bold text-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 px-3 py-1.5 rounded-full uppercase tracking-wider">Step 3 of 3</span>
               <h3 className={`text-3xl font-black mt-4 tracking-tight ${textColor}`}>Secure Your Account</h3>
               <p className={`text-xs mt-2 ${subTextClass}`}>Create a strong password to safeguard your portal</p>
             </div>

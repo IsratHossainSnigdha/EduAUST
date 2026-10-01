@@ -2,16 +2,10 @@ import { useCurrentUser } from '../../lib/useCurrentUser';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
   MessageSquare,
-  Bell,
-  Settings,
-  HelpCircle,
   LogOut,
   ChevronDown,
   Search,
-  Sun,
-  Moon,
   Filter,
   BookOpen,
   MapPin,
@@ -22,12 +16,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Lock,
-  Heart
+  Heart,
 } from 'lucide-react';
 import { apiDelete, apiGet, apiPost, clearAuth } from '../../lib/auth';
 import StarRating from '../../components/StarRating';
 import './FindTutorsPage.css';
 import UserAvatar from '../../components/UserAvatar';
+import { buildDashboardMenu } from '../../lib/dashboardMenu';
+import HeaderActions from '../../components/HeaderActions';
+import { useBadgeCounts } from '../../lib/useBadgeCounts';
 
 // Filter panel defaults; '' means "no filter applied".
 const EMPTY_FILTERS = {
@@ -52,6 +49,11 @@ const SEARCH_DEBOUNCE_MS = 300;
 export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const { user: currentUser } = useCurrentUser();
+
+  // Shared with every other page that shows these counts, so one request
+  // serves them all rather than each page asking again.
+  const { counts: badges } = useBadgeCounts();
+
   const [activeMenu, setActiveMenu] = useState('Find Tutors');
   // The dashboard search box hands its query over in the URL, so arriving
   // from there lands on the results rather than an unfiltered list.
@@ -286,14 +288,16 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
   const textPrimary = darkMode ? 'text-white font-extrabold' : 'text-slate-900 font-extrabold';
   const textSecondary = darkMode ? 'text-slate-300 font-medium' : 'text-slate-700 font-medium';
 
-  const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
-    { name: 'Messages', icon: MessageSquare, badge: undefined, path: '/messages' },
-    { name: 'Notifications', icon: Bell, badge: undefined, path: '/notifications' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
-    { name: 'Help & Support', icon: HelpCircle, path: '/support' },
-  ];
+  /*
+   * Browsing tutors is a student action, so this side of the menu is the one
+   * that belongs here whatever role is stored. The counts come from the hook
+   * every other page shares, which used to leave this sidebar the only one
+   * showing Messages and Notifications without their unread numbers.
+   */
+  const menuItems = buildDashboardMenu({
+    role: 'student',
+    badges: { messages: badges.messages, notifications: badges.notifications.student },
+  });
 
   const handleResetFilters = () => {
     setSearchQuery('');
@@ -344,7 +348,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                     <span>{item.name}</span>
                   </div>
                   {item.badge && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-black ${
                       isActive ? 'bg-white text-emerald-600' : 'bg-emerald-600 text-white'
                     }`}>
                       {item.badge}
@@ -361,7 +365,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             <UserAvatar user={currentUser} size={40} />
             <div>
               <h4 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h4>
-              <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
+              <p className={`text-[11px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
                 {['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
               </p>
             </div>
@@ -395,31 +399,11 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
         
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${textPrimary}`}>Find Expert Tutors</h2>
+            <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${textPrimary}`}>Find Expert Tutors</h1>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Browse verified AUST tutors and book your session today.</p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button onClick={toggleDarkMode} className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}>
-              {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
-            </button>
-            <button
-              onClick={() => navigate('/notifications')}
-              className={`p-2.5 rounded-xl border relative cursor-pointer transition ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white hover:bg-slate-800' : 'border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-100'}`}
-            >
-              <Bell size={16} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
-            </button>
-            <div className={`flex items-center gap-3 pl-3 border-l ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
-              <UserAvatar user={currentUser} size={36} />
-              <div className="hidden sm:block">
-                <h5 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h5>
-                <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
-                  {['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
-                </p>
-              </div>
-            </div>
-          </div>
+          <HeaderActions darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
         </header>
 
         <div className={`find-tutors-card flex flex-col md:flex-row items-center justify-between gap-4 ${cardBg}`}>
@@ -445,15 +429,15 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
               </div>
               <button 
                 onClick={handleResetFilters}
-                className="text-[10px] text-emerald-500 hover:underline flex items-center gap-1 font-semibold"
+                className="text-[11px] text-emerald-500 hover:underline flex items-center gap-1 font-semibold"
               >
                 <RotateCcw size={12} /> Reset
               </button>
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Subject</label>
-              <select
+              <label htmlFor="filter-subject" className={`text-xs font-bold ${textPrimary}`}>Subject</label>
+              <select id="filter-subject"
                 value={draft.subject_id}
                 onChange={(e) => setDraftField('subject_id', e.target.value)}
                 className={selectClass}
@@ -466,8 +450,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Department</label>
-              <select
+              <label htmlFor="filter-department" className={`text-xs font-bold ${textPrimary}`}>Department</label>
+              <select id="filter-department"
                 value={draft.department_id}
                 onChange={(e) => setDraftField('department_id', e.target.value)}
                 className={selectClass}
@@ -480,8 +464,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Language</label>
-              <select
+              <label htmlFor="filter-language" className={`text-xs font-bold ${textPrimary}`}>Language</label>
+              <select id="filter-language"
                 value={draft.language}
                 onChange={(e) => setDraftField('language', e.target.value)}
                 className={selectClass}
@@ -494,8 +478,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Minimum Experience</label>
-              <select
+              <label htmlFor="filter-minimum-experience" className={`text-xs font-bold ${textPrimary}`}>Minimum Experience</label>
+              <select id="filter-minimum-experience"
                 value={draft.min_experience}
                 onChange={(e) => setDraftField('min_experience', e.target.value)}
                 className={selectClass}
@@ -509,8 +493,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Minimum Students Taught</label>
-              <select
+              <label htmlFor="filter-minimum-students-taught" className={`text-xs font-bold ${textPrimary}`}>Minimum Students Taught</label>
+              <select id="filter-minimum-students-taught"
                 value={draft.min_students}
                 onChange={(e) => setDraftField('min_students', e.target.value)}
                 className={selectClass}
@@ -523,8 +507,8 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-bold ${textPrimary}`}>Sort By</label>
-              <select
+              <label htmlFor="filter-sort-by" className={`text-xs font-bold ${textPrimary}`}>Sort By</label>
+              <select id="filter-sort-by"
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
                 className={selectClass}
@@ -583,12 +567,12 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                       <div className="space-y-1 flex-grow">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className={`text-sm font-black ${textPrimary}`}>{tutor.name}</h4>
-                          <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 shrink-0">
+                          <span className="text-[11px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 shrink-0">
                             {tutor.experience_years}+ yrs
                           </span>
                         </div>
-                        <p className="text-[11px] text-emerald-600 font-bold">{tutor.headline}</p>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-400 flex-wrap">
+                        <p className="text-xs text-emerald-600 font-bold">{tutor.headline}</p>
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
                           <span className="flex items-center gap-1"><MapPin size={12} /> {tutor.department ?? 'AUST'}</span>
                           {/* What students made of them — the cards carried a
                               star icon with nothing behind it until now. */}
@@ -603,22 +587,22 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
 
                     <div className={`grid grid-cols-3 p-3 rounded-xl border text-center ${darkMode ? 'bg-slate-800/50 border-slate-700/60' : 'bg-slate-50 border-slate-200/80'}`}>
                       <div>
-                        <p className="text-[10px] text-slate-400 font-medium">Experience</p>
+                        <p className="text-[11px] text-slate-400 font-medium">Experience</p>
                         <p className={`text-xs font-bold ${textPrimary}`}>{tutor.experience_years}+ Years</p>
                       </div>
                       <div className="border-x border-slate-200 dark:border-slate-700">
-                        <p className="text-[10px] text-slate-400 font-medium">Students</p>
+                        <p className="text-[11px] text-slate-400 font-medium">Students</p>
                         <p className={`text-xs font-bold ${textPrimary}`}>{tutor.student_count}+</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-400 font-medium">Rate</p>
+                        <p className="text-[11px] text-slate-400 font-medium">Rate</p>
                         <p className="text-xs font-bold text-emerald-500">৳{tutor.hourly_rate}/hr</p>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5">
                       {tutor.subjects.map((subject) => (
-                        <span key={subject.id} className={`text-[10px] px-2.5 py-1 rounded-lg font-medium ${
+                        <span key={subject.id} className={`text-[11px] px-2.5 py-1 rounded-lg font-medium ${
                           darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
                         }`}>
                           {subject.name}
@@ -699,6 +683,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                 <button
                   onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                   disabled={meta.current_page <= 1}
+                  aria-label="Previous page"
                   className={`p-2 rounded-xl border transition disabled:opacity-40 disabled:cursor-not-allowed ${
                     darkMode ? 'border-slate-700 hover:bg-slate-800 text-slate-200' : 'border-slate-300 hover:bg-slate-100 text-slate-700'
                   }`}
@@ -713,6 +698,7 @@ export default function FindTutorsPage({ darkMode, toggleDarkMode }) {
                 <button
                   onClick={() => setCurrentPage((page) => Math.min(meta.last_page, page + 1))}
                   disabled={meta.current_page >= meta.last_page}
+                  aria-label="Next page"
                   className={`p-2 rounded-xl border transition disabled:opacity-40 disabled:cursor-not-allowed ${
                     darkMode ? 'border-slate-700 hover:bg-slate-800 text-slate-200' : 'border-slate-300 hover:bg-slate-100 text-slate-700'
                   }`}

@@ -5,17 +5,11 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { buildDashboardMenu } from '../../lib/dashboardMenu';
 
 import {
-  LayoutDashboard,
-  MessageSquare,
-  Bell,
-  Settings,
   LogOut,
-  HelpCircle,
-  Search,
-  BookOpen,
 } from 'lucide-react';
 
 import {
@@ -43,6 +37,13 @@ export default function MessagesPage({
   toggleDarkMode,
 }) {
   const navigate = useNavigate();
+
+  // ?with={userId} opens that person's conversation, which is where a
+  // message or acceptance notification leads.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const handledWith = useRef(false);
+  // Set once the address has chosen someone, so nothing else overrides it.
+  const openedFromLink = useRef(false);
   const { user: currentUser } = useCurrentUser();
   // Whose chat list this is: a tutor sees the students who approached them.
   const { role: currentRole } = useRole();
@@ -57,6 +58,15 @@ export default function MessagesPage({
     useState('');
 
   const messagesEndRef = useRef(null);
+
+  // The scrolling list, and how far from its bottom the reader was before
+  // older messages were added above, so they are not thrown to the end.
+  const threadRef = useRef(null);
+  const keepFromBottom = useRef(null);
+
+  // Bumped whenever a thread is (re)loaded, so an older page that arrives
+  // after another conversation was opened is dropped.
+  const threadLoads = useRef(0);
 
   // The locked contact whose request form is open, if any.
   const [requesting, setRequesting] = useState(null);
@@ -75,6 +85,9 @@ export default function MessagesPage({
 
   const [currentMessages, setCurrentMessages] =
     useState([]);
+
+  // Older pages of the open thread. The server sends the newest page first.
+  const [earlier, setEarlier] = useState({ hasMore: false, nextPage: 2, loading: false });
 
   const [unreadTotal, setUnreadTotal] =
     useState(0);
@@ -177,22 +190,13 @@ export default function MessagesPage({
     };
   }, [currentRole, conversations]);
 
-  useEffect(() => {
-    if (
-      selectedChat === null &&
-      conversations.length > 0
-    ) {
-      // Only an unlocked thread can be opened automatically.
-      const first = conversations.find((c) => !c.locked && c.conversation_id);
-      if (first) setSelectedChat(first.conversation_id);
-    }
-  }, [conversations, selectedChat]);
 
   useEffect(() => {
     if (!selectedChat) return;
 
     let cancelled = false;
 
+    threadLoads.current += 1;
     setLoadingThread(true);
 
     apiGet(
@@ -202,6 +206,7 @@ export default function MessagesPage({
 
       if (!ok) {
         setCurrentMessages([]);
+        setEarlier({ hasMore: false, nextPage: 2, loading: false });
         setLoadingThread(false);
 
         if (isUnauthenticated(body)) {
@@ -218,6 +223,7 @@ export default function MessagesPage({
       }
 
       setCurrentMessages(body.data ?? []);
+      setEarlier({ hasMore: Boolean(body.meta?.has_earlier), nextPage: 2, loading: false });
       setLoadingThread(false);
 
       loadConversations();
@@ -233,12 +239,67 @@ export default function MessagesPage({
   ]);
 
   useEffect(() => {
+    const container = threadRef.current;
+
+    // Older messages were added above: keep the reader where they were.
+    if (keepFromBottom.current !== null && container) {
+      container.scrollTop = container.scrollHeight - keepFromBottom.current;
+      keepFromBottom.current = null;
+
+      return;
+    }
+
     messagesEndRef.current?.scrollIntoView({
       behavior: 'smooth',
     });
   }, [currentMessages, selectedChat]);
 
-  const handleSelectChat = async (contact) => {
+  /*
+   * Fetch the next page back. A thread longer than one page used to open
+   * on its oldest messages with no way forward; it opens on the newest now,
+   * and this reaches the rest.
+   */
+  const loadEarlier = async () => {
+    if (!selectedChat || earlier.loading || !earlier.hasMore) return;
+
+    const load = threadLoads.current;
+    const page = earlier.nextPage;
+
+    setEarlier((current) => ({ ...current, loading: true }));
+
+    const { ok, body } = await apiGet(`/conversations/${selectedChat}/messages?page=${page}`);
+
+    // Another conversation was opened meanwhile.
+    if (load !== threadLoads.current) return;
+
+    if (!ok) {
+      setEarlier((current) => ({ ...current, loading: false }));
+
+      if (isUnauthenticated(body)) {
+        endExpiredSession();
+        return;
+      }
+
+      setError(body?.message || 'Could not load earlier messages.');
+
+      return;
+    }
+
+    const container = threadRef.current;
+    keepFromBottom.current = container ? container.scrollHeight - container.scrollTop : null;
+
+    // A message sent since the first page shifts every page along by one, so
+    // anything already shown is skipped rather than shown twice.
+    setCurrentMessages((current) => {
+      const shown = new Set(current.map((m) => m.id));
+
+      return [...(body.data ?? []).filter((m) => !shown.has(m.id)), ...current];
+    });
+
+    setEarlier({ hasMore: Boolean(body.meta?.has_earlier), nextPage: page + 1, loading: false });
+  };
+
+  const handleSelectChat = useCallback(async (contact) => {
     setError('');
 
     // A tutor who has not accepted cannot be messaged yet, but the student is
@@ -272,7 +333,43 @@ export default function MessagesPage({
 
     setSelectedChat(body?.data?.id ?? null);
     loadConversations();
-  };
+  }, [loadConversations]);
+
+  /*
+   * Once the list has loaded, open something. A conversation named in the
+   * address comes first; it is handled like a click on that person, so a
+   * thread that does not exist yet is created and a locked tutor shows the
+   * request panel. Otherwise the first open thread is shown.
+   */
+  useEffect(() => {
+    if (selectedChat !== null || conversations.length === 0) return;
+
+    // A thread being created, or a request panel for a locked tutor, is
+    // still the link's choice; the first-thread fallback must not replace it.
+    if (openedFromLink.current) return;
+
+    const withId = searchParams.get('with');
+
+    if (withId && !handledWith.current) {
+      handledWith.current = true;
+
+      // The address has done its job; leave it plain.
+      setSearchParams({}, { replace: true });
+
+      const target = conversations.find((c) => c.user_id === withId);
+
+      if (target) {
+        openedFromLink.current = true;
+        handleSelectChat(target);
+
+        return;
+      }
+    }
+
+    // Only an unlocked thread can be opened automatically.
+    const first = conversations.find((c) => !c.locked && c.conversation_id);
+    if (first) setSelectedChat(first.conversation_id);
+  }, [conversations, selectedChat, searchParams, setSearchParams, handleSelectChat]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -386,52 +483,14 @@ export default function MessagesPage({
           </div>
 
           {/* Navigation
-              Role-aware, so a tutor's Dashboard link goes to their own
-              dashboard rather than the student one — it used to be hardcoded
-              to /dashboard, which bounced a tutor to the student side. A tutor
-              also gets Tuition Requests where a student gets Find Tutors. */}
+              The entries come from the one shared list, so this page cannot
+              drift from the others the way it did when every page kept its
+              own copy. */}
           <nav className="space-y-1.5">
-            {[
-              {
-                name: 'Dashboard',
-                icon: LayoutDashboard,
-                path: currentRole === 'tutor' ? '/tutor-dashboard' : '/dashboard',
-              },
-              currentRole === 'tutor'
-                ? {
-                    name: 'Tuition Requests',
-                    icon: BookOpen,
-                    path: '/tutor-requests',
-                  }
-                : {
-                    name: 'Find Tutors',
-                    icon: Search,
-                    path: '/find-tutors',
-                  },
-              {
-                name: 'Messages',
-                icon: MessageSquare,
-                badge:
-                  unreadTotal || undefined,
-                path: '/messages',
-              },
-              {
-                name: 'Notifications',
-                icon: Bell,
-                badge: unreadTotal || undefined,
-                path: '/notifications',
-              },
-              {
-                name: 'Settings',
-                icon: Settings,
-                path: '/settings',
-              },
-              {
-                name: 'Help & Support',
-                icon: HelpCircle,
-                path: '/support',
-              },
-            ].map((item) => {
+            {buildDashboardMenu({
+              role: currentRole,
+              badges: { messages: unreadTotal, notifications: unreadTotal },
+            }).map((item) => {
               const Icon = item.icon;
 
               const isActive =
@@ -474,7 +533,7 @@ export default function MessagesPage({
 
                   {item.badge && (
                     <span
-                      className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
+                      className={`text-[11px] px-1.5 py-0.5 rounded-full font-black ${
                         isActive
                           ? 'bg-white text-emerald-600'
                           : 'bg-emerald-600 text-white'
@@ -501,7 +560,7 @@ export default function MessagesPage({
             <UserAvatar user={currentUser} size={40} />
 
             <div>
-              <h4
+              <p
                 className={`text-xs ${
                   darkMode
                     ? 'text-white font-extrabold'
@@ -509,10 +568,10 @@ export default function MessagesPage({
                 }`}
               >
                 {currentUser?.name || 'Loading…'}
-              </h4>
+              </p>
 
               <p
-                className={`text-[10px] ${
+                className={`text-[11px] ${
                   darkMode
                     ? 'text-slate-400 font-semibold'
                     : 'text-slate-500 font-semibold'
@@ -580,7 +639,7 @@ export default function MessagesPage({
                 darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-200'
               }`}
             >
-              <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[11px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 Currently teaching
               </p>
               <p className={`text-xl font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -593,7 +652,7 @@ export default function MessagesPage({
                 darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-200'
               }`}
             >
-              <p className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[11px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 Students taught
               </p>
               <p className={`text-xl font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -650,7 +709,24 @@ export default function MessagesPage({
             ) : (
               <>
                 {/* Messages */}
-                <div className="chat-messages-container space-y-3">
+                <div ref={threadRef} className="chat-messages-container space-y-3">
+                  {!loadingThread && earlier.hasMore && (
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={loadEarlier}
+                        disabled={earlier.loading}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-full border transition disabled:opacity-60 ${
+                          darkMode
+                            ? 'border-slate-700 text-slate-300 hover:bg-slate-800'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {earlier.loading ? 'Loading…' : 'Load earlier messages'}
+                      </button>
+                    </div>
+                  )}
+
                   {loadingThread ? (
                     <div className="text-center text-xs text-slate-400 py-8">
                       Loading messages…

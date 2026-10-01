@@ -219,7 +219,7 @@ export default function TutorAccountPage({
               </h2>
 
               <p
-                className={`text-[11px] mt-1 ${
+                className={`text-xs mt-1 ${
                   darkMode
                     ? 'text-slate-400'
                     : 'text-slate-500'

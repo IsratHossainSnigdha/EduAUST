@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Award, Heart } from 'lucide-react';
+import { Award, Heart } from 'lucide-react';
 import { apiDelete, apiGet, clearAuth, isAuthenticated, isUnauthenticated } from '../../lib/auth';
+import TutorSidebar from '../../components/Tutor/TutorSidebar';
+import TutorHeader from '../../components/Tutor/TutorHeader';
+import { useRole } from '../../lib/useRole';
 import UserAvatar from '../../components/UserAvatar';
 
 /*
@@ -11,8 +14,11 @@ import UserAvatar from '../../components/UserAvatar';
  * table, no endpoint, no page. Keeping a tutor is deliberately separate from
  * asking them: a student can shortlist a few and send a request later.
  */
-export default function SavedTutorsPage({ darkMode }) {
+export default function SavedTutorsPage({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
+
+  const [activeMenu, setActiveMenu] = useState('Saved Tutors');
+  const { role: currentRole, setRole: setCurrentRole } = useRole();
 
   const [saved, setSaved] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,16 +81,24 @@ export default function SavedTutorsPage({ darkMode }) {
   const muted = darkMode ? 'text-slate-400' : 'text-slate-500';
 
   return (
-    <div className={`min-h-screen w-full font-sans antialiased ${bgClass}`}>
-      <div className="max-w-4xl mx-auto p-6 lg:p-10 space-y-6">
+    <div
+      className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}
+    >
+      <TutorSidebar
+        darkMode={darkMode}
+        activeMenu={activeMenu}
+        currentRole={currentRole}
+        setCurrentRole={setCurrentRole}
+        handleNavigation={(name, path) => {
+          setActiveMenu(name);
 
-        <button
-          type="button"
-          onClick={() => navigate('/dashboard')}
-          className={`flex items-center gap-2 text-xs font-bold ${muted} hover:text-emerald-500 transition`}
-        >
-          <ArrowLeft size={14} /> Back to dashboard
-        </button>
+          if (path && path !== '#') navigate(path);
+        }}
+      />
+
+      <main className="flex-grow p-6 lg:p-10 space-y-6 overflow-y-auto max-h-screen">
+        <TutorHeader darkMode={darkMode} toggleDarkMode={toggleDarkMode} showSearch={false} />
+
 
         <div>
           <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -130,7 +144,7 @@ export default function SavedTutorsPage({ darkMode }) {
                     {t.name}
                   </h3>
 
-                  <p className={`text-[11px] font-semibold ${muted} truncate`}>
+                  <p className={`text-xs font-semibold ${muted} truncate`}>
                     {t.headline || [t.department, t.experience_years ? `${t.experience_years} yr` : null]
                       .filter(Boolean)
                       .join(' • ')}
@@ -143,7 +157,7 @@ export default function SavedTutorsPage({ darkMode }) {
                   {t.subjects.slice(0, 3).map((s) => (
                     <span
                       key={s}
-                      className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                         darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
                       }`}
                     >
@@ -175,7 +189,7 @@ export default function SavedTutorsPage({ darkMode }) {
           ))}
         </div>
 
-      </div>
+      </main>
     </div>
   );
 }

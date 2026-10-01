@@ -3,23 +3,19 @@ import UserAvatar from '../components/UserAvatar';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
   MessageSquare,
   Bell,
-  Settings,
-  HelpCircle,
   LogOut,
-  Search,
-  Sun,
-  Moon,
   CheckCheck,
   Calendar,
   BookOpen,
   UserCheck,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
 import { apiGet, apiPatch, clearAuth, isAuthenticated, isUnauthenticated } from '../lib/auth';
 import { useBadgeCounts } from '../lib/useBadgeCounts';
+import { buildDashboardMenu } from '../lib/dashboardMenu';
+import HeaderActions from '../components/HeaderActions';
 import { setRole, useRole } from '../lib/useRole';
 import './NotificationsPage.css'; // <-- External stylesheet imported here
 
@@ -112,11 +108,42 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
     if (ok) loadNotifications();
   };
 
-  // Reading a single notification clears its unread state.
+  /*
+   * Where a notification leads.
+   *
+   * New ones carry their own destination, because only whatever raised the
+   * notification knows what it was about. Anything recorded before that
+   * existed is placed by its category, which is coarse but better than a row
+   * that looks clickable and goes nowhere.
+   */
+  const destinationFor = (item) => {
+    if (item.link) return item.link;
+
+    if (item.category === 'message') return '/messages';
+
+    if (item.category === 'request') {
+      return currentRole === 'tutor' ? '/tutor-requests' : '/my-requests';
+    }
+
+    return null;
+  };
+
+  /*
+   * Opening a notification clears its unread state and takes you to the thing
+   * it is about. It used to do the first only, and only when unread, so every
+   * row was a dead end.
+   */
   const handleOpenNotification = async (item) => {
-    if (!item.unread) return;
-    const { ok } = await apiPatch(`/notifications/${item.id}/read`);
-    if (ok) loadNotifications();
+    const to = destinationFor(item);
+
+    if (item.unread) {
+      const { ok } = await apiPatch(`/notifications/${item.id}/read`);
+
+      // Nothing to come back to if we are leaving, so only reload in place.
+      if (ok && !to) loadNotifications();
+    }
+
+    if (to) navigate(to);
   };
 
   const bgClass = darkMode ? 'bg-[#12161f] text-slate-100' : 'bg-[#f1f3f6] text-slate-900';
@@ -125,20 +152,14 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
   const textPrimary = darkMode ? 'text-white font-extrabold' : 'text-slate-900 font-extrabold';
   const textSecondary = darkMode ? 'text-slate-300 font-medium' : 'text-slate-700 font-medium';
 
-  const menuItems = [
-    {
-      name: 'Dashboard',
-      icon: LayoutDashboard,
-      path: currentRole === 'tutor' ? '/tutor-dashboard' : '/dashboard'
-    },
-    ...(currentRole === 'student'
-      ? [{ name: 'Find Tutors', icon: Search, path: '/find-tutors' }]
-      : [{ name: 'Tuition Requests', icon: BookOpen, badge: badges.requests || undefined, path: '/tutor-requests' }]),
-    { name: 'Messages', icon: MessageSquare, badge: badges.messages || undefined, path: '/messages' },
-    { name: 'Notifications', icon: Bell, badge: unreadCount || undefined, path: '/notifications' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
-    { name: 'Help & Support', icon: HelpCircle, path: '/support' },
-  ];
+  const canTutor = currentUser?.isTutor === true
+    || currentUser?.isTutor === 1
+    || currentUser?.isTutor === '1';
+
+  const menuItems = buildDashboardMenu({
+    role: currentRole,
+    badges: { ...badges, notifications: unreadCount },
+  });
 
   const totalShown = groups.reduce((sum, group) => sum + group.notifications.length, 0);
 
@@ -179,7 +200,7 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
                     <span>{item.name}</span>
                   </div>
                   {item.badge && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-black ${
                       isActive ? 'bg-white text-emerald-600' : 'bg-emerald-600 text-white'
                     }`}>
                       {item.badge}
@@ -196,8 +217,8 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
           <div className="flex items-center gap-3">
             <UserAvatar user={currentUser} size={40} />
             <div>
-              <h4 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h4>
-              <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
+              <p className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</p>
+              <p className={`text-[11px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
                 {currentRole === 'tutor'
                   ? 'Tutor'
                   : ['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
@@ -207,6 +228,15 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
           
           <button
             onClick={() => {
+              // Only an account that tutors has a tutor dashboard to reach;
+              // anyone else is sent to sign up as one rather than being put
+              // straight back where they started.
+              if (currentRole === 'student' && !canTutor) {
+                navigate('/become-a-tutor');
+
+                return;
+              }
+
               // setRole refuses a tutor role on an account that does not
               // tutor, so follow where it landed rather than where we asked.
               const applied = setRole(currentRole === 'student' ? 'tutor' : 'student');
@@ -215,7 +245,11 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
             }}
             className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2 text-xs font-bold transition shadow-sm"
           >
-            {currentRole === 'student' ? 'Switch to Tutor Dashboard' : 'Switch to Student Dashboard'}
+            {currentRole !== 'student'
+              ? 'Switch to Student Dashboard'
+              : canTutor
+                ? 'Switch to Tutor Dashboard'
+                : 'Become a Tutor'}
           </button>
 
           <button
@@ -239,30 +273,16 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
         {/* Top Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${textPrimary}`}>Notifications</h2>
+            <h1 className={`text-2xl sm:text-3xl font-black tracking-tight ${textPrimary}`}>Notifications</h1>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Stay updated with your latest tutoring sessions, messages, and alerts.</p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button onClick={toggleDarkMode} className={`p-2.5 rounded-xl border transition-all ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}>
-              {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
-            </button>
-            <button className={`p-2.5 rounded-xl border relative ${darkMode ? 'border-slate-700 bg-[#1e2533] text-white' : 'border-slate-300 bg-white text-slate-700 shadow-sm'}`}>
-              <Bell size={16} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
-            </button>
-            <div className={`flex items-center gap-3 pl-3 border-l ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
-              <UserAvatar user={currentUser} size={36} />
-              <div className="hidden sm:block">
-                <h5 className={`text-xs ${textPrimary}`}>{currentUser?.name || 'Loading…'}</h5>
-                <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-semibold' : 'text-slate-500 font-semibold'}`}>
-                  {currentRole === 'tutor'
-                    ? 'Tutor Dashboard'
-                    : ['Student', currentUser?.department, currentUser?.semester].filter(Boolean).join(' · ')}
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* No bell here: it would only lead back to this page. */}
+          <HeaderActions
+            darkMode={darkMode}
+            toggleDarkMode={toggleDarkMode}
+            showNotifications={false}
+          />
         </header>
 
         {/* Toolbar & Action Buttons */}
@@ -289,7 +309,7 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
 
           {/* Action Triggers */}
           <div className="flex items-center gap-3">
-            <span className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <span className={`text-[11px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {unreadCount} unread
             </span>
             <button
@@ -317,12 +337,12 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
           {loading ? (
             <div className={`p-12 text-center rounded-2xl border ${cardBg}`}>
               <Bell size={40} className="mx-auto text-slate-400 mb-3 opacity-50 animate-pulse" />
-              <h4 className={`text-sm font-bold ${textPrimary}`}>Loading notifications…</h4>
+              <p className={`text-sm font-bold ${textPrimary}`}>Loading notifications…</p>
             </div>
           ) : totalShown > 0 ? (
             groups.map((group) => (
               <section key={group.key} className="space-y-3">
-                <h3 className={`text-[11px] font-black uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <h3 className={`text-xs font-black uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   {group.label}
                 </h3>
 
@@ -332,7 +352,18 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
                     <button
                       key={item.id}
                       onClick={() => handleOpenNotification(item)}
+                      title={
+                        destinationFor(item)
+                          ? 'Open'
+                          : item.unread
+                            ? 'Mark as read'
+                            : undefined
+                      }
                       className={`w-full text-left p-5 rounded-2xl border transition flex items-start gap-4 shadow-sm ${cardBg} ${
+                        destinationFor(item) || item.unread
+                          ? 'hover:border-emerald-500/60 cursor-pointer'
+                          : 'cursor-default'
+                      } ${
                         item.unread ? (darkMode ? 'border-emerald-500/40 bg-[#1e2533]' : 'border-emerald-500/40 bg-emerald-50/30') : ''
                       }`}
                     >
@@ -350,7 +381,7 @@ export default function NotificationsPage({ darkMode, toggleDarkMode }) {
                               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                             )}
                           </div>
-                          <span className={`text-[10px] ${darkMode ? 'text-slate-400 font-medium' : 'text-slate-500 font-medium'}`}>
+                          <span className={`text-[11px] ${darkMode ? 'text-slate-400 font-medium' : 'text-slate-500 font-medium'}`}>
                             {item.time}
                           </span>
                         </div>

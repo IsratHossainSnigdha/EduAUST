@@ -27,7 +27,7 @@ export default function MessageBubble({
 
       <div className="flex items-center gap-1 mt-1">
         <span
-          className={`text-[10px] font-semibold ${
+          className={`text-[11px] font-semibold ${
             darkMode
               ? 'text-slate-300'
               : 'text-slate-500'
@@ -36,9 +36,13 @@ export default function MessageBubble({
           {message.time}
         </span>
 
+        {/* The only thing that says whether it landed, so it needs a name
+            for anyone not looking at the colour. */}
         {message.sent_by_me && (
           <CheckCheck
             size={12}
+            role="img"
+            aria-label={message.read ? 'Read' : 'Sent'}
             className={
               message.read
                 ? 'text-emerald-500'

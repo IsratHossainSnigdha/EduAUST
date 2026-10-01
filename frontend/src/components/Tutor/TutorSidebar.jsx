@@ -1,22 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  MessageSquare,
-  Bell,
-  Settings,
-  HelpCircle,
-  LogOut,
-  UserPlus,
-  Search,
-  Users,
-  GraduationCap,
-} from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import UserAvatar from '../UserAvatar';
 import { useCurrentUser } from '../../lib/useCurrentUser';
 import { clearAuth } from '../../lib/auth';
 import { useBadgeCounts } from '../../lib/useBadgeCounts';
 import { setRole } from '../../lib/useRole';
+import { buildDashboardMenu } from '../../lib/dashboardMenu';
 
 export default function TutorSidebar({
   darkMode,
@@ -65,79 +55,16 @@ export default function TutorSidebar({
   // active role: a student sees their dashboard and Find Tutors, a tutor sees
   // theirs and Tuition Requests. It used to be hardcoded to the tutor side,
   // which sent a student on Settings or Support to the tutor dashboard.
-  const isTutorView = currentRole === 'tutor';
+  const menuItems = buildDashboardMenu({ role: currentRole, badges: counts });
 
-  const menuItems = [
-    {
-      name: 'Dashboard',
-      icon: LayoutDashboard,
-      path: isTutorView ? '/tutor-dashboard' : '/dashboard',
-      requiresProfile: false,
-    },
-
-    isTutorView
-      ? {
-          name: 'Tuition Requests',
-          icon: UserPlus,
-          badge: counts.requests || undefined,
-          path: '/tutor-requests',
-          requiresProfile: true,
-        }
-      : {
-          name: 'Find Tutors',
-          icon: Search,
-          path: '/find-tutors',
-          requiresProfile: false,
-        },
-
-    /*
-     * The people on the other end of an active arrangement. Each side manages
-     * the same relationship, so each side gets an entry for it.
-     */
-    isTutorView
-      ? {
-          name: 'My Students',
-          icon: Users,
-          path: '/my-students',
-          requiresProfile: true,
-        }
-      : {
-          name: 'My Tutors',
-          icon: GraduationCap,
-          path: '/my-tutors',
-          requiresProfile: false,
-        },
-
-    {
-      name: 'Messages',
-      icon: MessageSquare,
-      badge: counts.messages || undefined,
-      path: '/messages',
-      requiresProfile: true,
-    },
-
-    {
-      name: 'Notifications',
-      icon: Bell,
-      badge: counts.notifications || undefined,
-      path: '/notifications',
-      requiresProfile: true,
-    },
-
-    {
-      name: 'Settings',
-      icon: Settings,
-      path: '/settings',
-      requiresProfile: true,
-    },
-
-    {
-      name: 'Help & Support',
-      icon: HelpCircle,
-      path: '/support',
-      requiresProfile: true,
-    },
-  ];
+  /*
+   * Only an account that actually tutors has a tutor dashboard to reach.
+   * Offering the switch to everyone meant a student pressed a prominent
+   * button and was quietly put back where they started.
+   */
+  const canTutor = currentUser?.isTutor === true
+    || currentUser?.isTutor === 1
+    || currentUser?.isTutor === '1';
 
   /*
    * Check whether a menu item is locked.
@@ -251,7 +178,7 @@ export default function TutorSidebar({
                 {/* Badge */}
                 {item.badge && (
                   <span
-                    className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
+                    className={`text-[11px] px-1.5 py-0.5 rounded-full font-black ${
                       isActive
                         ? 'bg-white text-emerald-600'
                         : locked
@@ -281,12 +208,12 @@ export default function TutorSidebar({
           <UserAvatar user={currentUser} size={40} />
 
           <div className="min-w-0">
-            <h4 className={`text-xs truncate ${textPrimary}`}>
+            <p className={`text-xs truncate ${textPrimary}`}>
               {currentUser?.name || 'Loading…'}
-            </h4>
+            </p>
 
             <p
-              className={`text-[10px] ${
+              className={`text-[11px] ${
                 darkMode
                   ? 'text-slate-400'
                   : 'text-slate-500'
@@ -307,6 +234,14 @@ export default function TutorSidebar({
         <button
           type="button"
           onClick={() => {
+            // Anyone who does not tutor yet is sent to sign up as one rather
+            // than bounced off the tutor route guard.
+            if (currentRole !== 'tutor' && !canTutor) {
+              navigate('/become-a-tutor');
+
+              return;
+            }
+
             const nextRole =
               currentRole === 'tutor'
                 ? 'student'
@@ -328,7 +263,9 @@ export default function TutorSidebar({
         >
           {currentRole === 'tutor'
             ? 'Switch to Student Dashboard'
-            : 'Switch to Tutor Dashboard'}
+            : canTutor
+              ? 'Switch to Tutor Dashboard'
+              : 'Become a Tutor'}
         </button>
 
         {/* =================================================

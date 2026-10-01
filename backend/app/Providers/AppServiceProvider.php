@@ -20,8 +20,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // The link lands on the frontend's reset page. The address is encoded
+        // so a "+" in it survives the trip rather than arriving as a space.
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
-            return config('app.frontend_url')."/password-reset/$token?email={$notifiable->getEmailForPasswordReset()}";
+            return rtrim((string) config('app.frontend_url'), '/')
+                .'/password-reset/'.$token
+                .'?email='.urlencode($notifiable->getEmailForPasswordReset());
         });
     }
 }

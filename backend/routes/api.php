@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\AccountController;
 use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -13,11 +14,13 @@ use App\Http\Controllers\Auth\SignInMethodController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StudentDashboardController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TuitionRequestController;
 use App\Http\Controllers\TutorController;
+use App\Http\Controllers\TutoringSessionController;
 use App\Http\Controllers\UserProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -82,6 +85,13 @@ Route::prefix('v1')->group(function () {
 
         Route::patch('/read-all', [NotificationController::class, 'markAllAsRead'])
             ->name('api.v1.notifications.read-all');
+
+        // Which kinds of notification this account wants.
+        Route::get('/preferences', [NotificationPreferenceController::class, 'show'])
+            ->name('api.v1.notifications.preferences.show');
+
+        Route::patch('/preferences', [NotificationPreferenceController::class, 'update'])
+            ->name('api.v1.notifications.preferences.update');
 
         Route::patch('/{notification}/read', [NotificationController::class, 'markAsRead'])
             ->name('api.v1.notifications.read');
@@ -154,6 +164,33 @@ Route::prefix('v1')->group(function () {
     });
     /*
     |--------------------------------------------------------------------------
+    | Tutoring sessions
+    |--------------------------------------------------------------------------
+    |
+    | A session belongs to the pair rather than to one role, so either side
+    | proposes and whichever did not propose it answers. Nothing here sits
+    | behind the tutor middleware.
+    |
+    */
+
+    Route::middleware('auth.jwt')->prefix('sessions')->group(function () {
+
+        Route::get('/', [TutoringSessionController::class, 'index'])
+            ->name('api.v1.sessions.index');
+
+        Route::post('/', [TutoringSessionController::class, 'store'])
+            ->middleware('throttle:30,1')
+            ->name('api.v1.sessions.store');
+
+        Route::patch('/{tutoringSession}/confirm', [TutoringSessionController::class, 'confirm'])
+            ->name('api.v1.sessions.confirm');
+
+        Route::delete('/{tutoringSession}', [TutoringSessionController::class, 'cancel'])
+            ->name('api.v1.sessions.cancel');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
     | Reviews
     |--------------------------------------------------------------------------
     | Students rate the tutors who taught them; anyone signed in can read a
@@ -221,7 +258,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard', [TutorController::class, 'dashboard'])
             ->name('api.v1.tutor.dashboard');
 
-        // Edit the public tutoring details.
+        // Read and edit the public tutoring details.
+        Route::get('/profile', [TutorController::class, 'showProfile'])
+            ->name('api.v1.tutor.profile.show');
+
         Route::patch('/profile', [TutorController::class, 'updateProfile'])
             ->name('api.v1.tutor.profile.update');
     });
@@ -306,6 +346,11 @@ Route::prefix('v1')->group(function () {
 
             Route::delete('/google/link', [SignInMethodController::class, 'unlinkGoogle'])
                 ->name('api.v1.auth.google.unlink');
+
+            // Close the account for good, after confirming it is really them.
+            Route::delete('/account', [AccountController::class, 'destroy'])
+                ->middleware('throttle:5,1')
+                ->name('api.v1.auth.account.destroy');
         });
     });
 });

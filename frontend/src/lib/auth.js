@@ -139,9 +139,10 @@ export function apiPatch(path, payload) {
   return request(path, { method: 'PATCH', payload: payload ?? {} });
 }
 
-// DELETE; returns { ok, body }.
-export function apiDelete(path) {
-  return request(path, { method: 'DELETE' });
+// DELETE, with an optional JSON body; returns { ok, body }. Without a
+// payload no body is sent, exactly as before.
+export function apiDelete(path, payload) {
+  return request(path, { method: 'DELETE', payload });
 }
 
 // Whether a failed response means the session is over and the user has to sign

@@ -137,7 +137,7 @@ export default function RequestDetailsModal({
             {/* An empty level rendered as a stray grey chip. */}
             {request.level && (
               <span
-                className={`inline-block mt-2 text-[9px] px-2 py-1 rounded ${
+                className={`inline-block mt-2 text-[11px] px-2 py-1 rounded ${
                   darkMode
                     ? 'bg-slate-700 text-slate-300'
                     : 'bg-slate-200 text-slate-700'
@@ -175,7 +175,7 @@ export default function RequestDetailsModal({
               }`}
             >
               <p
-                className={`text-[10px] ${
+                className={`text-[11px] ${
                   darkMode
                     ? 'text-slate-400'
                     : 'text-slate-500'
@@ -197,7 +197,7 @@ export default function RequestDetailsModal({
               }`}
             >
               <p
-                className={`text-[10px] ${
+                className={`text-[11px] ${
                   darkMode
                     ? 'text-slate-400'
                     : 'text-slate-500'

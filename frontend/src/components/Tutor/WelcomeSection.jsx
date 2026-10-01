@@ -6,7 +6,7 @@ export default function WelcomeSection({ darkMode, name, loading }) {
 
   return (
     <div className="space-y-1">
-      <h2
+      <h1
         className={`text-2xl sm:text-3xl font-black tracking-tight ${
           darkMode
             ? 'text-white'
@@ -22,7 +22,7 @@ export default function WelcomeSection({ darkMode, name, loading }) {
         ) : (
           <>Let&apos;s Connect{firstName ? `, ${firstName}` : ''}! 👋</>
         )}
-      </h2>
+      </h1>
 
       <p
         className={`text-xs sm:text-sm ${

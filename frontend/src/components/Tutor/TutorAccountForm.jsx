@@ -296,7 +296,7 @@ export default function TutorAccountForm({
         )}
 
         <p
-          className={`text-[10px] mt-1 ${
+          className={`text-[11px] mt-1 ${
             darkMode
               ? 'text-slate-500'
               : 'text-slate-400'
@@ -307,7 +307,7 @@ export default function TutorAccountForm({
         </p>
 
         {selectedSubjects.length > 0 && (
-          <p className="text-[10px] text-emerald-500 mt-1">
+          <p className="text-[11px] text-emerald-500 mt-1">
             {selectedSubjects.length}{' '}
             subject
             {selectedSubjects.length !== 1
@@ -318,7 +318,7 @@ export default function TutorAccountForm({
         )}
 
         {errors.subjects && (
-          <p className="text-[10px] text-rose-500 mt-1">
+          <p className="text-[11px] text-rose-500 mt-1">
             {Array.isArray(errors.subjects)
               ? errors.subjects[0]
               : errors.subjects}
@@ -353,7 +353,7 @@ export default function TutorAccountForm({
           />
 
           <span
-            className={`absolute right-4 top-1/2 -translate-y-1/2 text-[10px] ${
+            className={`absolute right-4 top-1/2 -translate-y-1/2 text-[11px] ${
               darkMode
                 ? 'text-slate-500'
                 : 'text-slate-400'
@@ -364,7 +364,7 @@ export default function TutorAccountForm({
         </div>
 
         {errors.experience && (
-          <p className="text-[10px] text-rose-500 mt-1">
+          <p className="text-[11px] text-rose-500 mt-1">
             {Array.isArray(
               errors.experience
             )
@@ -399,7 +399,7 @@ export default function TutorAccountForm({
 
         <div className="flex justify-between mt-1">
           {errors.bio ? (
-            <p className="text-[10px] text-rose-500">
+            <p className="text-[11px] text-rose-500">
               {Array.isArray(errors.bio)
                 ? errors.bio[0]
                 : errors.bio}
@@ -409,7 +409,7 @@ export default function TutorAccountForm({
           )}
 
           <span
-            className={`text-[10px] ${
+            className={`text-[11px] ${
               darkMode
                 ? 'text-slate-500'
                 : 'text-slate-400'

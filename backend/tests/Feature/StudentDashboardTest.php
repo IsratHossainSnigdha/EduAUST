@@ -511,4 +511,88 @@ class StudentDashboardTest extends TestCase
             ->assertJsonCount(1, 'tutors')
             ->assertJsonCount(0, 'past_tutors');
     }
+
+    public function test_a_student_can_withdraw_a_request_the_tutor_has_not_answered(): void
+    {
+        $student = User::factory()->create();
+
+        $request = TuitionRequest::factory()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $this->tutor()->id,
+        ]);
+
+        $this->signIn($student);
+
+        $this->deleteJson('/api/v1/tuition-requests/'.$request->id)->assertOk();
+
+        $this->assertSame(
+            TuitionRequest::STATUS_WITHDRAWN,
+            $request->fresh()->status
+        );
+    }
+
+    public function test_a_withdrawn_request_leaves_the_tutors_inbox(): void
+    {
+        $tutor = $this->tutor();
+        $student = User::factory()->create();
+
+        $request = TuitionRequest::factory()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $this->signIn($student);
+        $this->deleteJson('/api/v1/tuition-requests/'.$request->id)->assertOk();
+
+        $this->signIn($tutor);
+
+        $this->getJson('/api/v1/tuition-requests?status=pending')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_a_tutor_cannot_accept_a_request_that_was_withdrawn(): void
+    {
+        $tutor = $this->tutor();
+        $student = User::factory()->create();
+
+        $request = TuitionRequest::factory()->create([
+            'student_id' => $student->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $this->signIn($student);
+        $this->deleteJson('/api/v1/tuition-requests/'.$request->id)->assertOk();
+
+        $this->signIn($tutor);
+
+        $this->patchJson('/api/v1/tuition-requests/'.$request->id, ['status' => 'accepted'])
+            ->assertStatus(422);
+
+        $this->assertSame(
+            TuitionRequest::STATUS_WITHDRAWN,
+            $request->fresh()->status
+        );
+    }
+
+    public function test_a_tutor_cannot_withdraw_a_students_request(): void
+    {
+        $tutor = $this->tutor();
+
+        $request = TuitionRequest::factory()->create([
+            'student_id' => User::factory()->create()->id,
+            'tutor_id' => $tutor->id,
+        ]);
+
+        $this->signIn($tutor);
+
+        // Declining is the tutor's move; withdrawing is not.
+        $this->deleteJson('/api/v1/tuition-requests/'.$request->id)
+            ->assertStatus(422);
+
+        $this->assertSame(
+            TuitionRequest::STATUS_PENDING,
+            $request->fresh()->status
+        );
+    }
 }

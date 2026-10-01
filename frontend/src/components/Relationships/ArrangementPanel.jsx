@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { BookOpen, Clock, MessageSquare, Star, UserMinus } from 'lucide-react';
+import { BookOpen, CalendarPlus, Clock, MessageSquare, Star, UserMinus } from 'lucide-react';
+import ProposeSessionForm from '../Sessions/ProposeSessionForm';
 import UserAvatar from '../UserAvatar';
 import StarRating from '../StarRating';
 import ReviewForm from '../Reviews/ReviewForm';
+import { describeSpan, formatDate } from '../../lib/dates';
 
 /*
  * One side of a tutoring arrangement, listed and managed.
@@ -11,62 +13,6 @@ import ReviewForm from '../Reviews/ReviewForm';
  * from opposite ends, so they are the same panel with different wording. They
  * were briefly two near-identical files, which is two places for every fix.
  */
-
-/**
- * A date as a reader wants it, not as the API stores it.
- */
-export function formatDate(iso) {
-  if (!iso) return null;
-
-  const date = new Date(iso);
-
-  if (Number.isNaN(date.getTime())) return null;
-
-  return date.toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-/**
- * How long the arrangement ran, in the largest unit that is not a lie.
- */
-export function describeSpan(fromIso, toIso) {
-  if (!fromIso) return null;
-
-  const from = new Date(fromIso);
-  const to = toIso ? new Date(toIso) : new Date();
-
-  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return null;
-
-  const days = Math.max(0, Math.floor((to - from) / 86400000));
-
-  if (days < 1) return 'today';
-  if (days < 31) return `${days} day${days === 1 ? '' : 's'}`;
-
-  /*
-   * Calendar months, not days divided by an average month. Dividing made
-   * 23 December to 23 June read as five months rather than six.
-   */
-  let months =
-    (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
-
-  // The final month has not completed if the day of the month has not come
-  // round yet.
-  if (to.getDate() < from.getDate()) months -= 1;
-
-  months = Math.max(1, months);
-
-  if (months < 12) return `${months} month${months === 1 ? '' : 's'}`;
-
-  const years = Math.floor(months / 12);
-  const rest = months % 12;
-
-  return rest === 0
-    ? `${years} year${years === 1 ? '' : 's'}`
-    : `${years}y ${rest}m`;
-}
 
 export default function ArrangementPanel({
   darkMode,
@@ -85,10 +31,14 @@ export default function ArrangementPanel({
   onRemove,
   onOpenProfile,
   onRated,
+  onScheduled,
 }) {
   const [tab, setTab] = useState('current');
   const [rating, setRating] = useState(null);
   const [confirming, setConfirming] = useState(null);
+
+  // Which row is currently suggesting a time, if any.
+  const [scheduling, setScheduling] = useState(null);
 
   const cardBg = darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-100';
   const rowBg = darkMode ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50 border-slate-200';
@@ -123,9 +73,9 @@ export default function ArrangementPanel({
   return (
     <div className={`p-5 rounded-2xl border space-y-4 ${cardBg}`} id={anchorId}>
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
+        <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
           {title}
-        </h3>
+        </h2>
 
         {/* Who is here now, and who used to be. */}
         <div className="flex items-center gap-1.5">
@@ -137,8 +87,9 @@ export default function ArrangementPanel({
                 setTab(t.key);
                 setRating(null);
                 setConfirming(null);
+                setScheduling(null);
               }}
-              className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition ${
+              className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition ${
                 tab === t.key
                   ? 'bg-emerald-600 text-white'
                   : darkMode
@@ -192,8 +143,8 @@ export default function ArrangementPanel({
                     <UserAvatar user={{ name: row.name, profile_picture: row.avatar }} size={38} />
 
                     <div className="min-w-0">
-                      <h4 className={`text-xs font-black truncate ${heading}`}>{row.name}</h4>
-                      <p className={`text-[10px] font-semibold ${muted}`}>
+                      <h3 className={`text-xs font-black truncate ${heading}`}>{row.name}</h3>
+                      <p className={`text-[11px] font-semibold ${muted}`}>
                         {[row.department, row.semester].filter(Boolean).join(' · ')}
                       </p>
 
@@ -209,6 +160,24 @@ export default function ArrangementPanel({
                   </button>
 
                   <div className="flex items-center gap-1.5 shrink-0">
+                    {/* A finished arrangement has nothing left to schedule. */}
+                    {!isPast && row.request_id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScheduling(scheduling === id ? null : id);
+                          setRating(null);
+                          setConfirming(null);
+                        }}
+                        title="Propose a session"
+                        className={`p-2 rounded-lg border transition ${
+                          scheduling === id ? 'border-emerald-500 text-emerald-600' : iconBtn
+                        }`}
+                      >
+                        <CalendarPlus size={13} />
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => onMessage?.(row)}
@@ -257,7 +226,7 @@ export default function ArrangementPanel({
                 {/* When it started, and when it finished. */}
                 {(started || ended) && (
                   <div
-                    className={`flex items-center gap-1.5 mt-2 text-[10px] font-semibold ${muted}`}
+                    className={`flex items-center gap-1.5 mt-2 text-[11px] font-semibold ${muted}`}
                   >
                     <Clock size={10} className="shrink-0" />
                     <span>
@@ -273,7 +242,7 @@ export default function ArrangementPanel({
                     {row.subjects.map((subject) => (
                       <span
                         key={subject}
-                        className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
                           darkMode
                             ? 'bg-slate-900 text-slate-300'
                             : 'bg-white text-slate-600 border border-slate-200'
@@ -288,7 +257,7 @@ export default function ArrangementPanel({
                 {/* Say why the button is dead rather than leaving them to guess. */}
                 {!isPast && row.can_end === false && row.end_blocked_reason && (
                   <p
-                    className={`mt-2.5 text-[10px] font-semibold rounded-lg px-2.5 py-2 ${
+                    className={`mt-2.5 text-[11px] font-semibold rounded-lg px-2.5 py-2 ${
                       darkMode
                         ? 'bg-amber-500/10 text-amber-300'
                         : 'bg-amber-500/10 text-amber-700'
@@ -301,7 +270,7 @@ export default function ArrangementPanel({
                 {/* Ending an arrangement is not a one-tap accident. */}
                 {confirming === id && (
                   <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                    <p className={`text-[11px] ${muted}`}>
+                    <p className={`text-xs ${muted}`}>
                       {labels.confirmCopy(row.name?.split(' ')[0] ?? 'them')}
                     </p>
 
@@ -312,7 +281,7 @@ export default function ArrangementPanel({
                           setConfirming(null);
                           onRemove?.(row);
                         }}
-                        className="bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition"
+                        className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
                       >
                         {labels.confirmButton}
                       </button>
@@ -320,7 +289,7 @@ export default function ArrangementPanel({
                       <button
                         type="button"
                         onClick={() => setConfirming(null)}
-                        className={`text-[11px] font-bold px-3 py-1.5 rounded-lg border transition ${
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
                           darkMode
                             ? 'border-slate-700 text-slate-300'
                             : 'border-slate-200 text-slate-600'
@@ -329,6 +298,21 @@ export default function ArrangementPanel({
                         Cancel
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {scheduling === id && (
+                  <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <ProposeSessionForm
+                      darkMode={darkMode}
+                      requestId={row.request_id}
+                      withName={row.name?.split(' ')[0]}
+                      onCancel={() => setScheduling(null)}
+                      onProposed={() => {
+                        setScheduling(null);
+                        onScheduled?.();
+                      }}
+                    />
                   </div>
                 )}
 

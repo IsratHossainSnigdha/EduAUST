@@ -215,7 +215,7 @@ export default function SupportPage({ darkMode, toggleDarkMode, currentRole = 's
                 </div>
                 <div>
                   <h3 className={`text-sm font-extrabold ${heading}`}>{category.title}</h3>
-                  <p className={`text-[11px] mt-1 ${muted}`}>{category.description}</p>
+                  <p className={`text-xs mt-1 ${muted}`}>{category.description}</p>
                 </div>
               </button>
             );
@@ -235,7 +235,7 @@ export default function SupportPage({ darkMode, toggleDarkMode, currentRole = 's
               <button
                 type="button"
                 onClick={() => setActiveTag(null)}
-                className="text-[11px] font-bold text-emerald-500 hover:text-emerald-400"
+                className="text-xs font-bold text-emerald-500 hover:text-emerald-400"
               >
                 Show all
               </button>
@@ -296,7 +296,7 @@ export default function SupportPage({ darkMode, toggleDarkMode, currentRole = 's
 
       {/* Footer */}
       <footer className={`support-footer ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
-        <div className={`max-w-5xl mx-auto px-6 text-center text-[11px] ${muted}`}>
+        <div className={`max-w-5xl mx-auto px-6 text-center text-xs ${muted}`}>
           EduAUST — peer tutoring for AUST students.
         </div>
       </footer>

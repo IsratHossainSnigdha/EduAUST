@@ -31,8 +31,9 @@ class TutorController extends Controller
 
         $validated = $request->validate([
             'subjects' => ['required', 'array', 'min:1'],
-            'subjects.*' => ['integer', 'exists:subjects,id'],
-            'experience' => ['nullable', 'integer', 'min:0'],
+            'subjects.*' => ['integer', 'distinct', 'exists:subjects,id'],
+            // The same ceiling the profile update applies.
+            'experience' => ['nullable', 'integer', 'min:0', 'max:60'],
             'bio' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -40,6 +41,18 @@ class TutorController extends Controller
             $user,
             $validated
         ) {
+            /*
+             * A double-clicked submit sends two of these at once. Both passed
+             * the check above, and the second then hit the unique index on
+             * tutor_profiles.user_id as a server error. Locking the account
+             * row makes the second wait and then see the first one's result.
+             */
+            $locked = $user->newQuery()->lockForUpdate()->find($user->id);
+
+            if ($locked->isTutor || TutorProfile::where('user_id', $user->id)->exists()) {
+                return null;
+            }
+
             $tutorProfile = TutorProfile::create([
                 'user_id' => $user->id,
                 'bio' => $validated['bio'] ?? null,
@@ -59,6 +72,13 @@ class TutorController extends Controller
 
             return $tutorProfile->load('subjects');
         });
+
+        if ($tutorProfile === null) {
+            return response()->json([
+                'message' => 'User already has a tutor account.',
+                'isTutor' => true,
+            ], 409);
+        }
 
         return response()->json([
             'message' => 'Tutor account created successfully.',
@@ -397,11 +417,26 @@ class TutorController extends Controller
             'hourly_rate' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:100000'],
             'experience_years' => ['sometimes', 'integer', 'min:0', 'max:60'],
             'is_available' => ['sometimes', 'boolean'],
-            'languages' => ['sometimes', 'array'],
-            'languages.*' => ['string', 'max:50'],
-            'subjects' => ['sometimes', 'array'],
-            'subjects.*' => ['integer', Rule::exists('subjects', 'id')],
+            'languages' => ['sometimes', 'array', 'max:10'],
+            // A blank entry is dropped below rather than refused.
+            'languages.*' => ['nullable', 'string', 'max:50'],
+            // A tutor with no subjects cannot be found by any subject filter,
+            // so the list may change but never empty.
+            'subjects' => ['sometimes', 'array', 'min:1'],
+            'subjects.*' => ['integer', 'distinct', Rule::exists('subjects', 'id')],
+        ], [
+            'subjects.min' => 'Choose at least one subject you teach.',
         ]);
+
+        if (array_key_exists('languages', $validated)) {
+            // "English", "english " and "English" again are one language.
+            $validated['languages'] = collect($validated['languages'])
+                ->map(fn (?string $l) => trim((string) $l))
+                ->filter()
+                ->unique(fn (string $l) => mb_strtolower($l))
+                ->values()
+                ->all();
+        }
 
         $profile->fill(Arr::except($validated, ['subjects']))->save();
 
@@ -409,21 +444,52 @@ class TutorController extends Controller
             $profile->subjects()->sync($validated['subjects']);
         }
 
-        $profile->load('subjects');
-
         return response()->json([
             'message' => 'Your tutor profile has been updated.',
-            'tutor_profile' => [
-                'headline' => $profile->headline,
-                'bio' => $profile->bio,
-                'hourly_rate' => $profile->hourly_rate,
-                'experience_years' => $profile->experience_years,
-                'is_available' => (bool) $profile->is_available,
-                'languages' => $profile->languages ?? [],
-                'subjects' => $profile->subjects
-                    ->map(fn (Subject $s) => ['id' => $s->id, 'name' => $s->name])
-                    ->all(),
-            ],
+            'tutor_profile' => $this->presentOwnProfile($profile),
         ]);
+    }
+
+    /**
+     * The signed-in tutor's own editable profile, for the settings screen.
+     */
+    public function showProfile(Request $request): JsonResponse
+    {
+        $profile = $request->user()->tutorProfile;
+
+        if (! $profile) {
+            return response()->json([
+                'message' => 'You do not have a tutor profile yet.',
+            ], 404);
+        }
+
+        return response()->json([
+            'tutor_profile' => $this->presentOwnProfile($profile),
+        ]);
+    }
+
+    /**
+     * Everything a tutor can edit about their public card.
+     *
+     * @return array<string, mixed>
+     */
+    private function presentOwnProfile(TutorProfile $profile): array
+    {
+        // Reloaded rather than reused, so a list synced a moment ago is what
+        // comes back.
+        $profile->load('subjects');
+
+        return [
+            'headline' => $profile->headline,
+            'bio' => $profile->bio,
+            'hourly_rate' => $profile->hourly_rate,
+            'experience_years' => $profile->experience_years,
+            'is_available' => (bool) $profile->is_available,
+            'languages' => $profile->languages ?? [],
+            'subjects' => $profile->subjects
+                ->map(fn (Subject $s) => ['id' => $s->id, 'name' => $s->name])
+                ->values()
+                ->all(),
+        ];
     }
 }

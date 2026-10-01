@@ -182,6 +182,7 @@ export default function MyStudentsPage({ darkMode, toggleDarkMode }) {
           onMessage={() => navigate('/messages')}
           onRemove={handleStopTeaching}
           onRated={load}
+          onScheduled={() => navigate('/sessions')}
         />
       </main>
 

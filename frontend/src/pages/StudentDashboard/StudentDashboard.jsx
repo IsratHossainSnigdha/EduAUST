@@ -1,22 +1,14 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
   Search,
   Heart,
   GitPullRequest,
   MessageSquare,
-  Bell,
-  Settings,
-  HelpCircle,
   LogOut,
-  ChevronDown,
   Plus,
   ArrowRight,
   BookOpen,
-  GraduationCap,
-  Sun,
-  Moon,
 } from 'lucide-react';
 import { apiDelete, apiGet, isAuthenticated, isUnauthenticated, clearAuth } from '../../lib/auth';
 import { useBadgeCounts } from '../../lib/useBadgeCounts';
@@ -26,6 +18,9 @@ import ProfileModal from '../../components/Messages/ProfileModal';
 import './StudentDashboard.css';
 import { setRole, STUDENT, TUTOR } from '../../lib/useRole';
 import UserAvatar from '../../components/UserAvatar';
+import HeaderActions from '../../components/HeaderActions';
+import { useSlashToFocus } from '../../lib/useSlashToFocus';
+import { buildDashboardMenu } from '../../lib/dashboardMenu';
 
 // Status pill colours for the student's own requests.
 const REQUEST_STATUS_STYLES = {
@@ -37,6 +32,10 @@ const REQUEST_STATUS_STYLES = {
 export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const searchRef = useRef(null);
+
+  // "/" jumps to the search box, as its hint says.
+  useSlashToFocus(searchRef);
   const [activeMenu, setActiveMenu] = useState('Dashboard');
   // The signed-in user, so the profile card and the tutor switch reflect the
   // real account rather than a placeholder.
@@ -136,16 +135,10 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
   const textSecondary = darkMode ? 'text-slate-200 font-medium' : 'text-slate-600 font-medium';
   const textMuted = darkMode ? 'text-slate-350 font-medium' : 'text-slate-500 font-medium';
 
-  const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { name: 'Find Tutors', icon: Search, path: '/find-tutors' },
-    // The tutors already teaching them, which the dashboard only counted.
-    { name: 'My Tutors', icon: GraduationCap, badge: stats?.my_tutors || undefined, path: '/my-tutors' },
-    { name: 'Messages', icon: MessageSquare, badge: unreadMessages || undefined, path: '/messages' },
-    { name: 'Notifications', icon: Bell, badge: unreadCount || undefined, path: '/notifications' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
-    { name: 'Help & Support', icon: HelpCircle, path: '/support' },
-  ];
+  const menuItems = buildDashboardMenu({
+    role: 'student',
+    badges: { messages: unreadMessages, notifications: unreadCount },
+  });
 
   /*
    * Leave a tutoring arrangement. The conversation closes for both sides, and
@@ -179,7 +172,6 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
     setRole(STUDENT);
   }, []);
 
-
   return (
     <div className={`min-h-screen w-full font-sans antialiased flex transition-colors duration-300 ${bgClass}`}>
       
@@ -209,7 +201,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
                     <span>{item.name}</span>
                   </div>
                   {item.badge && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-black ${
                       isActive ? 'bg-white text-emerald-600' : 'bg-emerald-600 text-white'
                     }`}>
                       {item.badge}
@@ -225,8 +217,8 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
           <div className="flex items-center gap-3">
             <UserAvatar user={me} size={40} />
             <div>
-              <h4 className={`text-xs ${textPrimary}`}>{me?.name ?? 'Student'}</h4>
-              <p className={`text-[10px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-xs ${textPrimary}`}>{me?.name ?? 'Student'}</p>
+              <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 {['Student', me?.department, me?.semester].filter(Boolean).join(' · ')}
               </p>
             </div>
@@ -264,8 +256,11 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="relative max-w-md w-full">
             <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${darkMode ? 'text-slate-400' : 'text-slate-450'}`} size={16} />
-            <input 
-              type="text" 
+            <input
+              ref={searchRef}
+              type="search"
+              aria-label="Search tutors"
+              aria-keyshortcuts="/"
               placeholder="Search by course, subject, or tutor..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -279,42 +274,22 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
               }}
               className={`w-full pl-11 pr-12 py-2.5 rounded-2xl border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${inputBg}`}
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">⌘ /</span>
+            <kbd aria-hidden="true" className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">/</kbd>
           </div>
 
-          <div className="flex items-center gap-4 self-end md:self-auto">
-            <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1f2937] text-slate-700 dark:text-white transition-all">
-              {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
-            </button>
-            
-            
-            <button 
-              onClick={() => navigate('/notifications')} 
-              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1f2937] text-slate-700 dark:text-white relative cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            >
-              <Bell size={16} />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping" />
-              )}
-            </button>
-
-            <div className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-800">
-              <UserAvatar user={me} size={36} />
-              <div className="hidden sm:block">
-                <h5 className={`text-xs ${textPrimary}`}>{me?.name ?? 'Student'}</h5>
-                <p className={`text-[10px] ${darkMode ? 'text-slate-400 font-medium' : 'text-slate-500 font-medium'}`}>
-                  {[me?.department, me?.semester && `Semester ${me.semester}`].filter(Boolean).join(' • ')}
-                </p>
-              </div>
-              <ChevronDown size={14} className="text-slate-450 dark:text-slate-350" />
-            </div>
-
-            <button 
-              onClick={() => navigate('/find-tutors')}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-bold transition text-xs shadow-lg shadow-emerald-500/10 flex items-center gap-1.5"
-            >
-              <Plus size={14} /> Find Tutors
-            </button>
+          {/* The shared controls and account menu, with this page's own call
+              to action after them. The arrow here used to be a picture of a
+              menu that opened nothing. */}
+          <div className="self-end md:self-auto">
+            <HeaderActions darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+              <button
+                type="button"
+                onClick={() => navigate('/find-tutors')}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-bold transition text-xs shadow-lg shadow-emerald-500/10 flex items-center gap-1.5"
+              >
+                <Plus size={14} /> Find Tutors
+              </button>
+            </HeaderActions>
           </div>
         </header>
 
@@ -366,12 +341,12 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
                     <Icon size={18} />
                   </div>
                   {card.badge && (
-                    <span className="bg-emerald-600 text-white text-[9px] px-2 py-0.5 rounded-full font-black">{card.badge}</span>
+                    <span className="bg-emerald-600 text-white text-[11px] px-2 py-0.5 rounded-full font-black">{card.badge}</span>
                   )}
                 </div>
                 <div className="mt-4 space-y-1">
                   <h3 className={`text-sm font-extrabold tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>{card.title}</h3>
-                  <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{card.desc}</p>
+                  <p className={`text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{card.desc}</p>
                 </div>
                 <div className="absolute bottom-5 right-5 text-slate-400 group-hover:text-emerald-500 transition-colors">
                   <ArrowRight size={14} />
@@ -385,13 +360,13 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
           <div className="space-y-6">
             <div className={`p-5 rounded-2xl border ${cardBg} space-y-4`}>
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
+                <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
                   Recent Tutor Requests
-                </h3>
+                </h2>
                 <button
                   type="button"
                   onClick={() => navigate('/my-requests')}
-                  className="text-[11px] font-bold text-emerald-500 dark:text-emerald-400 hover:underline"
+                  className="text-xs font-bold text-emerald-500 dark:text-emerald-400 hover:underline"
                 >
                   View All
                 </button>
@@ -411,7 +386,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
                   <div className={`py-8 text-center ${textMuted}`}>
                     <BookOpen size={24} className="mx-auto mb-2 text-emerald-500/60" />
                     <p className="text-xs font-bold">No requests yet</p>
-                    <p className="text-[11px] mt-1">Find a tutor and send your first request.</p>
+                    <p className="text-xs mt-1">Find a tutor and send your first request.</p>
                   </div>
                 )}
 
@@ -430,13 +405,13 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
                           {req.subject ?? 'General tutoring'}
                         </h4>
 
-                        <p className={`text-[10px] truncate ${textMuted}`}>
+                        <p className={`text-[11px] truncate ${textMuted}`}>
                           {req.tutor?.name ?? 'Tutor'}
                         </p>
                       </div>
                     </div>
 
-                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded border capitalize ${REQUEST_STATUS_STYLES[req.status] ?? REQUEST_STATUS_STYLES.pending}`}>
+                    <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded border capitalize ${REQUEST_STATUS_STYLES[req.status] ?? REQUEST_STATUS_STYLES.pending}`}>
                       {req.status === 'pending' ? 'Waiting' : req.status}
                     </span>
                   </div>
@@ -457,6 +432,7 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
               onMessage={() => navigate('/messages')}
               onRemove={handleEndTutoring}
               onRated={refreshDashboard}
+              onScheduled={() => navigate('/sessions')}
             />
           </div>
 
@@ -464,12 +440,12 @@ export default function StudentDashboard({ darkMode, toggleDarkMode }) {
           <div className="xl:col-span-3">
             <div className={`p-5 rounded-2xl border ${cardBg} space-y-4`}>
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
+                <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
                   Reviews &amp; Ratings
-                </h3>
+                </h2>
 
                 {stats?.reviews_pending > 0 && (
-                  <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[9px] px-2 py-0.5 rounded-full font-black">
+                  <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[11px] px-2 py-0.5 rounded-full font-black">
                     {stats.reviews_pending} to rate
                   </span>
                 )}

@@ -24,7 +24,10 @@ class NewPasswordController extends Controller
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            // The same rule as registering and changing a password. Laravel's
+            // default here only asked for eight characters, so a reset could
+            // set a password the rest of the site would have refused.
+            'password' => ['required', 'confirmed', Rules\Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
         // Here we will attempt to reset the user's password. If it is successful we

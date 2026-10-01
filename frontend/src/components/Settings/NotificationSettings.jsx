@@ -1,66 +1,88 @@
+import React, { useEffect, useId, useState } from 'react';
+
+import Switch from '../Switch';
+import { apiGet, apiPatch, firstError } from '../../lib/auth';
 import { usePushNotifications } from '../../lib/usePushNotifications';
-import React, { useState } from 'react';
 
-function Toggle({
-  enabled,
-  setEnabled,
-  darkMode,
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => setEnabled(!enabled)}
-      className={`w-10 h-5 rounded-full p-0.5 transition ${
-        enabled
-          ? 'bg-emerald-600'
-          : darkMode
-          ? 'bg-slate-700'
-          : 'bg-slate-300'
-      }`}
-    >
-      <div
-        className={`w-4 h-4 bg-white rounded-full transition-transform ${
-          enabled ? 'translate-x-5' : 'translate-x-0'
-        }`}
-      />
-    </button>
-  );
-}
+const TOPICS = [
+  { key: 'messages', title: 'Messages', description: 'When someone sends you a message.' },
+  { key: 'requests', title: 'Tuition requests', description: 'New requests, answers to yours, and arrangements ending.' },
+  { key: 'sessions', title: 'Sessions', description: 'Sessions proposed to you, confirmed or cancelled.' },
+  { key: 'system', title: 'EduAUST updates', description: 'Occasional notices about your account and the site.' },
+];
 
-export default function NotificationSettings({
-  darkMode,
-}) {
+/*
+ * Which notifications this account receives.
+ *
+ * These switches used to be page state only: nothing saved them and nothing
+ * read them, so switching one off changed nothing and it was back on after a
+ * reload. Each one is now saved as it is flipped, and the server skips that
+ * kind of notification when it is off.
+ */
+export default function NotificationSettings({ darkMode }) {
   const { permission, request, supported } = usePushNotifications({ enabled: false });
-  const [messages, setMessages] =
-    useState(true);
 
-  const [requests, setRequests] =
-    useState(true);
+  const [preferences, setPreferences] = useState(null);
+  const [savingKey, setSavingKey] = useState(null);
+  const [error, setError] = useState('');
+  const baseId = useId();
 
-  const [system, setSystem] =
-    useState(true);
+  const mutedClass = darkMode ? 'text-slate-400' : 'text-slate-500';
+  const titleClass = darkMode ? 'text-white' : 'text-slate-900';
+  const cardClass = darkMode ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-slate-50/60';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    apiGet('/notifications/preferences').then(({ ok, body }) => {
+      if (cancelled) return;
+
+      if (ok) setPreferences(body.preferences);
+      else setError(firstError(body, 'Could not load your notification settings.'));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const change = async (key, value) => {
+    const previous = preferences;
+
+    // Show the change at once, and put it back if the save fails.
+    setPreferences({ ...preferences, [key]: value });
+    setSavingKey(key);
+    setError('');
+
+    const { ok, body } = await apiPatch('/notifications/preferences', { [key]: value });
+
+    setSavingKey(null);
+
+    if (!ok) {
+      setPreferences(previous);
+      setError(firstError(body, 'Could not save that change. Please try again.'));
+
+      return;
+    }
+
+    setPreferences(body.preferences);
+  };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Desktop notifications */}
-      <div
-        className={`p-4 rounded-xl border ${
-          darkMode ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-slate-50/60'
-        }`}
-      >
+      <div className={`p-4 rounded-xl border ${cardClass}`}>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h3 className={`text-xs font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-              Desktop notifications
-            </h3>
-            <p className={`text-[11px] mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <h3 className={`text-xs font-black ${titleClass}`}>Desktop notifications</h3>
+            <p className={`text-xs mt-1 ${mutedClass}`}>
               {!supported
                 ? 'Your browser does not support desktop notifications.'
                 : permission === 'granted'
-                  ? 'On — new requests and messages appear while EduAUST is open.'
+                  ? 'On. New notifications pop up while EduAUST is open in another tab.'
                   : permission === 'denied'
                     ? 'Blocked. Allow notifications for this site in your browser settings.'
-                    : 'Get alerted about new requests and messages while EduAUST is open.'}
+                    : 'Get a pop-up for new notifications while EduAUST is open in another tab.'}
             </p>
           </div>
 
@@ -73,105 +95,62 @@ export default function NotificationSettings({
               Enable
             </button>
           )}
-
-          {permission === 'granted' && (
-            <span className="shrink-0 text-[10px] font-extrabold px-2 py-1 rounded bg-emerald-500/10 text-emerald-500">
-              Enabled
-            </span>
-          )}
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h3
-            className={`text-xs font-bold ${
-              darkMode
-                ? 'text-white'
-                : 'text-slate-900'
-            }`}
-          >
-            Messages
-          </h3>
+      <div>
+        <h3 className={`text-xs font-black uppercase tracking-wider mb-1 ${titleClass}`}>
+          What to notify you about
+        </h3>
+        <p className={`text-xs mb-3 ${mutedClass}`}>
+          Changes save as soon as you make them. Switching one off stops new notifications of that
+          kind; messages and requests themselves still arrive.
+        </p>
 
-          <p
-            className={`text-[11px] mt-1 ${
-              darkMode
-                ? 'text-slate-400'
-                : 'text-slate-500'
-            }`}
-          >
-            Get notified when you receive messages.
+        {error && (
+          <p role="alert" className="mb-3 text-sm text-red-500 font-semibold bg-red-500/10 p-3 rounded-xl">
+            {error}
           </p>
-        </div>
+        )}
 
-        <Toggle
-          enabled={messages}
-          setEnabled={setMessages}
-          darkMode={darkMode}
-        />
-      </div>
+        {!preferences && !error && (
+          <div className="space-y-2" aria-busy="true">
+            {TOPICS.map((t) => (
+              <div key={t.key} className={`h-16 rounded-xl animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} />
+            ))}
+          </div>
+        )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h3
-            className={`text-xs font-bold ${
-              darkMode
-                ? 'text-white'
-                : 'text-slate-900'
-            }`}
-          >
-            {requests
-              ? 'Tuition Requests'
-              : 'Tuition Requests'}
-          </h3>
+        {preferences && (
+          <ul className={`rounded-xl border divide-y ${darkMode ? 'border-slate-800 divide-slate-800' : 'border-slate-200 divide-slate-200'}`}>
+            {TOPICS.map((topic) => {
+              const titleId = `${baseId}-${topic.key}-title`;
+              const hintId = `${baseId}-${topic.key}-hint`;
 
-          <p
-            className={`text-[11px] mt-1 ${
-              darkMode
-                ? 'text-slate-400'
-                : 'text-slate-500'
-            }`}
-          >
-            Receive updates about requests and activity.
-          </p>
-        </div>
+              return (
+                <li key={topic.key} className="flex items-center justify-between gap-4 p-4">
+                  <div>
+                    <p id={titleId} className={`text-xs font-bold ${titleClass}`}>
+                      {topic.title}
+                    </p>
+                    <p id={hintId} className={`text-xs mt-1 ${mutedClass}`}>
+                      {topic.description}
+                    </p>
+                  </div>
 
-        <Toggle
-          enabled={requests}
-          setEnabled={setRequests}
-          darkMode={darkMode}
-        />
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h3
-            className={`text-xs font-bold ${
-              darkMode
-                ? 'text-white'
-                : 'text-slate-900'
-            }`}
-          >
-            System Notifications
-          </h3>
-
-          <p
-            className={`text-[11px] mt-1 ${
-              darkMode
-                ? 'text-slate-400'
-                : 'text-slate-500'
-            }`}
-          >
-            Important updates from EduAUST.
-          </p>
-        </div>
-
-        <Toggle
-          enabled={system}
-          setEnabled={setSystem}
-          darkMode={darkMode}
-        />
+                  <Switch
+                    checked={Boolean(preferences[topic.key])}
+                    onChange={(value) => change(topic.key, value)}
+                    darkMode={darkMode}
+                    labelledBy={titleId}
+                    describedBy={hintId}
+                    disabled={savingKey === topic.key}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </div>
   );

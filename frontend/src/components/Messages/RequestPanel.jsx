@@ -89,7 +89,7 @@ export default function RequestPanel({ darkMode, contact, onSent }) {
             <h3 className={`text-sm font-black truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               {contact.participant?.name}
             </h3>
-            <p className={`text-[11px] font-semibold truncate ${muted}`}>
+            <p className={`text-xs font-semibold truncate ${muted}`}>
               {contact.participant?.headline || contact.participant?.department || 'Tutor'}
             </p>
           </div>
@@ -101,7 +101,7 @@ export default function RequestPanel({ darkMode, contact, onSent }) {
             <p className={`text-xs font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               Waiting for a reply
             </p>
-            <p className={`text-[11px] mt-2 ${muted}`}>
+            <p className={`text-xs mt-2 ${muted}`}>
               You have already asked {contact.participant?.name?.split(' ')[0]}. The chat opens
               as soon as they accept.
             </p>
@@ -111,7 +111,7 @@ export default function RequestPanel({ darkMode, contact, onSent }) {
         {declined && (
           <div className="text-center py-3 mb-4">
             <XCircle size={20} className="mx-auto text-rose-500 mb-2" />
-            <p className={`text-[11px] ${muted}`}>
+            <p className={`text-xs ${muted}`}>
               This tutor declined your last request. You can ask again about a different subject.
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function RequestPanel({ darkMode, contact, onSent }) {
             {!declined && (
               <div className="flex items-start gap-2 mb-1">
                 <Lock size={13} className={`mt-0.5 shrink-0 ${muted}`} />
-                <p className={`text-[11px] ${muted}`}>
+                <p className={`text-xs ${muted}`}>
                   Chat opens once {contact.participant?.name?.split(' ')[0]} accepts. Send a
                   request to get started.
                 </p>
@@ -130,7 +130,7 @@ export default function RequestPanel({ darkMode, contact, onSent }) {
             )}
 
             <div>
-              <label className={`block text-[10px] font-extrabold uppercase tracking-wider mb-2 ${muted}`}>
+              <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-2 ${muted}`}>
                 Subject
               </label>
               <select
@@ -146,7 +146,7 @@ export default function RequestPanel({ darkMode, contact, onSent }) {
             </div>
 
             <div>
-              <label className={`block text-[10px] font-extrabold uppercase tracking-wider mb-2 ${muted}`}>
+              <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-2 ${muted}`}>
                 Message <span className="font-medium normal-case tracking-normal">(optional)</span>
               </label>
               <textarea
@@ -160,7 +160,7 @@ export default function RequestPanel({ darkMode, contact, onSent }) {
             </div>
 
             {error && (
-              <p className="text-[11px] text-rose-500 font-semibold">{error}</p>
+              <p className="text-xs text-rose-500 font-semibold">{error}</p>
             )}
 
             <button

@@ -65,7 +65,9 @@ class RegisterSecurityController extends Controller
 
         Cache::forget($key);
 
-        // Auto-login: hand back tokens so the client is signed in immediately.
+        // Auto-login: hand back tokens so the client is signed in immediately,
+        // including a refresh token. Without one the new account was signed
+        // out again when the one-hour access token expired.
         return response()->json(array_merge([
             'message' => 'Registration completed successfully.',
             'user' => [
@@ -77,7 +79,7 @@ class RegisterSecurityController extends Controller
                 'department_id' => $user->department_id,
                 'semester' => $user->semester,
             ],
-        ], $jwt->tokensFor($user)), 201);
+        ], $jwt->tokensFor($user, true)), 201);
     }
 
     /**

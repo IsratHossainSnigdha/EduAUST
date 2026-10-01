@@ -15,7 +15,6 @@ import {
   isUnauthenticated,
 } from '../../lib/auth';
 
-import { useBadgeCounts } from '../../lib/useBadgeCounts';
 
 import TutorSidebar from '../../components/Tutor/TutorSidebar';
 import TutorHeader from '../../components/Tutor/TutorHeader';
@@ -42,13 +41,6 @@ export default function TutorDashboard({
 
   const [activeMenu, setActiveMenu] =
     useState('Dashboard');
-
-  /*
-   * The sidebar shows the same unread counts, so both read them through the
-   * shared hook and one request serves the whole screen.
-   */
-  const { counts: badges } = useBadgeCounts({ includeRequests: true });
-  const unreadCount = badges.notifications.tutor;
 
   // Real dashboard data from the backend, replacing the placeholder figures
   // the cards used to hard-code.
@@ -212,7 +204,6 @@ export default function TutorDashboard({
           toggleDarkMode={toggleDarkMode}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          unreadCount={unreadCount}
         />
 
         {dashboardError && (
@@ -260,6 +251,7 @@ export default function TutorDashboard({
           onMessage={() => navigate('/messages')}
           onRemove={handleStopTeaching}
           onRated={() => setRefreshKey((key) => key + 1)}
+          onScheduled={() => navigate('/sessions')}
         />
 
         {/* What students made of the teaching — the dashboard reported every
@@ -270,9 +262,9 @@ export default function TutorDashboard({
             darkMode ? 'bg-[#1f2937] border-slate-800' : 'bg-white border-slate-100'
           }`}
         >
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
+          <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300">
             Reviews &amp; Ratings
-          </h3>
+          </h2>
 
           <TutorReviews
             darkMode={darkMode}

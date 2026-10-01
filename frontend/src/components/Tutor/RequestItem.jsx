@@ -66,7 +66,7 @@ export default function RequestItem({
           </h4>
 
           <p
-            className={`text-[10px] truncate ${
+            className={`text-[11px] truncate ${
               darkMode ? 'text-slate-400' : 'text-slate-500'
             }`}
           >
@@ -79,7 +79,7 @@ export default function RequestItem({
 
       <div className="text-right shrink-0 pl-3">
         <span
-          className={`text-[10px] block mb-1 ${
+          className={`text-[11px] block mb-1 ${
             darkMode ? 'text-slate-400' : 'text-slate-500'
           }`}
         >
@@ -91,21 +91,21 @@ export default function RequestItem({
             <button
               type="button"
               onClick={() => onRespond(request.id, 'accepted')}
-              className="text-[9px] font-extrabold px-2 py-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 transition"
+              className="text-[11px] font-extrabold px-2 py-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 transition"
             >
               Accept
             </button>
             <button
               type="button"
               onClick={() => onRespond(request.id, 'declined')}
-              className="text-[9px] font-extrabold px-2 py-1 rounded border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white transition"
+              className="text-[11px] font-extrabold px-2 py-1 rounded border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white transition"
             >
               Decline
             </button>
           </div>
         ) : (
           <span
-            className={`text-[9px] font-extrabold px-2 py-0.5 rounded capitalize ${
+            className={`text-[11px] font-extrabold px-2 py-0.5 rounded capitalize ${
               STATUS_STYLES[status] || STATUS_STYLES.pending
             }`}
           >

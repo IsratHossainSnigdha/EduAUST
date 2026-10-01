@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiGet, isAuthenticated } from './auth';
+import { apiGet, apiPatch, isAuthenticated } from './auth';
 
 /*
  * Desktop notifications for anything new that arrives while the app is open.
@@ -8,12 +8,29 @@ import { apiGet, isAuthenticated } from './auth';
  * party; this polls for them and raises a browser notification, so a tutor
  * hears about a request without sitting on the dashboard.
  *
- * Scope worth being honest about: this is a foreground notifier. Delivery to
- * a closed browser needs Web Push — a service worker, VAPID keys and a push
- * service — which is a separate piece of infrastructure.
+ * It pops up only while EduAUST is open but out of sight, in another tab or
+ * behind another window. It used to do the opposite: polling stopped whenever
+ * the tab was hidden, so a pop-up could only appear while you were already
+ * looking at the page it was about.
+ *
+ * Scope worth being honest about: delivery to a closed browser needs Web Push
+ * (a service worker, VAPID keys and a push service), which is a separate
+ * piece of infrastructure.
  */
 const POLL_MS = 20000;
 const SEEN_KEY = 'eduaust_last_notified_at';
+
+// The build serves from /app/, the dev server from /, so the icon is found
+// relative to wherever the app lives.
+const ICON = `${import.meta.env.BASE_URL}favicon.svg`;
+
+// Timestamps arrive as "+00:00" from the server and "Z" from the browser, so
+// they are compared as moments rather than as strings.
+const toTime = (iso) => {
+  const t = Date.parse(iso);
+
+  return Number.isNaN(t) ? 0 : t;
+};
 
 function canNotify() {
   return typeof window !== 'undefined' && 'Notification' in window;
@@ -57,12 +74,16 @@ export function usePushNotifications({ enabled = true } = {}) {
         const shown = new Notification(notification.title || 'EduAUST', {
           body: notification.body ?? '',
           tag: notification.id,
-          icon: '/vite.svg',
+          icon: ICON,
         });
 
+        // Straight to the thing it is about, and read once opened, the same
+        // as opening it from the notifications page.
         shown.onclick = () => {
           window.focus();
-          window.location.assign('/notifications');
+          apiPatch(`/notifications/${notification.id}/read`).finally(() => {
+            window.location.assign(notification.link || '/notifications');
+          });
           shown.close();
         };
       } catch {
@@ -71,7 +92,7 @@ export function usePushNotifications({ enabled = true } = {}) {
     };
 
     const poll = async () => {
-      if (cancelled || !isAuthenticated() || document.visibilityState === 'hidden') return;
+      if (cancelled || !isAuthenticated()) return;
 
       const { ok, body } = await apiGet('/notifications?unread=1&limit=10');
 
@@ -87,13 +108,18 @@ export function usePushNotifications({ enabled = true } = {}) {
 
       const fresh = items
         .filter((item) => item?.created_at)
-        .filter((item) => !lastSeenAt.current || item.created_at > lastSeenAt.current)
+        .filter((item) => !lastSeenAt.current || toTime(item.created_at) > toTime(lastSeenAt.current))
         // Oldest first, so the newest ends up on top of the stack.
-        .sort((a, b) => a.created_at.localeCompare(b.created_at));
+        .sort((a, b) => toTime(a.created_at) - toTime(b.created_at));
 
       if (fresh.length === 0) return;
 
-      fresh.forEach(announce);
+      // Someone looking at the page already sees the badge change; a pop-up
+      // on top of that is noise. What they missed is still marked as seen,
+      // so it does not pop up later out of context.
+      const outOfSight = document.visibilityState === 'hidden' || !document.hasFocus();
+
+      if (outOfSight) fresh.forEach(announce);
 
       const newest = fresh[fresh.length - 1].created_at;
       lastSeenAt.current = newest;

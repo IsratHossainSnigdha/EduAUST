@@ -7,9 +7,7 @@ import {
   Navigate,
 } from 'react-router-dom';
 
-import {
-  apiGet,
-} from '../lib/auth';
+import { fetchCurrentUser } from '../lib/useCurrentUser';
 
 import { setRole, TUTOR } from '../lib/useRole';
 
@@ -24,17 +22,20 @@ export default function TutorRoute({
 
     const checkTutor = async () => {
       try {
-        const { ok, body } =
-          await apiGet('/auth/me');
+        /*
+         * Shares whatever request the sidebar and header already started,
+         * rather than asking for the same account a second time. Forced,
+         * because an authorisation check must not run on a stale cache.
+         */
+        const user = await fetchCurrentUser({ force: true });
 
         if (cancelled) return;
 
-        if (!ok || !body?.user) {
+        if (!user) {
           setStatus('unauthenticated');
+
           return;
         }
-
-        const user = body.user;
 
         const tutorStatus =
           user.isTutor === true ||

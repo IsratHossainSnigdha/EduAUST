@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Notification;
 use App\Models\TuitionRequest;
+use App\Models\TutoringSession;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -31,7 +32,8 @@ class Notifier
             'New tuition request',
             $subject
                 ? "{$student} asked for help with {$subject}."
-                : "{$student} sent you a tuition request."
+                : "{$student} sent you a tuition request.",
+            '/tutor-requests',
         );
     }
 
@@ -54,7 +56,10 @@ class Notifier
             $accepted
                 // Acceptance is also what unlocks messaging, so say so.
                 ? "{$tutor} accepted your request{$about}. You can message them now."
-                : "{$tutor} declined your request{$about}."
+                : "{$tutor} declined your request{$about}.",
+            // Acceptance opens the conversation, so take them to it; a
+            // decline has nothing to open but the list it came from.
+            $accepted ? '/messages?with='.$request->tutor_id : '/my-requests',
         );
     }
 
@@ -82,7 +87,8 @@ class Notifier
                 Notification::AUDIENCE_STUDENT,
                 Notification::CATEGORY_REQUEST,
                 'Tutoring ended',
-                "{$tutor} has ended your tutoring{$about}. You can send a new request if you would like to continue."
+                "{$tutor} has ended your tutoring{$about}. You can send a new request if you would like to continue.",
+                '/my-tutors',
             );
 
             return;
@@ -95,7 +101,8 @@ class Notifier
             Notification::AUDIENCE_TUTOR,
             Notification::CATEGORY_REQUEST,
             'Tutoring ended',
-            "{$student} has ended their tutoring with you{$about}."
+            "{$student} has ended their tutoring with you{$about}.",
+            '/my-students',
         );
     }
 
@@ -104,27 +111,155 @@ class Notifier
      */
     public function messageReceived(User $recipient, User $sender, string $body): void
     {
+        if (! $recipient->wantsNotificationsAbout(Notification::CATEGORY_MESSAGE)) {
+            return;
+        }
+
+        // Straight to that person's conversation, not just the message box.
+        $link = '/messages?with='.$sender->id;
+
+        /*
+         * One notification per conversation, not per message. A burst of ten
+         * messages used to leave ten rows; while the last one is still unread
+         * it is brought up to date instead. The link names the sender by id,
+         * so two people who share a name are never merged.
+         */
+        $existing = Notification::query()
+            ->where('user_id', $recipient->id)
+            ->where('category', Notification::CATEGORY_MESSAGE)
+            ->where('link', $link)
+            ->unread()
+            ->latest()
+            ->first();
+
+        if ($existing) {
+            $existing->forceFill([
+                'body' => Str::limit($body, 120),
+                // Moved to the top, as a new notification would be.
+                'created_at' => now(),
+            ])->save();
+
+            return;
+        }
+
         $this->to(
             $recipient->id,
             // A conversation is not tied to a role, so either dashboard shows it.
             Notification::AUDIENCE_BOTH,
             Notification::CATEGORY_MESSAGE,
             "New message from {$sender->name}",
-            Str::limit($body, 120)
+            Str::limit($body, 120),
+            $link,
         );
     }
 
     /**
-     * Record one notification.
+     * Tell the other side that a time has been suggested.
      */
-    private function to(string $userId, string $audience, string $category, string $title, string $body): void
+    public function sessionProposed(TutoringSession $session, string $proposedBy): void
     {
+        $other = $session->counterpartFor($proposedBy);
+
+        if (! $other) {
+            return;
+        }
+
+        $who = ($proposedBy === $session->tutor_id ? $session->tutor : $session->student)?->name
+            ?? 'Someone';
+
+        $this->to(
+            $other->id,
+            Notification::AUDIENCE_BOTH,
+            Notification::CATEGORY_SESSION,
+            'New session proposed',
+            "{$who} suggested a session on {$this->when($session)}. Confirm it if that works for you.",
+            '/sessions',
+        );
+    }
+
+    /**
+     * Tell whoever proposed it that the other side agreed.
+     */
+    public function sessionConfirmed(TutoringSession $session, string $confirmedBy): void
+    {
+        $other = $session->counterpartFor($confirmedBy);
+
+        if (! $other) {
+            return;
+        }
+
+        $who = ($confirmedBy === $session->tutor_id ? $session->tutor : $session->student)?->name
+            ?? 'They';
+
+        $this->to(
+            $other->id,
+            Notification::AUDIENCE_BOTH,
+            Notification::CATEGORY_SESSION,
+            'Session confirmed',
+            "{$who} confirmed your session on {$this->when($session)}.",
+            '/sessions',
+        );
+    }
+
+    /**
+     * Tell the other side that a session is off.
+     */
+    public function sessionCancelled(TutoringSession $session, string $cancelledBy): void
+    {
+        $other = $session->counterpartFor($cancelledBy);
+
+        if (! $other) {
+            return;
+        }
+
+        $who = ($cancelledBy === $session->tutor_id ? $session->tutor : $session->student)?->name
+            ?? 'Someone';
+
+        $this->to(
+            $other->id,
+            Notification::AUDIENCE_BOTH,
+            Notification::CATEGORY_SESSION,
+            'Session cancelled',
+            "{$who} cancelled the session on {$this->when($session)}.",
+            '/sessions',
+        );
+    }
+
+    /**
+     * A session's time, written the way a person would say it.
+     */
+    private function when(TutoringSession $session): string
+    {
+        return $session->scheduled_at->format('D j M \a\t g:ia');
+    }
+
+    /**
+     * Record one notification, unless the recipient has switched that kind
+     * off in their settings.
+     *
+     * @param  string|null  $link  Where opening this notification should go.
+     */
+    private function to(
+        string $userId,
+        string $audience,
+        string $category,
+        string $title,
+        string $body,
+        ?string $link = null,
+    ): void {
+        $recipient = User::find($userId);
+
+        if (! $recipient || ! $recipient->wantsNotificationsAbout($category)) {
+            return;
+        }
+
         Notification::create([
             'user_id' => $userId,
             'audience' => $audience,
             'category' => $category,
             'title' => $title,
             'body' => $body,
+            'link' => $link,
         ]);
     }
 }

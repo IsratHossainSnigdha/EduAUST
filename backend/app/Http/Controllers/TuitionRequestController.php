@@ -81,6 +81,17 @@ class TuitionRequestController extends Controller
             ]);
         }
 
+        /*
+         * A tutor who has switched off "Accepting new students" is hidden from
+         * Find Tutors, but saved tutors and the message box still list them,
+         * and both offer a request. The switch has to hold everywhere.
+         */
+        if (! $tutor->tutorProfile?->is_available) {
+            throw ValidationException::withMessages([
+                'tutor_id' => ['This tutor is not taking new students right now.'],
+            ]);
+        }
+
         // A second request for the same subject would just be noise in the
         // tutor's inbox while the first is still unanswered.
         $duplicate = TuitionRequest::query()
@@ -189,6 +200,22 @@ class TuitionRequestController extends Controller
 
         if (! $isTutor && ! $isStudent) {
             return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        /*
+         * A student may take back a request the tutor has not answered yet.
+         * They had no way to do that: a request sent by mistake, or to a
+         * tutor they no longer need, sat in someone's inbox indefinitely.
+         */
+        if ($tuitionRequest->status === TuitionRequest::STATUS_PENDING && $isStudent) {
+            $tuitionRequest->update(['status' => TuitionRequest::STATUS_WITHDRAWN]);
+
+            // Nothing had begun, so there is nothing to tell the tutor about;
+            // it simply leaves their inbox.
+            return response()->json([
+                'message' => 'Your request has been withdrawn.',
+                'data' => $this->present($tuitionRequest->load(['student.department', 'subject'])),
+            ]);
         }
 
         if ($tuitionRequest->status !== TuitionRequest::STATUS_ACCEPTED) {

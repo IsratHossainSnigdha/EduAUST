@@ -62,7 +62,7 @@ export default function TuitionRequests({
             >
               <Inbox size={28} className="mb-2 text-emerald-500/60" />
               <p className="text-xs font-bold">No requests yet</p>
-              <p className="text-[11px] mt-1">
+              <p className="text-xs mt-1">
                 Students who want your help will appear here.
               </p>
             </div>

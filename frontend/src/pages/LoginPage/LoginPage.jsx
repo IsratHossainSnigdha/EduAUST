@@ -1,24 +1,26 @@
 import React, { useState } from 'react';
 import {
-  Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck,
-  Users, BookOpen, Sparkles, Sun, Moon
+  Eye, EyeOff, ArrowRight, ShieldCheck, Users, BookOpen,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { apiPost, saveAuth, firstError } from '../../lib/auth';
 import { setRole, STUDENT, TUTOR } from '../../lib/useRole';
 import GoogleSignInButton from '../../components/GoogleSignInButton';
 import './LoginPage.css';
 
-export default function LoginPage({
-  darkMode,
-  toggleDarkMode,
-  setCurrentPage
-}) {
+export default function LoginPage({ darkMode }) {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  /*
+   * Whether to issue a refresh token. Nothing on the page could change this,
+   * so it was always off: no refresh token was ever issued, and every session
+   * ended when the one-hour access token expired. Staying signed in is the
+   * default now, with the box there for a shared computer.
+   */
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const bgClass = darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900';
@@ -30,7 +32,8 @@ export default function LoginPage({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.endsWith('@aust.edu')) {
+    // Addresses are not case-sensitive, so neither is this check.
+    if (!email.trim().toLowerCase().endsWith('@aust.edu')) {
       setError('Please use a valid AUST email address (@aust.edu).');
       return;
     }
@@ -39,6 +42,7 @@ export default function LoginPage({
       return;
     }
     setError('');
+    setSubmitting(true);
 
     const { ok, body } = await apiPost('/auth/login', {
       identifier: email.trim(),
@@ -47,6 +51,7 @@ export default function LoginPage({
     });
 
     if (!ok) {
+      setSubmitting(false);
       setError(firstError(body, 'Unable to sign in. Please try again.'));
       return;
     }
@@ -84,27 +89,50 @@ export default function LoginPage({
               <p className={subTextClass}>Sign in to your EduAUST account.</p>
             </div>
 
-            {error && <p className="text-red-500 text-sm font-semibold bg-red-500/10 p-3 rounded-xl">{error}</p>}
+            {error && <p role="alert" className="text-red-500 text-sm font-semibold bg-red-500/10 p-3 rounded-xl">{error}</p>}
 
             <div className={`login-card ${cardBgClass} shadow-xl`}>
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <label className={`text-xs font-bold uppercase ${labelTextClass}`}>AUST Email</label>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={`login-input ${inputBgClass}`} placeholder="ishrat.cse.20230204017@aust.edu" />
+                  <label htmlFor="login-email" className={`text-xs font-bold uppercase ${labelTextClass}`}>AUST Email</label>
+                  <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={`login-input ${inputBgClass}`} placeholder="ishrat.cse.20230204017@aust.edu" />
                 </div>
 
                 <div className="space-y-2">
-                  <label className={`text-xs font-bold uppercase ${labelTextClass}`}>Password</label>
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="login-password" className={`text-xs font-bold uppercase ${labelTextClass}`}>Password</label>
+                    {/* The server has always been able to reset a password;
+                        nothing on the site led there. */}
+                    <Link to="/forgot-password" className="text-xs font-bold text-emerald-600 hover:underline">
+                      Forgot password?
+                    </Link>
+                  </div>
                   <div className="relative">
-                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required className={`login-input ${inputBgClass}`} placeholder="••••••••" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-4 text-slate-400">
+                    <input id="login-password" type={showPassword ? "text" : "password"} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required className={`login-input ${inputBgClass}`} placeholder="••••••••" />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-pressed={showPassword}
+                      className="absolute right-4 top-4 text-slate-400"
+                    >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
 
-                <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-2xl font-bold transition-all">
-                  Sign In <ArrowRight size={16} className="inline ml-1" />
+                <label className={`flex items-center gap-2 text-xs font-semibold cursor-pointer ${labelTextClass}`}>
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 accent-emerald-600 rounded"
+                  />
+                  Keep me signed in
+                </label>
+
+                <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-wait text-white py-3.5 rounded-2xl font-bold transition-all">
+                  {submitting ? 'Signing in…' : <>Sign In <ArrowRight size={16} className="inline ml-1" /></>}
                 </button>
               </form>
 
@@ -115,6 +143,15 @@ export default function LoginPage({
               </div>
 
               <GoogleSignInButton darkMode={darkMode} onError={setError} />
+
+              {/* The only way from here to registration used to be the
+                  landing page. */}
+              <p className={`text-center text-xs mt-6 ${subTextClass}`}>
+                New to EduAUST?{' '}
+                <Link to="/signup" className="font-bold text-emerald-600 hover:underline">
+                  Create an account
+                </Link>
+              </p>
             </div>
           </div>
           <div />
